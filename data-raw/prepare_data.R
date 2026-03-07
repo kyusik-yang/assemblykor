@@ -152,7 +152,10 @@ speeches <- raw_speeches |>
     date         = as.Date(date_clean),
     committee    = committee_clean,
     speaker      = speaker,
-    member_id    = member_id,
+    speaker_name = sub("^.+ ([가-힣]{2,4})$", "\\1",
+                    sub(" (위원|의원)$", "",
+                    sub("^(위원장|부위원장|전문위원|수석전문위원|정부위원|국무위원) ", "", speaker))),
+    speaker_id   = as.integer(member_id),
     speech_order = as.integer(speech_order),
     speech       = speech
   ) |>

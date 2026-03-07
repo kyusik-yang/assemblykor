@@ -242,34 +242,39 @@
 #' from standing committee meetings covering economic and infrastructure
 #' policy areas.
 #'
-#' @format A data frame with 7,500 rows and 7 variables:
+#' @format A data frame with 7,500 rows and 8 variables:
 #' \describe{
 #'   \item{assembly}{Assembly number (16-20)}
 #'   \item{date}{Date of the committee meeting}
 #'   \item{committee}{Standing committee name in Korean}
-#'   \item{speaker}{Speaker name (may include title, e.g., "위원장 김영일")}
-#'   \item{member_id}{Speaker identifier (numeric code from the minutes system)}
-#'   \item{speech_order}{Order of the speech within the meeting}
+#'   \item{speaker}{Speaker label as it appears in the minutes (may include
+#'     titles, e.g., "위원장 김영일" or "이원욱 위원")}
+#'   \item{speaker_name}{Cleaned speaker name with titles removed. Can be
+#'     joined with \code{legislators$name} or \code{seminars$name} for
+#'     cross-dataset linking. Note that legislators in the 20th assembly
+#'     overlap with \code{legislators}; speakers from the 16th-19th do not.
+#'     Some speakers are government officials, not legislators.}
+#'   \item{speaker_id}{Numeric speaker code from the minutes system. This
+#'     is NOT the same as \code{legislators$member_id} (MONA_CD).}
+#'   \item{speech_order}{Order of the speech turn within the meeting}
 #'   \item{speech}{Full text of the speech in Korean}
 #' }
 #'
 #' @details
 #' This is a stratified sample of 1,500 speeches per assembly (16th-20th),
-#' drawn from committee minutes (상임위원회 회의록). The committees covered
+#' drawn from committee minutes. The committees covered
 #' include finance and infrastructure-related standing committees
 #' (기획재정위원회, 건설교통위원회, 국토교통위원회, etc.), which changed
 #' names across assemblies due to government reorganizations.
 #'
-#' Speeches shorter than 50 characters were excluded from sampling. The
-#' median speech length is approximately 150 characters, ranging from
-#' brief procedural statements to extended policy arguments.
+#' Speeches shorter than 50 characters were excluded from sampling.
 #'
-#' For full-text analysis, note that Korean text requires morphological
-#' analysis (형태소 분석) for proper tokenization. Packages like
-#' \pkg{tidytext} with custom tokenizers or Python-based tools like
-#' KoNLPy can be used.
+#' \strong{Linking to other datasets}: Use \code{speaker_name} to join with
+#' \code{legislators$name} (20th assembly overlap) or
+#' \code{seminars$name}. Do NOT use \code{speaker_id} for cross-dataset
+#' joins, as it uses a different identification system.
 #'
-#' @source National Assembly committee minutes (상임위원회 회의록),
+#' @source National Assembly committee minutes,
 #'   published by the National Assembly of the Republic of Korea.
 #'
 #' @examples
@@ -283,7 +288,7 @@
 #'      main = "Speech Length Distribution", xlab = "Characters")
 #'
 #' # Most frequent speakers
-#' head(sort(table(speeches$speaker), decreasing = TRUE), 10)
+#' head(sort(table(speeches$speaker_name), decreasing = TRUE), 10)
 #'
 #' # Simple keyword search
 #' housing <- speeches[grepl("부동산|주택", speeches$speech), ]
