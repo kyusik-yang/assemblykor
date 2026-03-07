@@ -6,6 +6,18 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 6)
+
+# Korean font for ggplot2
+ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
+  "Apple SD Gothic Neo"
+} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
+  "NanumGothic"
+} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
+  "Malgun Gothic"
+} else {
+  ""
+}
+ggplot2::theme_set(ggplot2::theme_gray(base_family = ko_font))
 ```
 
 ## 학습 목표

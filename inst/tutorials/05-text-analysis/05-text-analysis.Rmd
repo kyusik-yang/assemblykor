@@ -12,6 +12,19 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
+
+# Korean font for ggplot2
+ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
+  "Apple SD Gothic Neo"
+} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
+  "NanumGothic"
+} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
+  "Malgun Gothic"
+} else {
+  ""
+}
+theme_set(theme_gray(base_family = ko_font))
+
 data(bills)
 data(legislators)
 tutorial_options(exercise.eval = FALSE)
