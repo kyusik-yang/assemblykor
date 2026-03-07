@@ -18,7 +18,7 @@ declarations, policy seminars, and committee speeches.
 \item \code{\link{bills}}: 60,925 legislative bills
 \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
 \item \code{\link{seminars}}: 5,962 legislator-year seminar records
-\item \code{\link{speeches}}: 7,500 committee speech excerpts (16th-20th)
+\item \code{\link{speeches}}: 10,500 committee speech records (16th-22nd, all committees)
 }
 }
 

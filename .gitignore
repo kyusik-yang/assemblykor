@@ -4,3 +4,6 @@
 .Ruserdata
 *.Rproj
 inst/doc
+assemblykor.Rcheck/
+assemblykor_*.tar.gz
+data-raw/speeches_all_committees.csv

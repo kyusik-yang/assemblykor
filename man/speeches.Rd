@@ -3,18 +3,20 @@
 \docType{data}
 \name{speeches}
 \alias{speeches}
-\title{Committee Speeches from the Korean National Assembly (16th-20th)}
+\title{Committee Speeches from the Korean National Assembly (16th-22nd)}
 \format{
-A data frame with 7,500 rows and 8 variables:
+A data frame with 10,500 rows and 8 variables:
 \describe{
-\item{assembly}{Assembly number (16-20)}
+\item{assembly}{Assembly number (16-22)}
 \item{date}{Date of the committee meeting}
-\item{committee}{Standing committee name in Korean}
+\item{committee}{Standing committee name in Korean (37 unique names;
+some committees changed names across assemblies due to government
+reorganizations, e.g., 건설교통위원회 -> 국토해양위원회 -> 국토교통위원회)}
 \item{speaker}{Speaker label as it appears in the minutes (may include
 titles, e.g., "위원장 김영일" or "이원욱 위원")}
 \item{speaker_name}{Cleaned speaker name with titles removed.}
 \item{member_id}{Legislator identifier (MONA_CD, links to
-\code{legislators$member_id}). Available for ~54\\% of speech rows.
+\code{legislators$member_id}). Available for matched legislators;
 \code{NA} for government officials (장관, 차관, etc.), speakers
 from assemblies with sparse crosswalk data (especially 16th),
 or ambiguous homonym cases.}
@@ -23,24 +25,23 @@ or ambiguous homonym cases.}
 }
 }
 \source{
-National Assembly committee minutes,
+National Assembly committee minutes (상임위원회 회의록 데이터셋),
 published by the National Assembly of the Republic of Korea.
 }
 \usage{
 speeches
 }
 \description{
-A stratified random sample of 7,500 committee speech records from the
-16th through 20th Korean National Assembly (2000-2020). Speeches are
-from standing committee meetings covering economic and infrastructure
-policy areas.
+A stratified random sample of 10,500 committee speech records from the
+16th through 22nd Korean National Assembly (2000-2025). Speeches cover
+all standing committees (37 unique committee names across seven assemblies).
 }
 \details{
-This is a stratified sample of 1,500 speeches per assembly (16th-20th),
-drawn from committee minutes. The committees covered
-include finance and infrastructure-related standing committees
-(기획재정위원회, 건설교통위원회, 국토교통위원회, etc.), which changed
-names across assemblies due to government reorganizations.
+This is a stratified sample of 1,500 speeches per assembly (16th-22nd),
+drawn from standing committee minutes of the Korean National Assembly.
+All standing committees are included (법제사법위원회, 국방위원회,
+기획재정위원회, 보건복지위원회, 외교통일위원회, etc.). Committee names
+vary across assemblies due to government reorganizations.
 
 Speeches shorter than 50 characters were excluded from sampling.
 
@@ -52,8 +53,11 @@ as a fallback for name-based joins.
 \examples{
 data(speeches)
 
-# Speech count by assembly and committee
-table(speeches$assembly, speeches$committee)
+# Speech count by assembly
+table(speeches$assembly)
+
+# Top committees
+head(sort(table(speeches$committee), decreasing = TRUE), 10)
 
 # Distribution of speech lengths
 hist(nchar(speeches$speech), breaks = 100,
