@@ -50,6 +50,8 @@
     "    run_tutorial(1)            Launch in browser (interactive)\n",
     "    open_tutorial(1)           Copy Rmd to working directory\n",
     "\n",
+    "  Korean font for ggplot2:     set_ko_font()\n",
+    "\n",
     "  https://github.com/kyusik-yang/assemblykor\n"
   )
 

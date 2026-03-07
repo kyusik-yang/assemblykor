@@ -150,3 +150,55 @@ run_tutorial <- function(name) {
 
   learnr::run_tutorial(tut_name, package = "assemblykor")
 }
+
+
+#' Set Korean font for ggplot2
+#'
+#' Detects a Korean-compatible font on the current system and applies it
+#' to all ggplot2 plots via \code{theme_set()}. Call this once at the top
+#' of your script to avoid broken Korean text in plot titles and labels.
+#'
+#' @param font Optional font family name to use directly. If \code{NULL}
+#'   (default), auto-detects from common Korean fonts.
+#'
+#' @return The font family name used (invisibly).
+#'
+#' @examples
+#' \dontrun{
+#' library(ggplot2)
+#' set_ko_font()
+#'
+#' # Now Korean text renders correctly
+#' ggplot(data.frame(x = 1), aes(x, x)) +
+#'   geom_point() +
+#'   labs(title = "한글 제목 테스트")
+#' }
+#'
+#' @export
+set_ko_font <- function(font = NULL) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package 'ggplot2' is required. Install with: install.packages('ggplot2')")
+  }
+
+  if (is.null(font)) {
+    available <- systemfonts::system_fonts()$family
+    font <- if (any(grepl("Apple SD Gothic Neo", available))) {
+      "Apple SD Gothic Neo"
+    } else if (any(grepl("NanumGothic", available))) {
+      "NanumGothic"
+    } else if (any(grepl("Malgun Gothic", available))) {
+      "Malgun Gothic"
+    } else {
+      ""
+    }
+  }
+
+  if (nchar(font) > 0) {
+    message("Korean font set: ", font)
+  } else {
+    message("No Korean font found. Install NanumGothic or set font manually.")
+  }
+
+  ggplot2::theme_set(ggplot2::theme_gray(base_family = font))
+  invisible(font)
+}

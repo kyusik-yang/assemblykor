@@ -149,6 +149,19 @@ bills %>%
 #> 5             철회   578
 ```
 
+## Korean font setup
+
+ggplot2 plots with Korean text (axis labels, titles) may show broken
+characters. Run this once per session to fix it:
+
+```r
+set_ko_font()
+#> Korean font set: Apple SD Gothic Neo
+```
+
+This auto-detects a Korean font on your system (macOS, Windows, Linux).
+The interactive tutorials (`run_tutorial()`) handle this automatically.
+
 ## Downloadable datasets
 
 Larger datasets are available via download functions (requires the `arrow`
