@@ -1,0 +1,436 @@
+/* assemblykor tutorial theme - modern CS textbook style */
+
+/* ── Import fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Root variables ── */
+:root {
+  --ak-bg: #fafbfc;
+  --ak-surface: #ffffff;
+  --ak-border: #e1e4e8;
+  --ak-text: #24292e;
+  --ak-text-secondary: #586069;
+  --ak-accent: #0366d6;
+  --ak-accent-light: #e8f0fe;
+  --ak-green: #28a745;
+  --ak-green-light: #e6f6ea;
+  --ak-code-bg: #1e1e2e;
+  --ak-code-text: #cdd6f4;
+  --ak-header-bg: #0d1117;
+  --ak-header-text: #f0f6fc;
+  --ak-radius: 8px;
+  --ak-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ak-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Global ── */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ak-text);
+  background: var(--ak-bg);
+  line-height: 1.7;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Tutorial title area ── */
+.bandContent .topicsList {
+  background: var(--ak-header-bg) !important;
+}
+
+.topicsList .topic {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.topicsList .topic.current {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.topicsList .topic .title {
+  color: var(--ak-header-text) !important;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.topicsList .topic.current .title {
+  color: #58a6ff !important;
+  font-weight: 600;
+}
+
+/* Sidebar panel */
+.band {
+  background: var(--ak-header-bg) !important;
+}
+
+.bandContent {
+  background: var(--ak-header-bg) !important;
+}
+
+/* Tutorial title in sidebar */
+#tutorial-topic .bandContent h2,
+.tutorialTitle {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--ak-header-text) !important;
+  letter-spacing: -0.02em;
+}
+
+/* ── Main content area ── */
+.topicContent {
+  background: var(--ak-bg);
+  padding: 2rem 2.5rem !important;
+  max-width: 850px;
+}
+
+/* ── Typography ── */
+h2, h3, h4 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: var(--ak-text);
+  letter-spacing: -0.02em;
+}
+
+.section h2 {
+  font-size: 1.6rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--ak-accent);
+  display: inline-block;
+}
+
+.section h3 {
+  font-size: 1.2rem;
+  margin-top: 2rem;
+  color: var(--ak-text);
+}
+
+p {
+  color: var(--ak-text);
+  margin-bottom: 1rem;
+}
+
+/* ── Code blocks (non-exercise) ── */
+pre {
+  background: var(--ak-code-bg) !important;
+  color: var(--ak-code-text) !important;
+  border: none !important;
+  border-radius: var(--ak-radius) !important;
+  padding: 1rem 1.2rem !important;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  box-shadow: var(--ak-shadow) !important;
+  overflow-x: auto;
+}
+
+pre code {
+  background: transparent !important;
+  color: var(--ak-code-text) !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  padding: 0 !important;
+}
+
+/* Inline code */
+code {
+  background: #f0f2f5;
+  color: #d63384;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 0.88em;
+  font-weight: 500;
+}
+
+/* ── Exercise containers ── */
+.tutorial-exercise {
+  background: var(--ak-surface) !important;
+  border: 1px solid var(--ak-border) !important;
+  border-radius: var(--ak-radius) !important;
+  box-shadow: var(--ak-shadow) !important;
+  margin: 1.5rem 0 !important;
+  overflow: hidden;
+}
+
+.tutorial-exercise .ace_editor {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  border-radius: 0 !important;
+}
+
+/* Exercise toolbar (Run Code, Hints, etc.) */
+.tutorial-exercise-actions {
+  background: #f6f8fa !important;
+  border-top: 1px solid var(--ak-border) !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.btn-tutorial-run {
+  background: var(--ak-accent) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 6px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 12.5px !important;
+  padding: 6px 16px !important;
+  letter-spacing: 0.02em;
+  transition: background 0.15s ease;
+}
+
+.btn-tutorial-run:hover {
+  background: #0256b9 !important;
+}
+
+/* Hint and solution buttons */
+.btn-tutorial-hint,
+.btn-tutorial-solution,
+.btn-tutorial-copy {
+  border-radius: 6px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  border: 1px solid var(--ak-border) !important;
+  background: var(--ak-surface) !important;
+  color: var(--ak-text-secondary) !important;
+  transition: all 0.15s ease;
+}
+
+.btn-tutorial-hint:hover,
+.btn-tutorial-solution:hover,
+.btn-tutorial-copy:hover {
+  background: #f0f2f5 !important;
+  color: var(--ak-text) !important;
+}
+
+/* Exercise output */
+.tutorial-exercise-output {
+  border-top: 1px solid var(--ak-border);
+  background: #f9fafb;
+}
+
+.tutorial-exercise-output pre {
+  background: #f9fafb !important;
+  color: var(--ak-text) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+}
+
+/* ── Quiz styling ── */
+.tutorial-question {
+  background: var(--ak-surface) !important;
+  border: 1px solid var(--ak-border) !important;
+  border-left: 4px solid var(--ak-accent) !important;
+  border-radius: var(--ak-radius) !important;
+  padding: 1.25rem 1.5rem !important;
+  margin: 1.5rem 0 !important;
+  box-shadow: var(--ak-shadow) !important;
+}
+
+.tutorial-question-container {
+  margin: 0 !important;
+}
+
+.tutorial-question h4 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ak-accent);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.tutorial-question .btn-primary {
+  background: var(--ak-accent) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 6px 20px !important;
+  transition: background 0.15s ease;
+}
+
+.tutorial-question .btn-primary:hover {
+  background: #0256b9 !important;
+}
+
+/* Correct answer */
+.tutorial-question .correct {
+  color: var(--ak-green) !important;
+  background: var(--ak-green-light) !important;
+  border-radius: 6px !important;
+  padding: 0.75rem 1rem !important;
+  margin-top: 0.75rem;
+  font-weight: 500;
+}
+
+/* Radio/checkbox styling */
+.tutorial-question .radio label,
+.tutorial-question .checkbox label {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+
+/* ── Section dividers ── */
+.section-heading {
+  border-bottom: none;
+}
+
+/* Horizontal rule */
+hr {
+  border: none;
+  border-top: 1px solid var(--ak-border);
+  margin: 2.5rem 0;
+}
+
+/* ── Data frame / table output ── */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 13.5px;
+  border-radius: var(--ak-radius);
+  overflow: hidden;
+  box-shadow: var(--ak-shadow);
+}
+
+thead th {
+  background: var(--ak-header-bg);
+  color: var(--ak-header-text);
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: none;
+}
+
+tbody td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--ak-border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+
+tbody tr:hover {
+  background: var(--ak-accent-light);
+}
+
+tbody tr:nth-child(even) {
+  background: #f8f9fa;
+}
+
+tbody tr:nth-child(even):hover {
+  background: var(--ak-accent-light);
+}
+
+/* ── Progress bar ── */
+.progress {
+  background: var(--ak-border) !important;
+  border-radius: 4px !important;
+  height: 4px !important;
+}
+
+.progress-bar {
+  background: var(--ak-accent) !important;
+  border-radius: 4px !important;
+}
+
+/* ── Scrollbar (WebKit) ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a8b0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .topicContent {
+    padding: 1rem 1.2rem !important;
+  }
+
+  .section h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* ── Ace editor theme override for dark background ── */
+.tutorial-exercise .ace_scroller {
+  background: var(--ak-code-bg) !important;
+}
+
+.tutorial-exercise .ace_gutter {
+  background: #181825 !important;
+  color: #6c7086 !important;
+  border-right: 1px solid #313244 !important;
+}
+
+.tutorial-exercise .ace_gutter-active-line {
+  background: #1e1e2e !important;
+}
+
+.tutorial-exercise .ace_cursor {
+  color: #cdd6f4 !important;
+}
+
+.tutorial-exercise .ace_marker-layer .ace_active-line {
+  background: rgba(205, 214, 244, 0.05) !important;
+}
+
+.tutorial-exercise .ace_text-layer {
+  color: var(--ak-code-text) !important;
+}
+
+/* Syntax highlighting (Catppuccin Mocha inspired) */
+.tutorial-exercise .ace_keyword {
+  color: #cba6f7 !important;
+}
+
+.tutorial-exercise .ace_constant,
+.tutorial-exercise .ace_constant.ace_numeric {
+  color: #fab387 !important;
+}
+
+.tutorial-exercise .ace_string {
+  color: #a6e3a1 !important;
+}
+
+.tutorial-exercise .ace_comment {
+  color: #6c7086 !important;
+  font-style: italic;
+}
+
+.tutorial-exercise .ace_variable {
+  color: #cdd6f4 !important;
+}
+
+.tutorial-exercise .ace_support.ace_function {
+  color: #89b4fa !important;
+}
+
+.tutorial-exercise .ace_paren {
+  color: #f5e0dc !important;
+}
+
+.tutorial-exercise .ace_operator {
+  color: #89dceb !important;
+}

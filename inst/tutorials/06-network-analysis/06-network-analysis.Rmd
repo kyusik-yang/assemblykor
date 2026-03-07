@@ -1,7 +1,9 @@
 ---
 title: "튜토리얼 6: 공동발의 네트워크 분석"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output: learnr::tutorial
+output:
+  learnr::tutorial:
+    css: ../css/assemblykor.css
 runtime: shiny_prerendered
 ---
 
