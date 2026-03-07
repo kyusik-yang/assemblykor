@@ -13,7 +13,7 @@
 #'   \item \code{\link{bills}}: 60,925 legislative bills
 #'   \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
 #'   \item \code{\link{seminars}}: 5,962 legislator-year seminar records
-#'   \item \code{\link{speeches}}: 10,500 committee speech records (16th-22nd, all committees)
+#'   \item \code{\link{speeches}}: 10,500 speech records (16th-22nd, all committees + audit hearings)
 #' }
 #'
 #' @section Download functions:
@@ -240,17 +240,18 @@
 
 #' Committee Speeches from the Korean National Assembly (16th-22nd)
 #'
-#' A stratified random sample of 10,500 committee speech records from the
-#' 16th through 22nd Korean National Assembly (2000-2025). Speeches cover
-#' all standing committees (37 unique committee names across seven assemblies).
+#' A stratified random sample of 10,500 speech records from the
+#' 16th through 22nd Korean National Assembly (2000-2025). Includes both
+#' standing committee meetings (상임위원회) and parliamentary audit
+#' hearings (국정감사).
 #'
 #' @format A data frame with 10,500 rows and 8 variables:
 #' \describe{
 #'   \item{assembly}{Assembly number (16-22)}
 #'   \item{date}{Date of the committee meeting}
-#'   \item{committee}{Standing committee name in Korean (37 unique names;
-#'     some committees changed names across assemblies due to government
-#'     reorganizations, e.g., 건설교통위원회 -> 국토해양위원회 -> 국토교통위원회)}
+#'   \item{committee}{Committee name in Korean. Standing committee names
+#'     vary across assemblies due to government reorganizations. Audit
+#'     hearing entries are tagged with "(국정감사)" suffix.}
 #'   \item{speaker}{Speaker label as it appears in the minutes (may include
 #'     titles, e.g., "위원장 김영일" or "이원욱 위원")}
 #'   \item{speaker_name}{Cleaned speaker name with titles removed.}
@@ -265,11 +266,11 @@
 #' }
 #'
 #' @details
-#' This is a stratified sample of 1,500 speeches per assembly (16th-22nd),
-#' drawn from standing committee minutes of the Korean National Assembly.
-#' All standing committees are included (법제사법위원회, 국방위원회,
-#' 기획재정위원회, 보건복지위원회, 외교통일위원회, etc.). Committee names
-#' vary across assemblies due to government reorganizations.
+#' This is a stratified sample of 1,500 speeches per assembly (16th-22nd):
+#' 1,000 from standing committee meetings and 500 from parliamentary audit
+#' hearings (국정감사). All standing committees are included. Committee names
+#' vary across assemblies due to government reorganizations; audit hearing
+#' entries carry a "(국정감사)" suffix to distinguish them.
 #'
 #' Speeches shorter than 50 characters were excluded from sampling.
 #'

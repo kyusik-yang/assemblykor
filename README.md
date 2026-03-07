@@ -46,7 +46,7 @@ public data of the Korean National Assembly (2000-2026).
 
 **`speeches`** 10,500 records
 
-상임위원회 회의록 샘플 (16-22대, 전체 위원회 37개, 발언 전문)
+상임위원회 + 국정감사 회의록 샘플 (16-22대, 전체 위원회, 발언 전문)
 
 </td></tr>
 </table>
