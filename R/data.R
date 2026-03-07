@@ -255,10 +255,11 @@
 #'     titles, e.g., "위원장 김영일" or "이원욱 위원")}
 #'   \item{speaker_name}{Cleaned speaker name with titles removed.}
 #'   \item{member_id}{Legislator identifier (MONA_CD, links to
-#'     \code{legislators$member_id}). Available for matched legislators;
-#'     \code{NA} for government officials (장관, 차관, etc.), speakers
-#'     from assemblies with sparse crosswalk data (especially 16th),
-#'     or ambiguous homonym cases.}
+#'     \code{legislators$member_id}). Available for ~76\% of rows.
+#'     \code{NA} for non-legislator speakers: government ministers (34\%
+#'     of NAs), agency officials (30\%), witnesses/experts (11\%),
+#'     and others who testify before committees but do not have a
+#'     legislator ID.}
 #'   \item{speech_order}{Order of the speech turn within the meeting}
 #'   \item{speech}{Full text of the speech in Korean}
 #' }
