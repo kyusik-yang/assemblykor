@@ -99,8 +99,35 @@ cat("wealth:", nrow(wealth), "rows\n")
 # ------------------------------------------------------------
 # 4. seminars: legislator-year policy seminar panel
 # Source: na-legislative-events-korea/outputs/legislator_panel_v2.csv
-# Coverage: 16th-22nd assemblies (2000-2025)
+# Coverage: 17th-22nd assemblies (2004-2025)
+# member_id attached via crosswalk from seminar_hosts_matched.csv
 # ------------------------------------------------------------
+
+# Build name-assembly -> MONA_CD crosswalk (de-duplicated, no homonyms)
+sem_hosts <- read_csv(
+  file.path(src, "na-legislative-events-korea/data/processed/seminar_hosts_matched.csv"),
+  show_col_types = FALSE
+)
+xwalk_sem <- sem_hosts |>
+  filter(!is.na(MONA_CD), MONA_CD != "") |>
+  mutate(assembly = as.integer(gsub("[^0-9]", "", assembly))) |>
+  distinct(name = host_name, assembly, member_id = MONA_CD)
+# Add mp_metadata and members_18_22 sources
+xwalk_mp <- mp |>
+  transmute(name = HG_NM, assembly = as.integer(`_age`), member_id = MONA_CD) |>
+  distinct()
+mem_18_22 <- read_csv(
+  file.path(src, "legislator-assets-korea/data/processed/members_18_22.csv"),
+  show_col_types = FALSE
+)
+xwalk_mem <- mem_18_22 |>
+  transmute(name = `\uc774\ub984`, assembly = as.integer(`\ub300\uc218`),
+            member_id = monaCode) |>
+  filter(!is.na(member_id)) |> distinct()
+xwalk <- bind_rows(xwalk_sem, xwalk_mp, xwalk_mem) |>
+  distinct(name, assembly, member_id) |>
+  group_by(name, assembly) |> filter(n_distinct(member_id) == 1) |> ungroup()
+
 raw_sem <- read_csv(
   file.path(src, "na-legislative-events-korea/outputs/legislator_panel_v2.csv"),
   show_col_types = FALSE
@@ -126,6 +153,8 @@ seminars <- raw_sem |>
     total_terms       = as.integer(total_terms),
     n_bills_led       = as.integer(n_bills_led)
   ) |>
+  left_join(xwalk, by = c("name", "assembly")) |>
+  relocate(member_id, .after = name) |>
   as.data.frame()
 
 cat("seminars:", nrow(seminars), "rows\n")
@@ -155,10 +184,11 @@ speeches <- raw_speeches |>
     speaker_name = sub("^.+ ([가-힣]{2,4})$", "\\1",
                     sub(" (위원|의원)$", "",
                     sub("^(위원장|부위원장|전문위원|수석전문위원|정부위원|국무위원) ", "", speaker))),
-    speaker_id   = as.integer(member_id),
     speech_order = as.integer(speech_order),
     speech       = speech
   ) |>
+  left_join(xwalk, by = c("speaker_name" = "name", "assembly")) |>
+  relocate(member_id, .after = speaker_name) |>
   arrange(assembly, date, committee, speech_order) |>
   as.data.frame()
 

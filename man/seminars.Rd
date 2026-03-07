@@ -5,11 +5,14 @@
 \alias{seminars}
 \title{Policy Seminar Activity by Legislator-Year (2000-2025)}
 \format{
-A data frame with 5,962 rows and 17 variables:
+A data frame with 5,962 rows and 18 variables:
 \describe{
 \item{name}{Legislator name in Korean}
+\item{member_id}{Legislator identifier (MONA_CD, links to
+\code{legislators$member_id}). Available for ~95\\% of rows;
+\code{NA} for unmatched or ambiguous (homonym) cases.}
 \item{year}{Calendar year}
-\item{assembly}{Assembly number (16-22)}
+\item{assembly}{Assembly number (17-22)}
 \item{party}{Party affiliation}
 \item{camp}{Political camp: "민주계" (liberal), "보수계" (conservative),
 "진보계" (progressive), "기타" (other)}

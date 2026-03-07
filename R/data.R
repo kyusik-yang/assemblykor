@@ -185,11 +185,14 @@
 #' are informal legislative events where MPs invite experts, stakeholders,
 #' and colleagues from other parties to discuss policy issues.
 #'
-#' @format A data frame with 5,962 rows and 17 variables:
+#' @format A data frame with 5,962 rows and 18 variables:
 #' \describe{
 #'   \item{name}{Legislator name in Korean}
+#'   \item{member_id}{Legislator identifier (MONA_CD, links to
+#'     \code{legislators$member_id}). Available for ~95\% of rows;
+#'     \code{NA} for unmatched or ambiguous (homonym) cases.}
 #'   \item{year}{Calendar year}
-#'   \item{assembly}{Assembly number (16-22)}
+#'   \item{assembly}{Assembly number (17-22)}
 #'   \item{party}{Party affiliation}
 #'   \item{camp}{Political camp: "민주계" (liberal), "보수계" (conservative),
 #'     "진보계" (progressive), "기타" (other)}
@@ -249,13 +252,12 @@
 #'   \item{committee}{Standing committee name in Korean}
 #'   \item{speaker}{Speaker label as it appears in the minutes (may include
 #'     titles, e.g., "위원장 김영일" or "이원욱 위원")}
-#'   \item{speaker_name}{Cleaned speaker name with titles removed. Can be
-#'     joined with \code{legislators$name} or \code{seminars$name} for
-#'     cross-dataset linking. Note that legislators in the 20th assembly
-#'     overlap with \code{legislators}; speakers from the 16th-19th do not.
-#'     Some speakers are government officials, not legislators.}
-#'   \item{speaker_id}{Numeric speaker code from the minutes system. This
-#'     is NOT the same as \code{legislators$member_id} (MONA_CD).}
+#'   \item{speaker_name}{Cleaned speaker name with titles removed.}
+#'   \item{member_id}{Legislator identifier (MONA_CD, links to
+#'     \code{legislators$member_id}). Available for ~54\% of speech rows.
+#'     \code{NA} for government officials (장관, 차관, etc.), speakers
+#'     from assemblies with sparse crosswalk data (especially 16th),
+#'     or ambiguous homonym cases.}
 #'   \item{speech_order}{Order of the speech turn within the meeting}
 #'   \item{speech}{Full text of the speech in Korean}
 #' }
@@ -269,10 +271,10 @@
 #'
 #' Speeches shorter than 50 characters were excluded from sampling.
 #'
-#' \strong{Linking to other datasets}: Use \code{speaker_name} to join with
-#' \code{legislators$name} (20th assembly overlap) or
-#' \code{seminars$name}. Do NOT use \code{speaker_id} for cross-dataset
-#' joins, as it uses a different identification system.
+#' \strong{Linking to other datasets}: Use \code{member_id} to join with
+#' \code{legislators}, \code{wealth}, \code{bills}, or \code{seminars}.
+#' Where \code{member_id} is \code{NA}, \code{speaker_name} can be used
+#' as a fallback for name-based joins.
 #'
 #' @source National Assembly committee minutes,
 #'   published by the National Assembly of the Republic of Korea.
