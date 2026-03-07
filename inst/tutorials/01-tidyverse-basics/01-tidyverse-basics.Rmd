@@ -1,9 +1,7 @@
 ---
 title: "튜토리얼 1: R 기초와 tidyverse"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output:
-  learnr::tutorial:
-    css: ../css/assemblykor.css
+output: learnr::tutorial
 runtime: shiny_prerendered
 ---
 
@@ -16,6 +14,12 @@ data(legislators)
 data(bills)
 data(wealth)
 tutorial_options(exercise.eval = FALSE)
+```
+
+```{r theme, echo=FALSE}
+htmltools::includeCSS(
+  system.file("tutorials/css/assemblykor.css", package = "assemblykor")
+)
 ```
 
 ## 학습 목표

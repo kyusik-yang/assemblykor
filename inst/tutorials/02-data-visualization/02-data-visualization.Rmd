@@ -1,9 +1,7 @@
 ---
 title: "튜토리얼 2: ggplot2로 국회 데이터 시각화"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output:
-  learnr::tutorial:
-    css: ../css/assemblykor.css
+output: learnr::tutorial
 runtime: shiny_prerendered
 ---
 
@@ -31,6 +29,12 @@ data(bills)
 data(wealth)
 data(seminars)
 tutorial_options(exercise.eval = FALSE)
+```
+
+```{r theme, echo=FALSE}
+htmltools::includeCSS(
+  system.file("tutorials/css/assemblykor.css", package = "assemblykor")
+)
 ```
 
 ## 학습 목표

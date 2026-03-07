@@ -1,9 +1,7 @@
 ---
 title: "튜토리얼 6: 공동발의 네트워크 분석"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output:
-  learnr::tutorial:
-    css: ../css/assemblykor.css
+output: learnr::tutorial
 runtime: shiny_prerendered
 ---
 
@@ -29,6 +27,12 @@ theme_set(theme_gray(base_family = ko_font))
 data(legislators)
 data(bills)
 tutorial_options(exercise.eval = FALSE)
+```
+
+```{r theme, echo=FALSE}
+htmltools::includeCSS(
+  system.file("tutorials/css/assemblykor.css", package = "assemblykor")
+)
 ```
 
 ## 학습 목표
