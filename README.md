@@ -18,7 +18,7 @@ Assembly (2000-2026).
 
 This package and all its tutorials follow
 [tidyverse](https://www.tidyverse.org/) conventions. We use `dplyr`,
-`ggplot2`, `tidyr`, and the pipe operator (`|>`) throughout.
+`ggplot2`, `tidyr`, and the pipe operator (`%>%`) throughout.
 
 Why tidyverse-first for teaching?
 
@@ -118,9 +118,9 @@ data(roll_calls)
 ```r
 library(dplyr)
 
-legislators |>
-  filter(assembly == 22) |>
-  count(party, gender) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  count(party, gender) %>%
   filter(n >= 3)
 ```
 
@@ -138,8 +138,8 @@ ggplot(wealth, aes(x = net_worth / 1e6)) +
 ### Example: bill outcomes
 
 ```r
-bills |>
-  count(result, sort = TRUE) |>
+bills %>%
+  count(result, sort = TRUE) %>%
   head(5)
 #>               result     n
 #> 1     임기만료폐기 30678
@@ -207,7 +207,7 @@ joining:
 
 ```r
 # Merge legislators with wealth data
-leg_wealth <- legislators |>
+leg_wealth <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
 ```
 

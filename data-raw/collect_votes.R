@@ -83,7 +83,7 @@ for (age in c(20, 21, 22)) {
 vote_results_raw <- bind_rows(vote_list)
 cat("\nTotal vote results:", nrow(vote_results_raw), "\n")
 
-votes <- vote_results_raw |>
+votes <- vote_results_raw %>%
   transmute(
     bill_id       = BILL_ID,
     bill_no       = as.integer(BILL_NO),
@@ -98,8 +98,8 @@ votes <- vote_results_raw |>
     yes           = as.integer(YES_TCNT),
     no            = as.integer(NO_TCNT),
     abstain       = as.integer(BLANK_TCNT)
-  ) |>
-  arrange(assembly, vote_date) |>
+  ) %>%
+  arrange(assembly, vote_date) %>%
   as.data.frame()
 
 save(votes, file = "data/votes.rda", compress = "xz")
@@ -134,7 +134,7 @@ for (i in seq_along(bill_ids)) {
 member_votes_raw <- bind_rows(all_member_votes)
 cat("\nTotal member votes:", nrow(member_votes_raw), "\n")
 
-roll_calls <- member_votes_raw |>
+roll_calls <- member_votes_raw %>%
   transmute(
     bill_id     = BILL_ID,
     assembly    = as.integer(AGE),
@@ -144,8 +144,8 @@ roll_calls <- member_votes_raw |>
     district    = ORIG_NM,
     vote        = RESULT_VOTE_MOD,
     vote_date   = as.Date(sub(" .*", "", VOTE_DATE), format = "%Y%m%d")
-  ) |>
-  arrange(assembly, vote_date, bill_id) |>
+  ) %>%
+  arrange(assembly, vote_date, bill_id) %>%
   as.data.frame()
 
 cat("Cleaned roll_calls:", nrow(roll_calls), "rows\n")

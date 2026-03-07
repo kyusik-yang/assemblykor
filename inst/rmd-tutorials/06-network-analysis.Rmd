@@ -58,18 +58,18 @@ head(proposers)
 
 ```{r edgelist}
 # 22대 법안으로 한정
-props_22 <- proposers |>
+props_22 <- proposers %>%
   filter(propose_date >= as.Date("2024-05-30"))
 
 # 대표발의자 - 공동발의자 쌍
-leads <- props_22 |> filter(is_lead) |> select(bill_id, lead = member_id)
-cosponsors <- props_22 |> filter(!is_lead) |> select(bill_id, cosponsor = member_id)
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
 
-edges <- inner_join(leads, cosponsors, by = "bill_id") |>
+edges <- inner_join(leads, cosponsors, by = "bill_id") %>%
   filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor)
 
 # 엣지 가중치: 같이 발의한 횟수
-edge_weights <- edges |>
+edge_weights <- edges %>%
   count(lead, cosponsor, name = "weight")
 
 cat("노드(의원):", n_distinct(c(edge_weights$lead, edge_weights$cosponsor)), "\n")
@@ -82,8 +82,8 @@ cat("엣지(연결):", nrow(edge_weights), "\n")
 g <- graph_from_data_frame(edge_weights, directed = FALSE)
 
 # 의원 메타데이터 추가
-leg_22 <- legislators |>
-  filter(assembly == 22) |>
+leg_22 <- legislators %>%
+  filter(assembly == 22) %>%
   distinct(member_id, .keep_all = TRUE)
 
 V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
@@ -116,20 +116,20 @@ centrality_df <- data.frame(
   betweenness = round(V(g)$betweenness, 6),
   closeness   = round(V(g)$closeness, 6),
   stringsAsFactors = FALSE
-) |>
+) %>%
   filter(!is.na(name))
 
 # 연결 중심성 상위 10명
-centrality_df |>
-  arrange(desc(degree)) |>
+centrality_df %>%
+  arrange(desc(degree)) %>%
   head(10)
 ```
 
 ### 매개 중심성 상위 의원
 
 ```{r betweenness-top}
-centrality_df |>
-  arrange(desc(betweenness)) |>
+centrality_df %>%
+  arrange(desc(betweenness)) %>%
   head(10)
 ```
 
@@ -138,9 +138,9 @@ centrality_df |>
 ## 6. 정당별 네트워크 구조
 
 ```{r party-stats}
-centrality_df |>
-  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) |>
-  group_by(party) |>
+centrality_df %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  group_by(party) %>%
   summarise(
     n = n(),
     avg_degree = round(mean(degree), 1),
@@ -150,8 +150,8 @@ centrality_df |>
 ```
 
 ```{r party-boxplot}
-centrality_df |>
-  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) |>
+centrality_df %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
   ggplot(aes(x = party, y = degree, fill = party)) +
   geom_boxplot(show.legend = FALSE) +
   labs(x = NULL, y = "연결 중심성 (degree)",
@@ -175,12 +175,12 @@ cat("모듈성(modularity):", round(modularity(comm), 3), "\n")
 comm_party <- data.frame(
   community = V(g)$community,
   party = V(g)$party
-) |>
+) %>%
   filter(!is.na(party))
 
-table(comm_party$community, comm_party$party) |>
-  as.data.frame() |>
-  filter(Freq > 5) |>
+table(comm_party$community, comm_party$party) %>%
+  as.data.frame() %>%
+  filter(Freq > 5) %>%
   arrange(Var1, desc(Freq))
 ```
 
@@ -224,12 +224,12 @@ legend("bottomleft",
 정당 간 공동발의(cross-party edges)의 비율을 계산합니다.
 
 ```{r cross-party}
-edge_df <- as_data_frame(g, what = "edges") |>
+edge_df <- as_data_frame(g, what = "edges") %>%
   mutate(
     party_from = V(g)$party[match(from, V(g)$name)],
     party_to   = V(g)$party[match(to, V(g)$name)],
     cross_party = party_from != party_to
-  ) |>
+  ) %>%
   filter(!is.na(party_from), !is.na(party_to))
 
 cat("전체 엣지:", nrow(edge_df), "\n")

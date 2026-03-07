@@ -75,8 +75,8 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #'
 #' # Build co-sponsorship edgelist
 #' library(dplyr)
-#' leads <- props |> filter(is_lead) |> select(bill_id, lead = member_id)
-#' cosponsors <- props |> filter(!is_lead) |> select(bill_id, cosponsor = member_id)
+#' leads <- props %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+#' cosponsors <- props %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
 #' edges <- inner_join(leads, cosponsors, by = "bill_id")
 #' }
 #'

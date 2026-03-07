@@ -27,10 +27,10 @@ tutorial_options(exercise.eval = FALSE)
 ## 1. 막대 그래프: 정당별 의원 수
 
 ```{r bar-party, exercise=TRUE, fig.height=4}
-legislators |>
-  filter(assembly == 22) |>
-  count(party) |>
-  filter(n >= 3) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  count(party) %>%
+  filter(n >= 3) %>%
   ggplot(aes(x = reorder(party, n), y = n)) +
   geom_col(fill = "steelblue") +
   coord_flip() +
@@ -40,10 +40,10 @@ legislators |>
 ### 쌓은 막대: 성별 구성
 
 ```{r bar-gender, exercise=TRUE, fig.height=4}
-legislators |>
-  filter(assembly == 22) |>
-  count(party, gender) |>
-  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  count(party, gender) %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
   ggplot(aes(x = party, y = n, fill = gender)) +
   geom_col(position = "fill") +
   scale_fill_manual(values = c("F" = "#e66101", "M" = "#5e3c99"),
@@ -65,8 +65,8 @@ ggplot(wealth, aes(x = net_worth / 1e6)) +
 꼬리가 긴 분포입니다. 로그 변환을 시도해보세요:
 
 ```{r hist-log, exercise=TRUE, fig.height=4}
-wealth |>
-  filter(net_worth > 0) |>
+wealth %>%
+  filter(net_worth > 0) %>%
   ggplot(aes(x = log10(net_worth))) +
   geom_histogram(bins = 40, fill = "darkgreen", color = "white") +
   labs(x = "log10(순자산, 천원)", y = "빈도",
@@ -79,8 +79,8 @@ wealth |>
 강남 부동산 보유 여부에 따른 순자산 차이를 봅시다:
 
 ```{r box-gangnam, exercise=TRUE, fig.height=4}
-wealth |>
-  filter(year == 2025) |>
+wealth %>%
+  filter(year == 2025) %>%
   ggplot(aes(x = has_gangnam_property, y = net_worth / 1e6)) +
   geom_boxplot(fill = c("lightblue", "salmon")) +
   scale_x_discrete(labels = c("비보유", "보유")) +
@@ -92,8 +92,8 @@ wealth |>
 ## 4. 산점도: 두 변수의 관계
 
 ```{r scatter, exercise=TRUE, fig.height=4}
-legislators |>
-  filter(assembly == 22) |>
+legislators %>%
+  filter(assembly == 22) %>%
   ggplot(aes(x = seniority, y = n_bills_lead, color = gender)) +
   geom_jitter(width = 0.2, alpha = 0.6, size = 2) +
   geom_smooth(method = "lm", se = FALSE) +
@@ -108,9 +108,9 @@ legislators |>
 ## 5. 시계열 꺾은선
 
 ```{r line-bills, exercise=TRUE, fig.height=4}
-bills |>
-  mutate(month = as.Date(format(propose_date, "%Y-%m-01"))) |>
-  count(month) |>
+bills %>%
+  mutate(month = as.Date(format(propose_date, "%Y-%m-01"))) %>%
+  count(month) %>%
   ggplot(aes(x = month, y = n)) +
   geom_line(color = "steelblue") +
   labs(x = "월", y = "발의 건수",
@@ -123,7 +123,7 @@ bills |>
 대수별 대표발의 건수 히스토그램을 나란히 그려보세요:
 
 ```{r facet-ex, exercise=TRUE, fig.height=4}
-legislators |>
+legislators %>%
   ggplot(aes(x = n_bills_lead)) +
   geom_histogram(bins = 30, fill = "steelblue") +
   facet_wrap(~ assembly) +
@@ -143,10 +143,10 @@ legislators |>
 ```
 
 ```{r q1-solution, fig.height=5}
-bills |>
-  filter(assembly == 22) |>
-  count(committee, sort = TRUE) |>
-  head(10) |>
+bills %>%
+  filter(assembly == 22) %>%
+  count(committee, sort = TRUE) %>%
+  head(10) %>%
   ggplot(aes(x = reorder(committee, n), y = n)) +
   geom_col(fill = "steelblue") +
   coord_flip() +

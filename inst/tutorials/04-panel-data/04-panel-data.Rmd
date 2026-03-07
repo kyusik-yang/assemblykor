@@ -32,7 +32,7 @@ cat("의원 수:", n_distinct(wealth$member_id), "\n")
 cat("연도:", paste(sort(unique(wealth$year)), collapse = ", "), "\n")
 
 # 의원별 관측 횟수
-obs_per_member <- wealth |> count(member_id) |> pull(n)
+obs_per_member <- wealth %>% count(member_id) %>% pull(n)
 table(obs_per_member)
 ```
 
@@ -55,14 +55,14 @@ quiz(
 ```{r between-within, exercise=TRUE, fig.height=4}
 # 예시: 5명의 의원 선택
 set.seed(42)
-sample_ids <- wealth |>
-  count(member_id) |>
-  filter(n >= 5) |>
-  slice_sample(n = 5) |>
+sample_ids <- wealth %>%
+  count(member_id) %>%
+  filter(n >= 5) %>%
+  slice_sample(n = 5) %>%
   pull(member_id)
 
-wealth |>
-  filter(member_id %in% sample_ids) |>
+wealth %>%
+  filter(member_id %in% sample_ids) %>%
   ggplot(aes(x = year, y = net_worth / 1e6, color = name, group = member_id)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
@@ -159,16 +159,16 @@ quiz(
 `seminars` 데이터에서 `is_governing`(여당 여부)이 자연스러운 처치 변수 역할을 합니다.
 
 ```{r did-prep, exercise=TRUE}
-sem_panel <- seminars |>
+sem_panel <- seminars %>%
   filter(n_seminars > 0, year >= 2016)
 
 cat("관측치:", nrow(sem_panel), "\n")
 cat("의원 수:", n_distinct(sem_panel$name), "\n")
 
 # 여당 전환 경험 의원 수
-sem_panel |>
-  group_by(name) |>
-  summarise(ever_gov = any(is_governing), ever_opp = any(!is_governing)) |>
+sem_panel %>%
+  group_by(name) %>%
+  summarise(ever_gov = any(is_governing), ever_opp = any(!is_governing)) %>%
   summarise(switchers = sum(ever_gov & ever_opp))
 ```
 
@@ -176,7 +176,7 @@ sem_panel |>
 
 ```{r did-estimate, exercise=TRUE}
 library(fixest)
-sem_panel <- seminars |>
+sem_panel <- seminars %>%
   filter(n_seminars > 0, year >= 2016)
 
 m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
@@ -193,7 +193,7 @@ summary(m_did)
 
 ```{r cluster-se, exercise=TRUE}
 library(fixest)
-sem_panel <- seminars |>
+sem_panel <- seminars %>%
   filter(n_seminars > 0, year >= 2016)
 
 m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
@@ -205,14 +205,14 @@ summary(m_did, cluster = "name")
 ## 7. 시각적 확인
 
 ```{r did-visual, exercise=TRUE, fig.height=4}
-sem_panel <- seminars |>
+sem_panel <- seminars %>%
   filter(n_seminars > 0, year >= 2016)
 
-sem_panel |>
-  group_by(year, is_governing) |>
+sem_panel %>%
+  group_by(year, is_governing) %>%
   summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE),
-            .groups = "drop") |>
-  mutate(status = ifelse(is_governing, "여당", "야당")) |>
+            .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
   ggplot(aes(x = year, y = mean_cross, color = status)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
@@ -249,9 +249,9 @@ summary(m)
 
 ```{r q2-hint}
 # has_seoul_property가 시간에 따라 변하는지 확인해보세요
-wealth |>
-  group_by(member_id) |>
-  summarise(changes = n_distinct(has_seoul_property)) |>
+wealth %>%
+  group_by(member_id) %>%
+  summarise(changes = n_distinct(has_seoul_property)) %>%
   count(changes)
 ```
 

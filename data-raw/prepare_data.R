@@ -20,7 +20,7 @@ seniority_map <- c(
   "5선" = 5L, "6선" = 6L, "7선" = 7L, "8선" = 8L, "9선" = 9L
 )
 
-legislators <- mp |>
+legislators <- mp %>%
   transmute(
     member_id   = MONA_CD,
     assembly    = as.integer(`_age`),
@@ -37,7 +37,7 @@ legislators <- mp |>
     seniority   = unname(seniority_map[REELE_GBN_NM]),
     n_bills     = as.integer(n_bills),
     n_bills_lead = as.integer(n_lead)
-  ) |>
+  ) %>%
   as.data.frame()
 
 cat("legislators:", nrow(legislators), "rows\n")
@@ -49,7 +49,7 @@ cat("legislators:", nrow(legislators), "rows\n")
 # ------------------------------------------------------------
 raw_bills <- read_parquet(file.path(src, "korean-assembly-bills/data/bills.parquet"))
 
-bills <- raw_bills |>
+bills <- raw_bills %>%
   transmute(
     bill_id      = BILL_ID,
     bill_no      = as.integer(BILL_NO),
@@ -60,7 +60,7 @@ bills <- raw_bills |>
     result       = PROC_RESULT,
     proposer     = RST_PROPOSER,
     proposer_id  = RST_MONA_CD
-  ) |>
+  ) %>%
   as.data.frame()
 
 cat("bills:", nrow(bills), "rows\n")
@@ -75,7 +75,7 @@ raw_wealth <- read_csv(
   show_col_types = FALSE
 )
 
-wealth <- raw_wealth |>
+wealth <- raw_wealth %>%
   transmute(
     member_id          = monaCode,
     year               = as.integer(wealth_year),
@@ -91,7 +91,7 @@ wealth <- raw_wealth |>
     n_properties       = as.integer(n_properties_all),
     has_seoul_property   = as.logical(has_seoul_re),
     has_gangnam_property = as.logical(has_gangnam_re)
-  ) |>
+  ) %>%
   as.data.frame()
 
 cat("wealth:", nrow(wealth), "rows\n")
@@ -106,23 +106,23 @@ cat("wealth:", nrow(wealth), "rows\n")
 # Build name-assembly -> MONA_CD crosswalk (de-duplicated, no homonyms)
 # Primary source: members_all_assemblies.csv (1st-22nd, from ALLNAMEMBER API)
 members_all <- read_csv("data-raw/members_all_assemblies.csv", show_col_types = FALSE)
-xwalk <- members_all |>
-  group_by(name, assembly) |>
-  filter(n_distinct(member_id) == 1) |>
+xwalk <- members_all %>%
+  group_by(name, assembly) %>%
+  filter(n_distinct(member_id) == 1) %>%
   ungroup()
 
 # Fallback crosswalk: name only (globally unambiguous names)
 # Helps match government officials who spoke as legislators in other terms
-xwalk_name_only <- xwalk |>
-  distinct(name, member_id) |>
-  group_by(name) |> filter(n_distinct(member_id) == 1) |> ungroup()
+xwalk_name_only <- xwalk %>%
+  distinct(name, member_id) %>%
+  group_by(name) %>% filter(n_distinct(member_id) == 1) %>% ungroup()
 
 raw_sem <- read_csv(
   file.path(src, "na-legislative-events-korea/outputs/legislator_panel_v2.csv"),
   show_col_types = FALSE
 )
 
-seminars <- raw_sem |>
+seminars <- raw_sem %>%
   transmute(
     name              = name,
     year              = as.integer(year),
@@ -141,9 +141,9 @@ seminars <- raw_sem |>
     province          = province,
     total_terms       = as.integer(total_terms),
     n_bills_led       = as.integer(n_bills_led)
-  ) |>
-  left_join(xwalk, by = c("name", "assembly")) |>
-  relocate(member_id, .after = name) |>
+  ) %>%
+  left_join(xwalk, by = c("name", "assembly")) %>%
+  relocate(member_id, .after = name) %>%
   as.data.frame()
 
 cat("seminars:", nrow(seminars), "rows\n")
@@ -158,13 +158,13 @@ raw_speeches <- read_csv(
   show_col_types = FALSE
 )
 
-speeches <- raw_speeches |>
+speeches <- raw_speeches %>%
   filter(
     assembly == 22,
     committee == "\uacfc\ud559\uae30\uc220\uc815\ubcf4\ubc29\uc1a1\ud1b5\uc2e0\uc704\uc6d0\ud68c",
     nchar(speech) >= 50,
     !is.na(date)
-  ) |>
+  ) %>%
   transmute(
     assembly     = as.integer(assembly),
     date         = as.Date(date),
@@ -175,13 +175,13 @@ speeches <- raw_speeches |>
                     sub("^(위원장|부위원장|전문위원|수석전문위원|정부위원|국무위원) ", "", speaker))),
     speech_order = as.integer(speech_order),
     speech       = speech
-  ) |>
-  left_join(xwalk, by = c("speaker_name" = "name", "assembly")) |>
-  left_join(xwalk_name_only, by = c("speaker_name" = "name"), suffix = c("", "_fb")) |>
-  mutate(member_id = ifelse(is.na(member_id), member_id_fb, member_id)) |>
-  select(-member_id_fb) |>
-  relocate(member_id, .after = speaker_name) |>
-  arrange(date, speech_order) |>
+  ) %>%
+  left_join(xwalk, by = c("speaker_name" = "name", "assembly")) %>%
+  left_join(xwalk_name_only, by = c("speaker_name" = "name"), suffix = c("", "_fb")) %>%
+  mutate(member_id = ifelse(is.na(member_id), member_id_fb, member_id)) %>%
+  select(-member_id_fb) %>%
+  relocate(member_id, .after = speaker_name) %>%
+  arrange(date, speech_order) %>%
   as.data.frame()
 
 cat("speeches:", nrow(speeches), "rows\n")

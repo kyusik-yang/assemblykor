@@ -31,10 +31,10 @@ data(wealth)
 
 ```{r}
 # 2024년 재산과 22대 의원 정보 결합
-df <- legislators |>
-  filter(assembly == 22) |>
+df <- legislators %>%
+  filter(assembly == 22) %>%
   inner_join(
-    wealth |> filter(year == 2024),
+    wealth %>% filter(year == 2024),
     by = "member_id"
   )
 
@@ -66,7 +66,7 @@ ggplot(df, aes(x = net_worth / 1e6, y = n_bills_lead)) +
 재산 데이터는 보통 오른쪽으로 치우친 분포입니다. 로그 변환을 적용해봅시다.
 
 ```{r log-transform}
-df <- df |>
+df <- df %>%
   mutate(log_nw = log(pmax(net_worth, 1)))  # 음수/0 방지
 
 m2 <- lm(n_bills_lead ~ log_nw, data = df)
@@ -100,7 +100,7 @@ cat("Model 3 (controls):   log_nw =", round(coef(m3)["log_nw"], 3), "\n")
 
 ```{r categorical}
 # 주요 3당만 유지 (소수 정당은 표본이 너무 작음)
-df_3party <- df |>
+df_3party <- df %>%
   filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당"))
 
 m4 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type + party,

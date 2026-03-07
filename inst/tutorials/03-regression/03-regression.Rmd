@@ -16,15 +16,15 @@ data(wealth)
 data(seminars)
 
 # Pre-build the merged dataset for exercises
-df <- legislators |>
-  filter(assembly == 22) |>
+df <- legislators %>%
+  filter(assembly == 22) %>%
   inner_join(
-    wealth |> filter(year == 2024),
+    wealth %>% filter(year == 2024),
     by = "member_id"
-  ) |>
+  ) %>%
   mutate(log_nw = log(pmax(net_worth, 1)))
 
-df_3party <- df |>
+df_3party <- df %>%
   filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당"))
 
 tutorial_options(exercise.eval = FALSE)
@@ -43,10 +43,10 @@ tutorial_options(exercise.eval = FALSE)
 22대 의원 데이터를 2024년 재산 정보와 결합합니다.
 
 ```{r prep, exercise=TRUE}
-df <- legislators |>
-  filter(assembly == 22) |>
+df <- legislators %>%
+  filter(assembly == 22) %>%
   inner_join(
-    wealth |> filter(year == 2024),
+    wealth %>% filter(year == 2024),
     by = "member_id"
   )
 
@@ -90,7 +90,7 @@ quiz(
 재산 데이터는 보통 오른쪽으로 치우친 분포입니다. 로그 변환을 적용해봅시다.
 
 ```{r log-transform, exercise=TRUE}
-df <- df |>
+df <- df %>%
   mutate(log_nw = log(pmax(net_worth, 1)))  # 음수/0 방지
 
 m2 <- lm(n_bills_lead ~ log_nw, data = df)
@@ -139,7 +139,7 @@ quiz(
 정당을 통제변수로 추가합니다. R은 자동으로 더미 변수를 생성합니다.
 
 ```{r categorical, exercise=TRUE}
-df_3party <- df |>
+df_3party <- df %>%
   filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당"))
 
 m4 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type + party,
@@ -267,7 +267,7 @@ summary(m_sem)
 ```
 
 ```{r q4-solution}
-df_pos <- df |> filter(n_bills_lead > 0, net_worth > 0)
+df_pos <- df %>% filter(n_bills_lead > 0, net_worth > 0)
 m_loglog <- lm(log(n_bills_lead) ~ log(net_worth), data = df_pos)
 summary(m_loglog)
 # log-log 모형: 계수 = 탄력성

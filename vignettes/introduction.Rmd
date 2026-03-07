@@ -136,12 +136,12 @@ All datasets share the `member_id` and/or `assembly` columns:
 library(dplyr)
 
 # Merge legislators with wealth
-leg_wealth <- legislators |>
+leg_wealth <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
 
 # Productivity vs wealth
-leg_wealth |>
-  group_by(district_type) |>
+leg_wealth %>%
+  group_by(district_type) %>%
   summarise(
     n = n(),
     median_net_worth = median(net_worth / 1e6, na.rm = TRUE),

@@ -12,7 +12,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 - R에서 데이터를 불러오고 구조를 파악하는 방법을 익힌다
 - `dplyr`의 핵심 함수 5개를 사용할 수 있다
-- 파이프 연산자(`|>`)로 분석 흐름을 연결할 수 있다
+- 파이프 연산자(`%>%`)로 분석 흐름을 연결할 수 있다
 
 ## 1. 패키지와 데이터 불러오기
 
@@ -75,10 +75,10 @@ legislators <- mutate(legislators,
 
 ```{r}
 # 대표발의 많은 순으로
-legislators |>
-  filter(assembly == 22) |>
-  arrange(desc(n_bills_lead)) |>
-  select(name, party, n_bills_lead) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  arrange(desc(n_bills_lead)) %>%
+  select(name, party, n_bills_lead) %>%
   head(10)
 ```
 
@@ -86,15 +86,15 @@ legislators |>
 
 ```{r}
 # 정당별 평균 대표발의 건수 (22대)
-legislators |>
-  filter(assembly == 22) |>
-  group_by(party) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(party) %>%
   summarise(
     n      = n(),
     avg    = mean(n_bills_lead),
     median = median(n_bills_lead)
-  ) |>
-  filter(n >= 5) |>
+  ) %>%
+  filter(n >= 5) %>%
   arrange(desc(avg))
 ```
 
@@ -103,8 +103,8 @@ legislators |>
 대수별 여성 의원 비율을 계산해봅시다.
 
 ```{r}
-legislators |>
-  group_by(assembly) |>
+legislators %>%
+  group_by(assembly) %>%
   summarise(
     total = n(),
     n_women = sum(gender == "F"),
@@ -132,14 +132,14 @@ summary(wealth$net_worth / 1e6)  # 단위: 10억원
 의원 정보와 재산 정보를 `member_id`로 연결합니다.
 
 ```{r}
-leg_wealth <- legislators |>
+leg_wealth <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
 
 dim(leg_wealth)
 
 # 성별에 따른 순자산 차이
-leg_wealth |>
-  group_by(gender) |>
+leg_wealth %>%
+  group_by(gender) %>%
   summarise(
     n = n(),
     median_nw = median(net_worth / 1e6, na.rm = TRUE)

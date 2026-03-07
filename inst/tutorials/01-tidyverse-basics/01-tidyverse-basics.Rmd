@@ -20,7 +20,7 @@ tutorial_options(exercise.eval = FALSE)
 
 - R에서 데이터를 불러오고 구조를 파악하는 방법을 익힌다
 - `dplyr`의 핵심 함수 5개를 사용할 수 있다
-- 파이프 연산자(`|>`)로 분석 흐름을 연결할 수 있다
+- 파이프 연산자(`%>%`)로 분석 흐름을 연결할 수 있다
 
 ## 1. 데이터 살펴보기
 
@@ -78,9 +78,9 @@ nrow(freshmen)
 
 ```{r select-demo, exercise=TRUE}
 # 이름, 정당, 대표발의 건수만
-legislators |>
-  filter(assembly == 22) |>
-  select(name, party, n_bills_lead) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  select(name, party, n_bills_lead) %>%
   head(10)
 ```
 
@@ -90,14 +90,14 @@ legislators |>
 
 ```{r mutate-demo, exercise=TRUE}
 # 공동발의 참여 건수와 대표발의 비율
-legislators |>
+legislators %>%
   mutate(
     n_cosponsor = n_bills - n_bills_lead,
     lead_ratio  = round(n_bills_lead / n_bills, 3)
-  ) |>
-  filter(assembly == 22) |>
-  select(name, n_bills, n_bills_lead, n_cosponsor, lead_ratio) |>
-  arrange(desc(lead_ratio)) |>
+  ) %>%
+  filter(assembly == 22) %>%
+  select(name, n_bills, n_bills_lead, n_cosponsor, lead_ratio) %>%
+  arrange(desc(lead_ratio)) %>%
   head(10)
 ```
 
@@ -107,23 +107,23 @@ legislators |>
 
 ```{r group-demo, exercise=TRUE}
 # 정당별 평균 대표발의 건수 (22대)
-legislators |>
-  filter(assembly == 22) |>
-  group_by(party) |>
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(party) %>%
   summarise(
     n      = n(),
     avg    = mean(n_bills_lead),
     median = median(n_bills_lead)
-  ) |>
-  filter(n >= 5) |>
+  ) %>%
+  filter(n >= 5) %>%
   arrange(desc(avg))
 ```
 
 대수별 여성 의원 비율을 계산해보세요:
 
 ```{r group-ex, exercise=TRUE}
-legislators |>
-  group_by(___) |>
+legislators %>%
+  group_by(___) %>%
   summarise(
     total = n(),
     n_women = sum(___ == "F"),
@@ -132,8 +132,8 @@ legislators |>
 ```
 
 ```{r group-ex-hint}
-legislators |>
-  group_by(assembly) |>
+legislators %>%
+  group_by(assembly) %>%
   summarise(
     total = n(),
     n_women = sum(gender == "F"),
@@ -146,7 +146,7 @@ legislators |>
 `member_id`를 기준으로 의원 정보와 재산 정보를 연결합니다.
 
 ```{r join-demo, exercise=TRUE}
-leg_wealth <- legislators |>
+leg_wealth <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
 
 dim(leg_wealth)
@@ -155,11 +155,11 @@ dim(leg_wealth)
 성별에 따른 순자산 차이를 확인해보세요:
 
 ```{r join-ex, exercise=TRUE}
-leg_wealth <- legislators |>
+leg_wealth <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
 
-leg_wealth |>
-  group_by(gender) |>
+leg_wealth %>%
+  group_by(gender) %>%
   summarise(
     n = n(),
     median_nw = median(net_worth / 1e6, na.rm = TRUE)
@@ -177,8 +177,8 @@ leg_wealth |>
 ```
 
 ```{r q1-solution}
-legislators |>
-  filter(assembly == 22, district_type == "proportional") |>
+legislators %>%
+  filter(assembly == 22, district_type == "proportional") %>%
   nrow()
 ```
 
@@ -191,8 +191,8 @@ legislators |>
 ```
 
 ```{r q2-solution}
-legislators |>
-  group_by(assembly) |>
+legislators %>%
+  group_by(assembly) %>%
   summarise(
     total = n(),
     freshmen = sum(seniority == 1, na.rm = TRUE),
@@ -209,8 +209,8 @@ legislators |>
 ```
 
 ```{r q3-solution}
-bills |>
-  count(committee, sort = TRUE) |>
+bills %>%
+  count(committee, sort = TRUE) %>%
   head(5)
 ```
 
@@ -223,7 +223,7 @@ bills |>
 ```
 
 ```{r q4-solution}
-merged <- legislators |>
+merged <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
 cor(merged$n_bills_lead, merged$net_worth, use = "complete.obs")
 ```
