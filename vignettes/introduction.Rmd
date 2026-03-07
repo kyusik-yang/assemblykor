@@ -1,0 +1,166 @@
+---
+title: "Getting Started with assemblykor"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with assemblykor}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## Overview
+
+`assemblykor` provides four built-in datasets from the Korean National Assembly
+for teaching quantitative methods in political science:
+
+- **`legislators`**: 947 MP records (20th-22nd assemblies)
+- **`bills`**: 60,925 legislative bills
+- **`wealth`**: 2,928 legislator-year asset declarations
+- **`seminars`**: 5,962 legislator-year seminar activity records
+
+```{r load}
+library(assemblykor)
+```
+
+## 1. Exploring legislator data
+
+```{r legislators}
+data(legislators)
+str(legislators)
+```
+
+### Gender composition by assembly
+
+```{r gender-table}
+gender_tab <- table(legislators$assembly, legislators$gender)
+gender_tab
+prop.table(gender_tab, margin = 1)
+```
+
+### Legislative productivity by seniority
+
+```{r seniority-plot}
+boxplot(n_bills_lead ~ seniority, data = legislators,
+        xlab = "Terms served", ylab = "Bills proposed (as lead)",
+        main = "Seniority and Legislative Productivity",
+        col = "lightblue")
+```
+
+Senior legislators produce more bills, but with high variance.
+
+## 2. Bill outcomes
+
+```{r bills}
+data(bills)
+
+# Top 5 outcomes
+outcome_counts <- sort(table(bills$result), decreasing = TRUE)
+barplot(outcome_counts[1:5], las = 2, col = "steelblue",
+        main = "Most Common Bill Outcomes")
+```
+
+Most bills expire at the end of the assembly term (임기만료폐기).
+Only a small fraction pass in their original form (원안가결).
+
+### Bills per month
+
+```{r bills-timeline}
+bills$month <- format(bills$propose_date, "%Y-%m")
+monthly <- aggregate(bill_id ~ month, data = bills, FUN = length)
+names(monthly) <- c("month", "count")
+monthly <- monthly[order(monthly$month), ]
+
+plot(seq_len(nrow(monthly)), monthly$count, type = "l",
+     xlab = "Month (index)", ylab = "Bills proposed",
+     main = "Monthly Bill Proposals (20th-22nd Assembly)")
+```
+
+## 3. Wealth panel
+
+The `wealth` dataset is a legislator-year panel ideal for practicing
+fixed-effects regression.
+
+```{r wealth}
+data(wealth)
+
+# Distribution of net worth
+hist(wealth$net_worth / 1e6, breaks = 50, col = "coral",
+     main = "Legislator Net Worth Distribution",
+     xlab = "Net Worth (billion KRW)")
+```
+
+### Real estate concentration
+
+```{r re-share}
+wealth$re_share <- ifelse(wealth$total_assets > 0,
+                          wealth$real_estate / wealth$total_assets, NA)
+
+boxplot(re_share ~ year, data = wealth,
+        xlab = "Year", ylab = "Real estate / total assets",
+        main = "Real Estate as Share of Legislator Wealth",
+        col = "lightyellow")
+```
+
+Korean legislators hold a large share of their wealth in real estate,
+reflecting broader patterns in Korean household wealth.
+
+## 4. Policy seminars and cross-party cooperation
+
+```{r seminars}
+data(seminars)
+
+# Governing vs opposition party
+gov_means <- tapply(seminars$cross_party_ratio,
+                    seminars$is_governing, mean, na.rm = TRUE)
+barplot(gov_means, names.arg = c("Opposition", "Governing"),
+        ylab = "Cross-party ratio", col = c("dodgerblue", "tomato"),
+        main = "Cross-Party Seminar Collaboration")
+```
+
+Governing-party legislators tend to have lower cross-party collaboration
+in policy seminars, a pattern consistent with the "closing ranks" hypothesis.
+
+## 5. Joining datasets
+
+All datasets share the `member_id` and/or `assembly` columns:
+
+```{r join, message=FALSE}
+library(dplyr)
+
+# Merge legislators with wealth
+leg_wealth <- legislators |>
+  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+
+# Productivity vs wealth
+leg_wealth |>
+  group_by(district_type) |>
+  summarise(
+    n = n(),
+    median_net_worth = median(net_worth / 1e6, na.rm = TRUE),
+    median_bills = median(n_bills_lead, na.rm = TRUE)
+  )
+```
+
+## Next steps
+
+For text analysis, download the bill propose-reason texts:
+
+```r
+texts <- get_bill_texts()
+```
+
+For network analysis, download the full co-sponsorship records:
+
+```r
+proposers <- get_proposers()
+```
+
+See `?get_bill_texts` and `?get_proposers` for details.

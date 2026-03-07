@@ -1,0 +1,32 @@
+Package: assemblykor
+Title: Korean National Assembly Data for Political Science Education
+Version: 0.1.0
+Authors@R:
+    person("Kyusik", "Yang", , "kyusik.yang@nyu.edu", role = c("aut", "cre"))
+Description: Provides ready-to-use datasets from the Korean National Assembly
+    (20th-22nd, 2016-2026) for teaching quantitative methods in political
+    science. Includes legislator metadata, bill proposals, asset declarations,
+    and policy seminar records. Designed as a Korean politics counterpart to
+    packages like 'palmerpenguins', enabling students to practice regression,
+    panel data analysis, text analysis, and network analysis with real
+    legislative data.
+License: MIT + file LICENSE
+URL: https://github.com/kyusik-yang/assemblykor
+BugReports: https://github.com/kyusik-yang/assemblykor/issues
+Depends:
+    R (>= 3.5.0)
+Imports:
+    utils
+Suggests:
+    arrow,
+    dplyr,
+    ggplot2,
+    knitr,
+    rmarkdown,
+    tidyr
+Encoding: UTF-8
+LazyData: true
+LazyDataCompression: xz
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+VignetteBuilder: knitr
