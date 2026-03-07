@@ -131,12 +131,44 @@ seminars <- raw_sem |>
 cat("seminars:", nrow(seminars), "rows\n")
 
 # ------------------------------------------------------------
+# 5. speeches: committee speech sample
+# Source: politician-wealth-embedding/data/processed/speeches_all.csv
+# Stratified sample of 1,500 per assembly (16th-20th)
+# Covers finance and infrastructure standing committees
+# ------------------------------------------------------------
+raw_speeches <- read_csv(
+  file.path(src, "politician-wealth-embedding/data/processed/speeches_all.csv"),
+  show_col_types = FALSE
+)
+
+set.seed(42)
+speeches <- raw_speeches |>
+  filter(nchar(speech) >= 50, !is.na(date_clean)) |>
+  group_by(term) |>
+  slice_sample(n = 1500) |>
+  ungroup() |>
+  transmute(
+    assembly     = as.integer(term),
+    date         = as.Date(date_clean),
+    committee    = committee_clean,
+    speaker      = speaker,
+    member_id    = member_id,
+    speech_order = as.integer(speech_order),
+    speech       = speech
+  ) |>
+  arrange(assembly, date, committee, speech_order) |>
+  as.data.frame()
+
+cat("speeches:", nrow(speeches), "rows\n")
+
+# ------------------------------------------------------------
 # Save all datasets as .rda with xz compression
 # ------------------------------------------------------------
 save(legislators, file = file.path(out, "legislators.rda"), compress = "xz")
 save(bills,       file = file.path(out, "bills.rda"),       compress = "xz")
 save(wealth,      file = file.path(out, "wealth.rda"),      compress = "xz")
 save(seminars,    file = file.path(out, "seminars.rda"),     compress = "xz")
+save(speeches,    file = file.path(out, "speeches.rda"),     compress = "xz")
 
 # Report sizes
 for (f in list.files(out, pattern = "\\.rda$", full.names = TRUE)) {

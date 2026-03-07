@@ -1,0 +1,177 @@
+---
+title: "튜토리얼 2: ggplot2로 국회 데이터 시각화"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4)
+```
+
+## 학습 목표
+
+- `ggplot2`의 기본 문법(aes, geom, labs)을 이해한다
+- 막대, 히스토그램, 산점도, 박스플롯을 그릴 수 있다
+- `facet_wrap()`으로 소그룹 비교 시각화를 할 수 있다
+
+## 1. 준비
+
+```{r}
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+
+data(legislators)
+data(bills)
+data(wealth)
+data(seminars)
+```
+
+## 2. 막대 그래프: 정당별 의원 수
+
+```{r bar-party}
+legislators |>
+  filter(assembly == 22) |>
+  count(party) |>
+  filter(n >= 3) |>
+  ggplot(aes(x = reorder(party, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "의원 수", title = "22대 국회 정당별 의석 수")
+```
+
+### 쌓은 막대: 성별 구성
+
+```{r bar-gender}
+legislators |>
+  filter(assembly == 22) |>
+  count(party, gender) |>
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) |>
+  ggplot(aes(x = party, y = n, fill = gender)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(values = c("F" = "#e66101", "M" = "#5e3c99"),
+                    labels = c("여성", "남성")) +
+  labs(x = NULL, y = "비율", fill = "성별",
+       title = "주요 정당의 성별 구성 (22대)")
+```
+
+## 3. 히스토그램: 의원 재산 분포
+
+```{r hist-wealth}
+ggplot(wealth, aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 50, fill = "coral", color = "white") +
+  labs(x = "순자산 (10억 원)", y = "빈도",
+       title = "국회의원 순자산 분포") +
+  theme_minimal()
+```
+
+꼬리가 긴 분포입니다. 로그 변환을 해볼까요?
+
+```{r hist-log}
+wealth |>
+  filter(net_worth > 0) |>
+  ggplot(aes(x = log10(net_worth))) +
+  geom_histogram(bins = 40, fill = "darkgreen", color = "white") +
+  labs(x = "log10(순자산, 천원)", y = "빈도",
+       title = "순자산의 로그 분포") +
+  theme_minimal()
+```
+
+## 4. 박스플롯: 그룹 간 비교
+
+```{r box-gangnam}
+wealth |>
+  filter(year == 2025) |>
+  ggplot(aes(x = has_gangnam_property, y = net_worth / 1e6)) +
+  geom_boxplot(fill = c("lightblue", "salmon")) +
+  scale_x_discrete(labels = c("비보유", "보유")) +
+  labs(x = "강남 부동산", y = "순자산 (10억 원)",
+       title = "강남 부동산 보유 여부에 따른 순자산") +
+  theme_minimal()
+```
+
+## 5. 산점도: 두 변수의 관계
+
+```{r scatter}
+legislators |>
+  filter(assembly == 22) |>
+  ggplot(aes(x = seniority, y = n_bills_lead, color = gender)) +
+  geom_jitter(width = 0.2, alpha = 0.6, size = 2) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("F" = "#e66101", "M" = "#5e3c99"),
+                     labels = c("여성", "남성")) +
+  labs(x = "선수 (당선 횟수)", y = "대표발의 건수",
+       color = "성별",
+       title = "선수와 입법 생산성의 관계 (22대)") +
+  theme_minimal()
+```
+
+## 6. 시계열 꺾은선: 법안 발의 추이
+
+```{r line-bills}
+bills |>
+  mutate(month = as.Date(format(propose_date, "%Y-%m-01"))) |>
+  count(month) |>
+  ggplot(aes(x = month, y = n)) +
+  geom_line(color = "steelblue") +
+  labs(x = "월", y = "발의 건수",
+       title = "월별 법안 발의 건수 (20-22대)") +
+  theme_minimal()
+```
+
+## 7. facet_wrap(): 소그룹 비교
+
+재산 구성이 시간에 따라 어떻게 변하는지 살펴봅시다.
+
+```{r facet-wealth}
+library(tidyr)
+
+wealth |>
+  select(year, real_estate, deposits, stocks) |>
+  group_by(year) |>
+  summarise(across(everything(), \(x) median(x / 1e6, na.rm = TRUE))) |>
+  pivot_longer(-year, names_to = "asset_type", values_to = "median_bn") |>
+  mutate(asset_type = case_match(asset_type,
+    "real_estate" ~ "부동산",
+    "deposits"    ~ "예금",
+    "stocks"      ~ "주식"
+  )) |>
+  ggplot(aes(x = year, y = median_bn, color = asset_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(x = "연도", y = "중앙값 (10억 원)", color = "자산 유형",
+       title = "국회의원 자산 구성 변화") +
+  theme_minimal()
+```
+
+## 8. 세미나 데이터: 여야 협력
+
+```{r seminar-gov}
+seminars |>
+  filter(year >= 2016) |>
+  group_by(year, is_governing) |>
+  summarise(avg_cross = mean(cross_party_ratio, na.rm = TRUE)) |>
+  mutate(status = ifelse(is_governing, "여당", "야당")) |>
+  ggplot(aes(x = year, y = avg_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
+  labs(x = "연도", y = "초당적 세미나 비율",
+       color = "여야 구분",
+       title = "여당 vs 야당의 초당적 협력 추이") +
+  theme_minimal()
+```
+
+---
+
+## 연습 문제
+
+1. 22대 국회 상임위원회별 법안 수를 막대그래프로 그리시오 (상위 10개만).
+
+2. `wealth` 데이터에서 서울 부동산 보유 여부(`has_seoul_property`)에 따른 부동산 자산(`real_estate`) 분포를 박스플롯으로 비교하시오.
+
+3. `seminars` 데이터에서 선수(`seniority`)별 세미나 개최 건수의 산점도를 그리고, 추세선을 추가하시오.
+
+4. 대수(`assembly`)별로 `facet_wrap()`을 사용하여 의원들의 대표발의 건수 히스토그램을 나란히 그리시오.
+
+5. 자유 주제: 오늘 배운 시각화 기법 중 하나를 선택하여 흥미로운 패턴을 발견하고, 제목과 축 라벨을 포함한 완성된 그래프를 만드시오.

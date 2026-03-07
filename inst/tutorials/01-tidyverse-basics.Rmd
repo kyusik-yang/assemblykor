@@ -1,0 +1,161 @@
+---
+title: "튜토리얼 1: R 기초와 tidyverse"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+## 학습 목표
+
+- R에서 데이터를 불러오고 구조를 파악하는 방법을 익힌다
+- `dplyr`의 핵심 함수 5개를 사용할 수 있다
+- 파이프 연산자(`|>`)로 분석 흐름을 연결할 수 있다
+
+## 1. 패키지와 데이터 불러오기
+
+```{r}
+library(assemblykor)
+library(dplyr)
+
+data(legislators)
+```
+
+`str()`로 데이터 구조를 확인해봅시다.
+
+```{r}
+str(legislators)
+```
+
+947개 행은 20-22대 국회의원 기록입니다. 한 의원이 여러 대에 걸쳐 활동하면 여러 행으로 나타납니다.
+
+## 2. 데이터 살펴보기
+
+```{r}
+# 처음 6행
+head(legislators)
+
+# 요약 통계
+summary(legislators$n_bills_lead)
+
+# 대수별 의원 수
+table(legislators$assembly)
+```
+
+## 3. dplyr 핵심 함수
+
+### filter(): 행 선택하기
+
+```{r}
+# 22대 여성 의원만
+women_22 <- filter(legislators, assembly == 22, gender == "F")
+nrow(women_22)
+```
+
+### select(): 열 선택하기
+
+```{r}
+# 이름, 정당, 발의 건수만
+select(legislators, name, party, n_bills_lead)
+```
+
+### mutate(): 새 변수 만들기
+
+```{r}
+# 공동발의 참여 건수 = 전체 - 대표발의
+legislators <- mutate(legislators,
+  n_cosponsor = n_bills - n_bills_lead,
+  lead_ratio  = n_bills_lead / n_bills
+)
+```
+
+### arrange(): 정렬하기
+
+```{r}
+# 대표발의 많은 순으로
+legislators |>
+  filter(assembly == 22) |>
+  arrange(desc(n_bills_lead)) |>
+  select(name, party, n_bills_lead) |>
+  head(10)
+```
+
+### group_by() + summarise(): 그룹별 요약
+
+```{r}
+# 정당별 평균 대표발의 건수 (22대)
+legislators |>
+  filter(assembly == 22) |>
+  group_by(party) |>
+  summarise(
+    n      = n(),
+    avg    = mean(n_bills_lead),
+    median = median(n_bills_lead)
+  ) |>
+  filter(n >= 5) |>
+  arrange(desc(avg))
+```
+
+## 4. 파이프로 분석 연결하기
+
+대수별 여성 의원 비율을 계산해봅시다.
+
+```{r}
+legislators |>
+  group_by(assembly) |>
+  summarise(
+    total = n(),
+    n_women = sum(gender == "F"),
+    pct_women = round(n_women / total * 100, 1)
+  )
+```
+
+## 5. 다른 데이터도 불러보기
+
+```{r}
+data(bills)
+data(wealth)
+
+# 법안 데이터 구조
+dim(bills)
+head(bills$bill_name, 5)
+
+# 재산 데이터 구조
+dim(wealth)
+summary(wealth$net_worth / 1e6)  # 단위: 10억원
+```
+
+## 6. 두 데이터 합치기 (join)
+
+의원 정보와 재산 정보를 `member_id`로 연결합니다.
+
+```{r}
+leg_wealth <- legislators |>
+  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+
+dim(leg_wealth)
+
+# 성별에 따른 순자산 차이
+leg_wealth |>
+  group_by(gender) |>
+  summarise(
+    n = n(),
+    median_nw = median(net_worth / 1e6, na.rm = TRUE)
+  )
+```
+
+---
+
+## 연습 문제
+
+1. 22대 국회에서 비례대표(`district_type == "proportional"`) 의원은 몇 명인가?
+
+2. 대수별로 초선(`seniority == 1`) 의원의 비율을 계산하시오.
+
+3. `wealth` 데이터에서 2025년 기준, 강남 부동산 보유 의원(`has_gangnam_property == TRUE`)의 평균 순자산과 비보유 의원의 평균 순자산을 비교하시오.
+
+4. `bills` 데이터에서 가장 많은 법안이 배정된 상임위원회 상위 5개를 구하시오.
+
+5. 의원별 대표발의 건수(`n_bills_lead`)와 순자산(`net_worth`)을 합친 데이터프레임을 만들어 상관계수를 구하시오.

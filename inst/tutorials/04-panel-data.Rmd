@@ -1,0 +1,189 @@
+---
+title: "튜토리얼 4: 패널 데이터와 고정효과"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4)
+```
+
+## 학습 목표
+
+- 패널 데이터의 구조(개체 x 시간)를 이해한다
+- 합동 OLS, 개체 고정효과, 양방향 고정효과의 차이를 설명할 수 있다
+- `fixest::feols()`로 고정효과 모형을 추정할 수 있다
+
+## 1. 준비
+
+```{r}
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+
+# fixest가 없으면 설치
+if (!requireNamespace("fixest", quietly = TRUE)) {
+  install.packages("fixest")
+}
+library(fixest)
+
+data(wealth)
+data(seminars)
+```
+
+## 2. 패널 데이터란?
+
+`wealth` 데이터는 **의원-연도** 패널입니다. 같은 의원이 여러 해에 걸쳐 관측됩니다.
+
+```{r panel-structure}
+# 패널 구조 확인
+cat("관측치:", nrow(wealth), "\n")
+cat("의원 수:", n_distinct(wealth$member_id), "\n")
+cat("연도:", paste(sort(unique(wealth$year)), collapse = ", "), "\n")
+
+# 의원별 관측 횟수
+obs_per_member <- wealth |> count(member_id) |> pull(n)
+table(obs_per_member)
+```
+
+## 3. Between vs Within 변동
+
+고정효과 모형의 핵심: **개인 간 차이(between)**와 **개인 내 변화(within)**를 구분합니다.
+
+```{r between-within}
+# 예시: 5명의 의원 선택
+sample_ids <- wealth |>
+  count(member_id) |>
+  filter(n >= 5) |>
+  slice_sample(n = 5) |>
+  pull(member_id)
+
+wealth |>
+  filter(member_id %in% sample_ids) |>
+  ggplot(aes(x = year, y = net_worth / 1e6, color = name, group = member_id)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(x = "연도", y = "순자산 (10억 원)", color = "의원",
+       title = "개별 의원의 순자산 변화 (5명 표본)") +
+  theme_minimal()
+```
+
+- **Between**: 부자 의원 vs 가난한 의원 (수준 차이)
+- **Within**: 같은 의원의 재산이 시간에 따라 어떻게 변하는가 (변화)
+
+## 4. 합동 OLS (Pooled OLS)
+
+개체 간 차이를 무시하고 모든 관측치를 한꺼번에 분석합니다.
+
+```{r pooled}
+# 부동산 보유와 예금의 관계
+m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
+summary(m_pooled)
+```
+
+**문제**: 관측되지 않는 개인 특성(능력, 가문 배경 등)이 편의를 발생시킬 수 있습니다.
+
+## 5. 개체 고정효과 (Individual Fixed Effects)
+
+각 의원에 대한 더미변수를 추가하여 관측되지 않는 개인 특성을 통제합니다.
+
+```{r fe-individual}
+m_fe <- feols(deposits ~ real_estate + n_properties | member_id,
+              data = wealth)
+summary(m_fe)
+```
+
+`| member_id`가 고정효과를 지정하는 부분입니다. 이 모형은 **같은 의원 내에서** 부동산 보유가 예금에 미치는 영향만 추정합니다.
+
+### 합동 OLS vs 고정효과 비교
+
+```{r compare-pooled-fe}
+etable(m_pooled, m_fe,
+       headers = c("Pooled OLS", "Individual FE"))
+```
+
+계수가 어떻게 달라졌나요? 이유를 생각해봅시다.
+
+## 6. 양방향 고정효과 (Two-Way FE)
+
+연도 고정효과를 추가하면, 모든 의원에게 공통으로 작용하는 시간 추세(예: 부동산 가격 상승)를 통제합니다.
+
+```{r twfe}
+m_twfe <- feols(deposits ~ real_estate + n_properties | member_id + year,
+                data = wealth)
+summary(m_twfe)
+
+etable(m_pooled, m_fe, m_twfe,
+       headers = c("Pooled", "Individual FE", "Two-way FE"))
+```
+
+## 7. 세미나 데이터로 DiD 연습
+
+**연구 질문**: 여당이 되면 초당적 세미나 협력이 줄어드는가?
+
+`seminars` 데이터에서 `is_governing`(여당 여부)이 자연스러운 처치 변수 역할을 합니다. 같은 의원이 여당에서 야당으로(또는 반대로) 전환되는 경우가 존재합니다.
+
+```{r did-prep}
+sem_panel <- seminars |>
+  filter(n_seminars > 0, year >= 2016)
+
+cat("관측치:", nrow(sem_panel), "\n")
+cat("의원 수:", n_distinct(sem_panel$name), "\n")
+
+# 여당 전환 경험 의원 수
+sem_panel |>
+  group_by(name) |>
+  summarise(ever_gov = any(is_governing), ever_opp = any(!is_governing)) |>
+  summarise(switchers = sum(ever_gov & ever_opp))
+```
+
+### DiD 추정
+
+```{r did-estimate}
+m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
+                 name + year,
+               data = sem_panel)
+summary(m_did)
+```
+
+**해석**: `is_governing`의 계수가 음수이고 유의미하다면, 여당이 되었을 때 초당적 협력이 감소한다는 증거입니다.
+
+### 클러스터 표준오차
+
+패널 데이터에서는 개체 수준에서 오차가 상관될 수 있으므로, 클러스터 표준오차를 사용합니다.
+
+```{r cluster-se}
+# fixest는 기본적으로 고정효과 수준에서 클러스터링
+summary(m_did, cluster = "name")
+```
+
+## 8. 시각적 확인
+
+```{r did-visual}
+sem_panel |>
+  group_by(year, is_governing) |>
+  summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE)) |>
+  mutate(status = ifelse(is_governing, "여당", "야당")) |>
+  ggplot(aes(x = year, y = mean_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
+  labs(x = "연도", y = "초당적 세미나 비율",
+       color = NULL,
+       title = "여당 vs 야당의 초당적 협력 (패널 데이터)") +
+  theme_minimal()
+```
+
+---
+
+## 연습 문제
+
+1. `wealth` 데이터에서 `stocks`(주식)를 종속변수로, `real_estate`를 독립변수로 하는 개체 고정효과 모형을 추정하시오. 부동산이 늘면 주식도 느는가?
+
+2. 양방향 고정효과 모형(의원 + 연도)에서, `has_seoul_property`를 독립변수로 사용하면 추정이 가능한가? 왜 그런지 설명하시오. (힌트: 시간에 따라 변하는 변수인가?)
+
+3. `seminars` 데이터에서 비례대표(`is_proportional`) 의원의 초당적 협력이 지역구 의원과 다른지 고정효과 모형으로 분석하시오. 이 변수에 고정효과를 적용할 때 주의할 점은?
+
+4. `feols()`에서 `| member_id^year` 구문을 사용하면 의원-연도 상호작용 고정효과를 적용할 수 있습니다. 이것이 언제 유용한지, 그리고 자유도에 미치는 영향을 논의하시오.
+
+5. 합동 OLS, 개체 FE, 양방향 FE 세 모형의 결과를 `etable()`로 정리하고, 어떤 모형이 가장 적절한지 근거를 제시하시오.

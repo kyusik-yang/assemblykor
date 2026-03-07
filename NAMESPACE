@@ -2,3 +2,6 @@
 
 export(get_bill_texts)
 export(get_proposers)
+export(list_tutorials)
+export(open_tutorial)
+export(path_to_file)

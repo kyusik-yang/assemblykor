@@ -1,0 +1,8 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "assemblykor: Korean National Assembly Data for Political Science Education",
+  author   = person("Kyusik", "Yang"),
+  year     = "2026",
+  url      = "https://github.com/kyusik-yang/assemblykor",
+  note     = "R package version 0.1.0"
+)

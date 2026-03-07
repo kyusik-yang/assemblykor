@@ -1,5 +1,35 @@
 # Dataset documentation for assemblykor package
 
+#' assemblykor: Korean National Assembly Data for Political Science Education
+#'
+#' Provides ready-to-use datasets from the Korean National Assembly for
+#' teaching quantitative methods in political science. Includes five
+#' built-in datasets covering legislator metadata, bills, asset
+#' declarations, policy seminars, and committee speeches.
+#'
+#' @section Built-in datasets:
+#' \itemize{
+#'   \item \code{\link{legislators}}: 947 MP records (20th-22nd assemblies)
+#'   \item \code{\link{bills}}: 60,925 legislative bills
+#'   \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
+#'   \item \code{\link{seminars}}: 5,962 legislator-year seminar records
+#'   \item \code{\link{speeches}}: 7,500 committee speech excerpts (16th-20th)
+#' }
+#'
+#' @section Download functions:
+#' \itemize{
+#'   \item \code{\link{get_bill_texts}}: 60,925 bill propose-reason texts
+#'   \item \code{\link{get_proposers}}: 769,773 co-sponsorship records
+#' }
+#'
+#' @section Tutorials:
+#' Use \code{\link{list_tutorials}} to see available Korean-language tutorials,
+#' and \code{\link{open_tutorial}} to copy them to your working directory.
+#'
+#' @docType package
+#' @name assemblykor-package
+"_PACKAGE"
+
 #' Members of the Korean National Assembly (20th-22nd)
 #'
 #' Biographical and political metadata for 947 records of legislators who
@@ -203,3 +233,59 @@
 #' # Gender gap in seminar hosting
 #' tapply(seminars$n_seminars, seminars$is_female, median, na.rm = TRUE)
 "seminars"
+
+
+#' Committee Speeches from the Korean National Assembly (16th-20th)
+#'
+#' A stratified random sample of 7,500 committee speech records from the
+#' 16th through 20th Korean National Assembly (2000-2020). Speeches are
+#' from standing committee meetings covering economic and infrastructure
+#' policy areas.
+#'
+#' @format A data frame with 7,500 rows and 7 variables:
+#' \describe{
+#'   \item{assembly}{Assembly number (16-20)}
+#'   \item{date}{Date of the committee meeting}
+#'   \item{committee}{Standing committee name in Korean}
+#'   \item{speaker}{Speaker name (may include title, e.g., "위원장 김영일")}
+#'   \item{member_id}{Speaker identifier (numeric code from the minutes system)}
+#'   \item{speech_order}{Order of the speech within the meeting}
+#'   \item{speech}{Full text of the speech in Korean}
+#' }
+#'
+#' @details
+#' This is a stratified sample of 1,500 speeches per assembly (16th-20th),
+#' drawn from committee minutes (상임위원회 회의록). The committees covered
+#' include finance and infrastructure-related standing committees
+#' (기획재정위원회, 건설교통위원회, 국토교통위원회, etc.), which changed
+#' names across assemblies due to government reorganizations.
+#'
+#' Speeches shorter than 50 characters were excluded from sampling. The
+#' median speech length is approximately 150 characters, ranging from
+#' brief procedural statements to extended policy arguments.
+#'
+#' For full-text analysis, note that Korean text requires morphological
+#' analysis (형태소 분석) for proper tokenization. Packages like
+#' \pkg{tidytext} with custom tokenizers or Python-based tools like
+#' KoNLPy can be used.
+#'
+#' @source National Assembly committee minutes (상임위원회 회의록),
+#'   published by the National Assembly of the Republic of Korea.
+#'
+#' @examples
+#' data(speeches)
+#'
+#' # Speech count by assembly and committee
+#' table(speeches$assembly, speeches$committee)
+#'
+#' # Distribution of speech lengths
+#' hist(nchar(speeches$speech), breaks = 100,
+#'      main = "Speech Length Distribution", xlab = "Characters")
+#'
+#' # Most frequent speakers
+#' head(sort(table(speeches$speaker), decreasing = TRUE), 10)
+#'
+#' # Simple keyword search
+#' housing <- speeches[grepl("부동산|주택", speeches$speech), ]
+#' table(housing$assembly)
+"speeches"
