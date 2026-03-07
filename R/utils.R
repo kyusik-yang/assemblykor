@@ -29,25 +29,32 @@ path_to_file <- function(file = NULL) {
 #'
 #' Lists the tutorial R Markdown files included with the package.
 #' Tutorials are designed for classroom use in Korean political science
-#' methods courses.
+#' methods courses. Each tutorial is available in two formats:
+#' \enumerate{
+#'   \item Plain Rmd for editing in RStudio (\code{\link{open_tutorial}})
+#'   \item Interactive \pkg{learnr} format (\code{\link{run_tutorial}})
+#' }
 #'
-#' @return A character vector of tutorial file names.
+#' @return A character vector of tutorial file names (invisibly).
 #'
 #' @examples
 #' list_tutorials()
 #'
 #' @export
 list_tutorials <- function() {
-  files <- dir(system.file("tutorials", package = "assemblykor"),
+  files <- dir(system.file("rmd-tutorials", package = "assemblykor"),
                pattern = "\\.Rmd$")
   if (length(files) == 0) {
     message("No tutorials found.")
     return(invisible(character(0)))
   }
-  cat("Available tutorials:\n")
+  cat("Available tutorials:\n\n")
   for (f in files) {
     cat("  ", f, "\n")
   }
+  cat("\nUsage:\n")
+  cat("  open_tutorial(1)       # Copy Rmd to working directory\n")
+  cat("  run_tutorial(1)        # Launch interactive version in browser\n")
   invisible(files)
 }
 
@@ -55,7 +62,7 @@ list_tutorials <- function() {
 #' Open a tutorial file
 #'
 #' Copies a tutorial R Markdown file to the specified directory (default:
-#' current working directory) so students can edit and run it interactively.
+#' current working directory) so students can edit and run it in RStudio.
 #'
 #' @param name Tutorial name (with or without .Rmd extension), or a number
 #'   corresponding to the tutorial order (1-6).
@@ -63,6 +70,8 @@ list_tutorials <- function() {
 #'   working directory.
 #'
 #' @return The path to the copied file (invisibly).
+#'
+#' @seealso \code{\link{run_tutorial}} for the interactive browser version.
 #'
 #' @examples
 #' \dontrun{
@@ -75,7 +84,7 @@ list_tutorials <- function() {
 #'
 #' @export
 open_tutorial <- function(name, dest_dir = getwd()) {
-  tutorials <- dir(system.file("tutorials", package = "assemblykor"),
+  tutorials <- dir(system.file("rmd-tutorials", package = "assemblykor"),
                    pattern = "\\.Rmd$")
 
   if (is.numeric(name)) {
@@ -92,7 +101,7 @@ open_tutorial <- function(name, dest_dir = getwd()) {
     }
   }
 
-  src <- system.file("tutorials", file, package = "assemblykor")
+  src <- system.file("rmd-tutorials", file, package = "assemblykor")
   dest <- file.path(dest_dir, file)
 
   if (file.exists(dest)) {
@@ -103,4 +112,41 @@ open_tutorial <- function(name, dest_dir = getwd()) {
   file.copy(src, dest, overwrite = TRUE)
   message("Tutorial copied to: ", dest)
   invisible(dest)
+}
+
+
+#' Run an interactive tutorial
+#'
+#' Launches a \pkg{learnr} interactive tutorial in the browser. Students
+#' can type and run code directly in the browser with hints and solutions.
+#' Requires the \pkg{learnr} package.
+#'
+#' @param name Tutorial name or number (1-6). Use \code{\link{list_tutorials}}
+#'   to see available tutorials.
+#'
+#' @seealso \code{\link{open_tutorial}} for the plain Rmd version.
+#'
+#' @examples
+#' \dontrun{
+#' run_tutorial(1)  # Launch tutorial 1 in browser
+#' }
+#'
+#' @export
+run_tutorial <- function(name) {
+  if (!requireNamespace("learnr", quietly = TRUE)) {
+    stop("Package 'learnr' is required. Install with: install.packages('learnr')")
+  }
+
+  tutorials <- dir(system.file("rmd-tutorials", package = "assemblykor"),
+                   pattern = "\\.Rmd$")
+  if (is.numeric(name)) {
+    if (name < 1 || name > length(tutorials)) {
+      stop("Tutorial number must be between 1 and ", length(tutorials))
+    }
+    tut_name <- sub("\\.Rmd$", "", tutorials[name])
+  } else {
+    tut_name <- sub("\\.Rmd$", "", name)
+  }
+
+  learnr::run_tutorial(tut_name, package = "assemblykor")
 }

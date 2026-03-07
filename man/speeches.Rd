@@ -3,49 +3,44 @@
 \docType{data}
 \name{speeches}
 \alias{speeches}
-\title{Committee Speeches from the Korean National Assembly (16th-22nd)}
+\title{Committee Speeches from the Science and ICT Committee (22nd Assembly)}
 \format{
-A data frame with 10,500 rows and 8 variables:
+A data frame with 15,843 rows and 8 variables:
 \describe{
-\item{assembly}{Assembly number (16-22)}
+\item{assembly}{Assembly number (22)}
 \item{date}{Date of the committee meeting}
-\item{committee}{Committee name in Korean. Standing committee names
-vary across assemblies due to government reorganizations. Audit
-hearing entries are tagged with "(국정감사)" suffix.}
+\item{committee}{Committee name in Korean}
 \item{speaker}{Speaker label as it appears in the minutes (may include
-titles, e.g., "위원장 김영일" or "이원욱 위원")}
+titles)}
 \item{speaker_name}{Cleaned speaker name with titles removed.}
 \item{member_id}{Legislator identifier (MONA_CD, links to
 \code{legislators$member_id}). Available for ~76\\% of rows.
-\code{NA} for non-legislator speakers: government ministers (34\\%
-of NAs), agency officials (30\\%), witnesses/experts (11\\%),
-and others who testify before committees but do not have a
-legislator ID.}
+\code{NA} for non-legislator speakers such as government officials,
+agency heads, and expert witnesses who testify before the committee.}
 \item{speech_order}{Order of the speech turn within the meeting}
 \item{speech}{Full text of the speech in Korean}
 }
 }
 \source{
-National Assembly committee minutes (상임위원회 회의록 데이터셋),
+National Assembly committee minutes,
 published by the National Assembly of the Republic of Korea.
 }
 \usage{
 speeches
 }
 \description{
-A stratified random sample of 10,500 speech records from the
-16th through 22nd Korean National Assembly (2000-2025). Includes both
-standing committee meetings (상임위원회) and parliamentary audit
-hearings (국정감사).
+Full corpus of 15,843 speech records from the Science, Technology,
+Information, Broadcasting and Communications Committee of the 22nd
+Korean National Assembly (2024). Standing committee meetings only.
 }
 \details{
-This is a stratified sample of 1,500 speeches per assembly (16th-22nd):
-1,000 from standing committee meetings and 500 from parliamentary audit
-hearings (국정감사). All standing committees are included. Committee names
-vary across assemblies due to government reorganizations; audit hearing
-entries carry a "(국정감사)" suffix to distinguish them.
+This dataset contains the complete standing committee speech records
+(no sampling) for the Science and ICT Committee of the 22nd assembly.
+Speeches shorter than 50 characters were excluded.
 
-Speeches shorter than 50 characters were excluded from sampling.
+This committee covers AI, telecommunications, broadcasting, space
+policy, and R&D governance, making it suitable for keyword analysis,
+topic modeling, and other text analysis exercises.
 
 \strong{Linking to other datasets}: Use \code{member_id} to join with
 \code{legislators}, \code{wealth}, \code{bills}, or \code{seminars}.
@@ -55,12 +50,6 @@ as a fallback for name-based joins.
 \examples{
 data(speeches)
 
-# Speech count by assembly
-table(speeches$assembly)
-
-# Top committees
-head(sort(table(speeches$committee), decreasing = TRUE), 10)
-
 # Distribution of speech lengths
 hist(nchar(speeches$speech), breaks = 100,
      main = "Speech Length Distribution", xlab = "Characters")
@@ -69,7 +58,7 @@ hist(nchar(speeches$speech), breaks = 100,
 head(sort(table(speeches$speaker_name), decreasing = TRUE), 10)
 
 # Simple keyword search
-housing <- speeches[grepl("부동산|주택", speeches$speech), ]
-table(housing$assembly)
+ai <- speeches[grepl("AI|인공지능", speeches$speech), ]
+nrow(ai)
 }
 \keyword{datasets}

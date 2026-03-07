@@ -1,0 +1,304 @@
+---
+title: "튜토리얼 5: 텍스트 분석 입문"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
+data(bills)
+data(legislators)
+tutorial_options(exercise.eval = FALSE)
+```
+
+## 학습 목표
+
+- 법안 제안이유 텍스트를 다운로드하고 전처리할 수 있다
+- 단어 빈도와 TF-IDF를 계산할 수 있다
+- 위원회별, 시기별 텍스트 차이를 분석할 수 있다
+
+## 1. 텍스트 데이터 다운로드
+
+`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다 (첫 실행 시 ~40MB).
+
+```{r download, exercise=TRUE, exercise.eval=FALSE}
+texts <- get_bill_texts()
+dim(texts)
+head(texts$propose_reason, 2)
+```
+
+## 2. 법안 데이터와 결합
+
+텍스트를 법안 메타데이터와 합칩니다.
+
+```{r merge, exercise=TRUE, exercise.eval=FALSE}
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok") |>
+  mutate(text_length = nchar(propose_reason))
+
+summary(bill_text$text_length)
+```
+
+### 텍스트 길이 분포
+
+```{r length-dist, exercise=TRUE, exercise.eval=FALSE}
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok") |>
+  mutate(text_length = nchar(propose_reason))
+
+ggplot(bill_text, aes(x = text_length)) +
+  geom_histogram(bins = 100, fill = "steelblue") +
+  scale_x_log10() +
+  labs(x = "제안이유 길이 (문자 수, 로그 스케일)", y = "빈도",
+       title = "법안 제안이유 텍스트 길이 분포") +
+  theme_minimal()
+```
+
+```{r quiz-text}
+quiz(
+  question("법안 제안이유 텍스트 길이 분포의 특징은?",
+    answer("정규분포에 가깝다"),
+    answer("오른쪽으로 꼬리가 긴(right-skewed) 분포", correct = TRUE),
+    answer("균등분포에 가깝다"),
+    answer("이봉(bimodal) 분포"),
+    correct = "맞습니다! 대부분 짧은 텍스트이지만, 매우 긴 텍스트도 일부 있습니다."
+  )
+)
+```
+
+## 3. 키워드 빈도 분석
+
+특정 키워드가 시간에 따라 얼마나 등장하는지 살펴봅시다.
+
+```{r keyword-trend, exercise=TRUE, exercise.eval=FALSE}
+library(stringr)
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok")
+
+keywords <- c("인공지능", "디지털", "플랫폼", "데이터", "기후", "탄소")
+
+keyword_df <- do.call(rbind, lapply(keywords, function(kw) {
+  bill_text |>
+    mutate(year = as.integer(format(propose_date, "%Y"))) |>
+    group_by(year) |>
+    summarise(
+      mentions = sum(str_detect(propose_reason, kw), na.rm = TRUE),
+      total = n(),
+      .groups = "drop"
+    ) |>
+    mutate(keyword = kw, pct = mentions / total * 100)
+}))
+
+ggplot(keyword_df, aes(x = year, y = pct, color = keyword)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 1.5) +
+  labs(x = "연도", y = "언급 비율 (%)", color = "키워드",
+       title = "법안 제안이유 속 키워드 추이") +
+  theme_minimal()
+```
+
+## 4. 한국어 토큰화 (간단한 방법)
+
+한국어는 형태소 분석이 필요하지만, 간단한 분석에서는 공백 기반 토큰화도 유용합니다.
+
+```{r tokenize, exercise=TRUE, exercise.eval=FALSE}
+library(tidytext)
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok", assembly == 22)
+
+# 공백 기반 토큰화 (5,000건 표본)
+sample_bills <- bill_text |>
+  slice_sample(n = min(5000, n()))
+
+tokens <- sample_bills |>
+  select(bill_id, committee, propose_reason) |>
+  unnest_tokens(word, propose_reason, token = "words")
+
+tokens |>
+  count(word, sort = TRUE) |>
+  head(20)
+```
+
+### 불용어 제거
+
+```{r stopwords, exercise=TRUE, exercise.eval=FALSE}
+library(tidytext)
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok", assembly == 22) |>
+  slice_sample(n = min(5000, n()))
+
+tokens <- bill_text |>
+  select(bill_id, committee, propose_reason) |>
+  unnest_tokens(word, propose_reason, token = "words")
+
+ko_stopwords <- c(
+  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
+  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
+  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
+  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
+)
+
+tokens_clean <- tokens |>
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+tokens_clean |>
+  count(word, sort = TRUE) |>
+  head(20) |>
+  ggplot(aes(x = reorder(word, n), y = n)) +
+  geom_col(fill = "coral") +
+  coord_flip() +
+  labs(x = NULL, y = "빈도", title = "가장 많이 등장하는 단어 (22대 법안)") +
+  theme_minimal()
+```
+
+## 5. TF-IDF: 위원회별 특징 단어
+
+TF-IDF(Term Frequency - Inverse Document Frequency)는 특정 그룹에서 특히 많이 나타나는 단어를 찾아줍니다.
+
+```{r tfidf, exercise=TRUE, exercise.eval=FALSE, fig.height=6}
+library(tidytext)
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok", assembly == 22) |>
+  slice_sample(n = min(5000, n()))
+
+ko_stopwords <- c(
+  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
+  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
+  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
+  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
+)
+
+tokens_clean <- bill_text |>
+  select(bill_id, committee, propose_reason) |>
+  unnest_tokens(word, propose_reason, token = "words") |>
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+# TF-IDF
+committee_tfidf <- tokens_clean |>
+  count(committee, word, sort = TRUE) |>
+  bind_tf_idf(word, committee, n)
+
+top_committees <- c("보건복지위원회", "국토교통위원회", "과학기술정보방송통신위원회")
+
+committee_tfidf |>
+  filter(committee %in% top_committees) |>
+  group_by(committee) |>
+  slice_max(tf_idf, n = 8) |>
+  ggplot(aes(x = reorder_within(word, tf_idf, committee), y = tf_idf)) +
+  geom_col(fill = "steelblue") +
+  facet_wrap(~ committee, scales = "free_y") +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(x = NULL, y = "TF-IDF",
+       title = "위원회별 특징 단어") +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 9))
+```
+
+```{r quiz-tfidf}
+quiz(
+  question("TF-IDF가 높은 단어의 특징은?",
+    answer("전체 문서에서 가장 자주 등장하는 단어"),
+    answer("특정 그룹에서 상대적으로 많이 나타나는 단어", correct = TRUE),
+    answer("문서 길이가 긴 문서에서만 나타나는 단어"),
+    answer("불용어를 제거한 후 남는 단어"),
+    correct = "맞습니다! TF-IDF는 특정 위원회에서 '특별히' 많이 쓰이는 단어를 찾아줍니다."
+  )
+)
+```
+
+## 연습 문제
+
+### 문제 1
+
+"부동산", "주택", "임대"가 포함된 법안의 비율을 대수별로 계산하시오.
+
+```{r q1, exercise=TRUE, exercise.eval=FALSE}
+
+```
+
+```{r q1-solution}
+library(stringr)
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok")
+
+bill_text |>
+  mutate(housing = str_detect(propose_reason, "부동산|주택|임대")) |>
+  group_by(assembly) |>
+  summarise(
+    total = n(),
+    housing_n = sum(housing, na.rm = TRUE),
+    pct = round(housing_n / total * 100, 1)
+  )
+```
+
+### 문제 2
+
+특정 위원회(예: 환경노동위원회)의 법안 제안이유에서 가장 자주 등장하는 단어 상위 15개를 막대그래프로 그리시오.
+
+```{r q2, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+
+```
+
+```{r q2-solution}
+library(tidytext)
+texts <- get_bill_texts()
+
+bill_text <- bills |>
+  inner_join(texts, by = "bill_id") |>
+  filter(scrape_status == "ok", committee == "환경노동위원회")
+
+ko_stopwords <- c(
+  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
+  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
+  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
+  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
+)
+
+bill_text |>
+  select(bill_id, propose_reason) |>
+  unnest_tokens(word, propose_reason, token = "words") |>
+  filter(!word %in% ko_stopwords, nchar(word) >= 2) |>
+  count(word, sort = TRUE) |>
+  head(15) |>
+  ggplot(aes(x = reorder(word, n), y = n)) +
+  geom_col(fill = "darkgreen") +
+  coord_flip() +
+  labs(x = NULL, y = "빈도", title = "환경노동위원회 법안 주요 단어") +
+  theme_minimal()
+```
+
+### 문제 3
+
+자유 주제: 관심 있는 키워드를 선택하여 시간에 따른 추세를 분석하시오.
+
+```{r q3, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+
+```

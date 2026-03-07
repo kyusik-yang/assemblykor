@@ -18,7 +18,7 @@ The path to the copied file (invisibly).
 }
 \description{
 Copies a tutorial R Markdown file to the specified directory (default:
-current working directory) so students can edit and run it interactively.
+current working directory) so students can edit and run it in RStudio.
 }
 \examples{
 \dontrun{
@@ -29,4 +29,7 @@ open_tutorial("01-tidyverse-basics")
 open_tutorial(1)
 }
 
+}
+\seealso{
+\code{\link{run_tutorial}} for the interactive browser version.
 }

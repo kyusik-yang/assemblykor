@@ -9,9 +9,37 @@ National Assembly datasets for teaching quantitative methods in political
 science. Think of it as a Korean politics counterpart to
 [palmerpenguins](https://allisonhorst.github.io/palmerpenguins/).
 
-The package includes five built-in datasets covering legislators, bills,
-asset declarations, policy seminars, and committee speeches, all drawn from
-public data of the Korean National Assembly (2000-2026).
+The package includes seven built-in datasets covering legislators, bills,
+asset declarations, policy seminars, committee speeches, plenary votes,
+and roll call records, all drawn from public data of the Korean National
+Assembly (2000-2026).
+
+## Why tidyverse?
+
+This package and all its tutorials follow
+[tidyverse](https://www.tidyverse.org/) conventions. We use `dplyr`,
+`ggplot2`, `tidyr`, and the pipe operator (`|>`) throughout.
+
+Why tidyverse-first for teaching?
+
+- **Readability**: tidyverse syntax reads like a sequence of data
+  operations, reducing cognitive load for beginners
+  ([Cetinkaya-Rundel et al., 2022](https://arxiv.org/abs/2108.03510)).
+- **Consistency**: Packages share a common grammar and data structure,
+  so learning one makes the next easier
+  ([Wickham et al., 2019](https://doi.org/10.21105/joss.01686)).
+- **Doing things quickly**: Students can perform meaningful data analysis
+  from day one, rather than spending weeks on base R syntax
+  ([Robinson, 2017](http://varianceexplained.org/r/teach-tidyverse/)).
+- **Community standard**: Most modern R textbooks, including
+  [R for Data Science](https://r4ds.hadley.nz/), adopt tidyverse as the
+  default, making it easier for students to find help and resources.
+
+> **Note**: This package is designed for educational purposes only.
+> The datasets have been processed and curated for classroom use and may
+> not reflect the most up-to-date or complete records. For research or
+> policy analysis, please verify against the original data sources listed
+> in the [Data sources](#data-sources) section below.
 
 ## Meet the data
 
@@ -42,11 +70,24 @@ public data of the Korean National Assembly (2000-2026).
 정책세미나 활동 패널 (개최 건수, 초당적 비율, 여당 여부)
 
 </td></tr>
+<tr><td>
+
+**`speeches`** 15,843 records
+
+22대 과학기술정보방송통신위원회 상임위 회의록 전수 (발언 전문, 화자 역할 포함)
+
+</td><td>
+
+**`votes`** 7,997 records
+
+본회의 표결 결과 (20-22대, 찬성/반대/기권 수, 의결 결과)
+
+</td></tr>
 <tr><td colspan="2">
 
-**`speeches`** 10,500 records
+**`roll_calls`** 368,210 records
 
-상임위원회 + 국정감사 회의록 샘플 (16-22대, 전체 위원회, 발언 전문)
+22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,233개 법안)
 
 </td></tr>
 </table>
@@ -68,6 +109,8 @@ data(bills)
 data(wealth)
 data(seminars)
 data(speeches)
+data(votes)
+data(roll_calls)
 ```
 
 ### Example: party composition by gender
@@ -133,15 +176,29 @@ use in political science methods courses:
 | 5 | 텍스트 분석 입문 | 키워드 빈도, TF-IDF, 위원회별 비교 |
 | 6 | 네트워크 분석 | 공동발의 네트워크, 중심성, 커뮤니티 탐지 |
 
+Each tutorial is available in two formats:
+
+**Option A: Interactive browser** (recommended for self-study)
+
+```r
+# Launch an interactive tutorial with exercises in the browser
+run_tutorial(1)  # or run_tutorial("01-tidyverse-basics")
+```
+
+Requires the `learnr` package (`install.packages("learnr")`). Students can
+type and run code directly in the browser with hints and solutions.
+
+**Option B: Plain R Markdown** (for editing in RStudio)
+
 ```r
 # List available tutorials
 list_tutorials()
 
-# Copy a tutorial to your working directory
+# Copy an Rmd file to your working directory
 open_tutorial(1)  # or open_tutorial("01-tidyverse-basics")
 ```
 
-Each tutorial includes step-by-step instructions and exercises (연습 문제).
+Students can edit and knit the Rmd file in RStudio at their own pace.
 
 ## Joining datasets
 
@@ -168,11 +225,28 @@ legislators_csv <- read.csv(path_to_file("legislators.csv"), fileEncoding = "UTF
 
 ## Data sources
 
+All data in this package are derived from publicly available sources.
+
 | Dataset | Source | License |
 |---------|--------|---------|
-| Legislators, bills, proposers | [Open National Assembly API](https://open.assembly.go.kr) | Public domain |
+| Legislators, bills, proposers, votes, roll calls | [Open National Assembly API](https://open.assembly.go.kr) | Public domain (Korean government open data) |
+| Speeches (committee minutes) | [speech-assembly-korea](https://github.com/kyusik-yang/speech-assembly-korea) | Public domain |
 | Asset declarations | [OpenWatch](https://openwatchdata.com) | CC BY-SA 4.0 |
 | Policy seminars | National Assembly Seminar Database | Public data |
+
+**Inspired by**: [palmerpenguins](https://allisonhorst.github.io/palmerpenguins/)
+(Horst, Hill & Gorman, 2020), which demonstrates how domain-specific
+datasets can make methods teaching more engaging.
+
+## Disclaimer
+
+This package is intended **for educational use only** (teaching
+quantitative methods in political science courses). The datasets have
+been processed, filtered, and in some cases sampled for classroom
+convenience. They should not be treated as authoritative records.
+
+For research or policy analysis, please consult the original data sources
+listed above and verify the data independently.
 
 ## Citation
 

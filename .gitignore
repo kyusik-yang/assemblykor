@@ -5,5 +5,11 @@
 *.Rproj
 inst/doc
 assemblykor.Rcheck/
+*.Rcheck/
 assemblykor_*.tar.gz
+
+# Large data-raw files (developer-only, not needed by users)
 data-raw/speeches_all_committees.csv
+data-raw/speeches_full.parquet
+data-raw/roll_calls_raw.csv
+data-raw/votes_raw.csv

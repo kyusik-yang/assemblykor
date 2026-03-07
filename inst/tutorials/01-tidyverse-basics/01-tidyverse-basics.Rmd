@@ -1,0 +1,229 @@
+---
+title: "튜토리얼 1: R 기초와 tidyverse"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(assemblykor)
+library(dplyr)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+data(legislators)
+data(bills)
+data(wealth)
+tutorial_options(exercise.eval = FALSE)
+```
+
+## 학습 목표
+
+- R에서 데이터를 불러오고 구조를 파악하는 방법을 익힌다
+- `dplyr`의 핵심 함수 5개를 사용할 수 있다
+- 파이프 연산자(`|>`)로 분석 흐름을 연결할 수 있다
+
+## 1. 데이터 살펴보기
+
+`assemblykor` 패키지의 `legislators` 데이터는 20-22대 국회의원 947명의 기록입니다.
+
+`str()`로 데이터 구조를 확인해봅시다.
+
+```{r explore, exercise=TRUE}
+str(legislators)
+```
+
+`head()`와 `summary()`도 시도해보세요:
+
+```{r explore2, exercise=TRUE}
+head(legislators)
+```
+
+```{r quiz-nrow}
+quiz(
+  question("legislators 데이터는 몇 개의 행(row)을 가지고 있나요?",
+    answer("661"),
+    answer("947", correct = TRUE),
+    answer("300"),
+    answer("1500"),
+    correct = "맞습니다! 661명의 고유 의원이 20-22대에 걸쳐 947개 행으로 기록되어 있습니다."
+  )
+)
+```
+
+## 2. filter(): 행 선택하기
+
+`filter()`는 조건에 맞는 행만 골라냅니다.
+
+```{r filter-demo, exercise=TRUE}
+# 22대 여성 의원만
+women_22 <- filter(legislators, assembly == 22, gender == "F")
+nrow(women_22)
+```
+
+아래 코드를 수정해서 **22대 초선 의원** 수를 구해보세요:
+
+```{r filter-ex, exercise=TRUE}
+# seniority == 1 이면 초선
+freshmen <- filter(legislators, ___, ___)
+nrow(freshmen)
+```
+
+```{r filter-ex-hint}
+# assembly와 seniority 조건을 넣으세요
+freshmen <- filter(legislators, assembly == 22, seniority == 1)
+nrow(freshmen)
+```
+
+## 3. select(): 열 선택하기
+
+```{r select-demo, exercise=TRUE}
+# 이름, 정당, 대표발의 건수만
+legislators |>
+  filter(assembly == 22) |>
+  select(name, party, n_bills_lead) |>
+  head(10)
+```
+
+## 4. mutate(): 새 변수 만들기
+
+`mutate()`로 기존 변수를 활용해 새로운 변수를 만듭니다.
+
+```{r mutate-demo, exercise=TRUE}
+# 공동발의 참여 건수와 대표발의 비율
+legislators |>
+  mutate(
+    n_cosponsor = n_bills - n_bills_lead,
+    lead_ratio  = round(n_bills_lead / n_bills, 3)
+  ) |>
+  filter(assembly == 22) |>
+  select(name, n_bills, n_bills_lead, n_cosponsor, lead_ratio) |>
+  arrange(desc(lead_ratio)) |>
+  head(10)
+```
+
+## 5. group_by() + summarise()
+
+그룹별 요약 통계를 구할 때 가장 많이 쓰는 패턴입니다.
+
+```{r group-demo, exercise=TRUE}
+# 정당별 평균 대표발의 건수 (22대)
+legislators |>
+  filter(assembly == 22) |>
+  group_by(party) |>
+  summarise(
+    n      = n(),
+    avg    = mean(n_bills_lead),
+    median = median(n_bills_lead)
+  ) |>
+  filter(n >= 5) |>
+  arrange(desc(avg))
+```
+
+대수별 여성 의원 비율을 계산해보세요:
+
+```{r group-ex, exercise=TRUE}
+legislators |>
+  group_by(___) |>
+  summarise(
+    total = n(),
+    n_women = sum(___ == "F"),
+    pct_women = round(n_women / total * 100, 1)
+  )
+```
+
+```{r group-ex-hint}
+legislators |>
+  group_by(assembly) |>
+  summarise(
+    total = n(),
+    n_women = sum(gender == "F"),
+    pct_women = round(n_women / total * 100, 1)
+  )
+```
+
+## 6. 두 데이터 합치기 (join)
+
+`member_id`를 기준으로 의원 정보와 재산 정보를 연결합니다.
+
+```{r join-demo, exercise=TRUE}
+leg_wealth <- legislators |>
+  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+
+dim(leg_wealth)
+```
+
+성별에 따른 순자산 차이를 확인해보세요:
+
+```{r join-ex, exercise=TRUE}
+leg_wealth <- legislators |>
+  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+
+leg_wealth |>
+  group_by(gender) |>
+  summarise(
+    n = n(),
+    median_nw = median(net_worth / 1e6, na.rm = TRUE)
+  )
+```
+
+## 연습 문제
+
+### 문제 1
+
+22대 국회에서 비례대표(`district_type == "proportional"`) 의원은 몇 명인가?
+
+```{r q1, exercise=TRUE}
+
+```
+
+```{r q1-solution}
+legislators |>
+  filter(assembly == 22, district_type == "proportional") |>
+  nrow()
+```
+
+### 문제 2
+
+대수별로 초선(`seniority == 1`) 의원의 비율을 계산하시오.
+
+```{r q2, exercise=TRUE}
+
+```
+
+```{r q2-solution}
+legislators |>
+  group_by(assembly) |>
+  summarise(
+    total = n(),
+    freshmen = sum(seniority == 1, na.rm = TRUE),
+    pct = round(freshmen / total * 100, 1)
+  )
+```
+
+### 문제 3
+
+`bills` 데이터에서 가장 많은 법안이 배정된 상임위원회 상위 5개를 구하시오.
+
+```{r q3, exercise=TRUE}
+
+```
+
+```{r q3-solution}
+bills |>
+  count(committee, sort = TRUE) |>
+  head(5)
+```
+
+### 문제 4
+
+의원별 대표발의 건수(`n_bills_lead`)와 순자산(`net_worth`)을 합친 데이터프레임을 만들어 상관계수를 구하시오.
+
+```{r q4, exercise=TRUE}
+
+```
+
+```{r q4-solution}
+merged <- legislators |>
+  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+cor(merged$n_bills_lead, merged$net_worth, use = "complete.obs")
+```

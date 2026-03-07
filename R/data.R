@@ -13,7 +13,9 @@
 #'   \item \code{\link{bills}}: 60,925 legislative bills
 #'   \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
 #'   \item \code{\link{seminars}}: 5,962 legislator-year seminar records
-#'   \item \code{\link{speeches}}: 10,500 speech records (16th-22nd, all committees + audit hearings)
+#'   \item \code{\link{speeches}}: 15,843 speech records (22nd, Science & ICT Committee)
+#'   \item \code{\link{votes}}: 7,997 plenary vote tallies (20th-22nd assemblies)
+#'   \item \code{\link{roll_calls}}: 368,210 member-level roll call votes (22nd assembly)
 #' }
 #'
 #' @section Download functions:
@@ -238,67 +240,178 @@
 "seminars"
 
 
-#' Committee Speeches from the Korean National Assembly (16th-22nd)
+#' Committee Speeches from the Science and ICT Committee (22nd Assembly)
 #'
-#' A stratified random sample of 10,500 speech records from the
-#' 16th through 22nd Korean National Assembly (2000-2025). Includes both
-#' standing committee meetings (상임위원회) and parliamentary audit
-#' hearings (국정감사).
+#' Full corpus of 15,843 speech records from the Science, Technology,
+#' Information, Broadcasting and Communications Committee of the 22nd
+#' Korean National Assembly (2024). Standing committee meetings only.
 #'
-#' @format A data frame with 10,500 rows and 8 variables:
+#' @format A data frame with 15,843 rows and 9 variables:
 #' \describe{
-#'   \item{assembly}{Assembly number (16-22)}
+#'   \item{assembly}{Assembly number (22)}
 #'   \item{date}{Date of the committee meeting}
-#'   \item{committee}{Committee name in Korean. Standing committee names
-#'     vary across assemblies due to government reorganizations. Audit
-#'     hearing entries are tagged with "(국정감사)" suffix.}
+#'   \item{committee}{Committee name in Korean}
 #'   \item{speaker}{Speaker label as it appears in the minutes (may include
-#'     titles, e.g., "위원장 김영일" or "이원욱 위원")}
-#'   \item{speaker_name}{Cleaned speaker name with titles removed.}
+#'     titles)}
+#'   \item{role}{Speaker role: "legislator", "chair", "minister",
+#'     "vice_minister", "senior_bureaucrat", "agency_head", "witness",
+#'     "expert_witness", "nominee", "minister_nominee", "testifier",
+#'     "public_corp_head", "broadcasting", "committee_staff"}
+#'   \item{speaker_name}{Cleaned speaker name with titles removed}
 #'   \item{member_id}{Legislator identifier (MONA_CD, links to
-#'     \code{legislators$member_id}). Available for ~76\% of rows.
-#'     \code{NA} for non-legislator speakers: government ministers (34\%
-#'     of NAs), agency officials (30\%), witnesses/experts (11\%),
-#'     and others who testify before committees but do not have a
-#'     legislator ID.}
+#'     \code{legislators$member_id}). Available for all rows; however,
+#'     non-legislator speakers (ministers, witnesses, etc.) will not match
+#'     entries in \code{legislators}.}
 #'   \item{speech_order}{Order of the speech turn within the meeting}
 #'   \item{speech}{Full text of the speech in Korean}
 #' }
 #'
 #' @details
-#' This is a stratified sample of 1,500 speeches per assembly (16th-22nd):
-#' 1,000 from standing committee meetings and 500 from parliamentary audit
-#' hearings (국정감사). All standing committees are included. Committee names
-#' vary across assemblies due to government reorganizations; audit hearing
-#' entries carry a "(국정감사)" suffix to distinguish them.
+#' This dataset contains the complete standing committee speech records
+#' (no sampling) for the Science and ICT Committee of the 22nd assembly
+#' (June-December 2024). Speeches shorter than 50 characters were excluded.
 #'
-#' Speeches shorter than 50 characters were excluded from sampling.
+#' The \code{role} variable distinguishes legislators from government
+#' officials, witnesses, and other participants. Filter to
+#' \code{role == "legislator"} for MP speeches only, or compare how
+#' legislators and ministers discuss the same agenda items.
 #'
-#' \strong{Linking to other datasets}: Use \code{member_id} to join with
-#' \code{legislators}, \code{wealth}, \code{bills}, or \code{seminars}.
-#' Where \code{member_id} is \code{NA}, \code{speaker_name} can be used
-#' as a fallback for name-based joins.
+#' This committee covers AI, telecommunications, broadcasting, space
+#' policy, and R&D governance, making it suitable for keyword analysis,
+#' topic modeling, and other text analysis exercises.
 #'
-#' @source National Assembly committee minutes (상임위원회 회의록 데이터셋),
-#'   published by the National Assembly of the Republic of Korea.
+#' @source National Assembly committee minutes, derived from the
+#'   \href{https://github.com/kyusik-yang/speech-assembly-korea}{speech-assembly-korea}
+#'   project (all_speeches_16_22.parquet).
 #'
 #' @examples
 #' data(speeches)
-#'
-#' # Speech count by assembly
-#' table(speeches$assembly)
-#'
-#' # Top committees
-#' head(sort(table(speeches$committee), decreasing = TRUE), 10)
 #'
 #' # Distribution of speech lengths
 #' hist(nchar(speeches$speech), breaks = 100,
 #'      main = "Speech Length Distribution", xlab = "Characters")
 #'
-#' # Most frequent speakers
-#' head(sort(table(speeches$speaker_name), decreasing = TRUE), 10)
+#' # Speaker roles
+#' table(speeches$role)
+#'
+#' # Most frequent legislator speakers
+#' leg <- speeches[speeches$role == "legislator", ]
+#' head(sort(table(leg$speaker_name), decreasing = TRUE), 10)
 #'
 #' # Simple keyword search
-#' housing <- speeches[grepl("부동산|주택", speeches$speech), ]
-#' table(housing$assembly)
+#' ai <- speeches[grepl("AI|인공지능", speeches$speech), ]
+#' nrow(ai)
 "speeches"
+
+
+#' Plenary Vote Results in the Korean National Assembly (20th-22nd)
+#'
+#' Bill-level vote tallies from plenary sessions of the 20th through
+#' 22nd Korean National Assembly (2016-2026). Each row represents one
+#' bill that went to a recorded floor vote.
+#'
+#' @format A data frame with 7,997 rows and 13 variables:
+#' \describe{
+#'   \item{bill_id}{Unique bill identifier (links to \code{bills$bill_id})}
+#'   \item{bill_no}{Numeric bill number}
+#'   \item{bill_name}{Full bill title in Korean}
+#'   \item{assembly}{Assembly number (20, 21, or 22)}
+#'   \item{committee}{Standing committee to which the bill was referred}
+#'   \item{vote_date}{Date of the plenary vote}
+#'   \item{result}{Vote outcome in Korean (e.g., passed as-is,
+#'     passed with amendments, rejected)}
+#'   \item{bill_type}{Type of bill (e.g., legislation, budget, resolution)}
+#'   \item{total_members}{Total number of assembly members at the time}
+#'   \item{voted}{Number of members who cast a vote}
+#'   \item{yes}{Number of yes votes}
+#'   \item{no}{Number of no votes}
+#'   \item{abstain}{Number of abstentions}
+#' }
+#'
+#' @details
+#' Not all bills go to a floor vote. Most bills are disposed of in
+#' committee or expire at the end of the assembly term. The \code{votes}
+#' dataset captures only those that reached the plenary floor for a
+#' recorded vote.
+#'
+#' About 40\% of \code{votes$bill_id} match \code{bills$bill_id},
+#' because \code{bills} only contains legislator-proposed bills while
+#' \code{votes} also includes committee alternatives, budget bills,
+#' and resolutions that have separate identifiers.
+#'
+#' See \code{\link{roll_calls}} for member-level voting records
+#' (22nd assembly), useful for ideal point estimation or party
+#' discipline analysis.
+#'
+#' @source Open National Assembly API (\url{https://open.assembly.go.kr}),
+#'   endpoint \code{ncocpgfiaoituanbr}.
+#'
+#' @examples
+#' data(votes)
+#'
+#' # Votes per assembly
+#' table(votes$assembly)
+#'
+#' # Pass rate
+#' table(votes$result)
+#'
+#' # Average yes rate
+#' votes$yes_rate <- votes$yes / votes$voted
+#' summary(votes$yes_rate)
+#'
+#' # Contentious votes (yes rate < 70%)
+#' contentious <- votes[votes$yes / votes$voted < 0.7, ]
+#' nrow(contentious)
+"votes"
+
+
+#' Member-Level Roll Call Votes (22nd Assembly)
+#'
+#' Individual legislator voting records for all 1,233 bills that went
+#' to a recorded plenary vote in the 22nd Korean National Assembly
+#' (2024-2026). Each row represents one legislator's vote on one bill.
+#'
+#' @format A data frame with 368,210 rows and 8 variables:
+#' \describe{
+#'   \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
+#'     \code{bills$bill_id})}
+#'   \item{assembly}{Assembly number (22)}
+#'   \item{member_name}{Legislator name in Korean}
+#'   \item{member_id}{Legislator identifier (MONA_CD, links to
+#'     \code{legislators$member_id})}
+#'   \item{party}{Party affiliation at time of vote}
+#'   \item{district}{Electoral district or proportional list position}
+#'   \item{vote}{Vote cast in Korean: one of four values meaning
+#'     yes, no, abstain, or absent}
+#'   \item{vote_date}{Date of the vote}
+#' }
+#'
+#' @details
+#' The member-level roll call API is only available for the 22nd
+#' assembly. For the 20th and 21st assemblies, use the bill-level
+#' \code{\link{votes}} dataset.
+#'
+#' This dataset enables ideal point estimation (e.g., W-NOMINATE),
+#' party unity scores, and analysis of legislative coalitions. Use
+#' \code{member_id} to link with \code{legislators} for biographical
+#' metadata.
+#'
+#' @source Open National Assembly API (\url{https://open.assembly.go.kr}),
+#'   endpoint \code{nojepdqqaweusdfbi}.
+#'
+#' @seealso \code{\link{votes}}
+#'
+#' @examples
+#' data(roll_calls)
+#'
+#' # Vote distribution
+#' table(roll_calls$vote)
+#'
+#' # Votes per party
+#' head(sort(table(roll_calls$party), decreasing = TRUE))
+#'
+#' # Number of unique legislators
+#' length(unique(roll_calls$member_id))
+"roll_calls"
+
+

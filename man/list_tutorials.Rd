@@ -7,12 +7,16 @@
 list_tutorials()
 }
 \value{
-A character vector of tutorial file names.
+A character vector of tutorial file names (invisibly).
 }
 \description{
 Lists the tutorial R Markdown files included with the package.
 Tutorials are designed for classroom use in Korean political science
-methods courses.
+methods courses. Each tutorial is available in two formats:
+\enumerate{
+\item Plain Rmd for editing in RStudio (\code{\link{open_tutorial}})
+\item Interactive \pkg{learnr} format (\code{\link{run_tutorial}})
+}
 }
 \examples{
 list_tutorials()
