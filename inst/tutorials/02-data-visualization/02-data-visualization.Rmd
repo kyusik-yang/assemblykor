@@ -76,16 +76,16 @@ legislators %>%
   theme_minimal()
 ```
 
-`position = "fill"` normalizes each bar to 100%. Try changing to `"dodge"` for side-by-side bars.
+Try changing `"fill"` to `"dodge"` or `"stack"` in the code above and see how the chart changes.
 
 ```{r quiz-bar}
 quiz(
-  question("What does position = 'fill' do in a stacked bar chart?",
-    answer("Stacks bars on top of each other"),
-    answer("Places bars side by side"),
-    answer("Normalizes each bar to 100%", correct = TRUE),
-    answer("Fills bars with color"),
-    correct = "Correct! 'fill' makes each bar represent 100%, making proportions comparable."
+  question("Party A has 80 men and 20 women. Party B has 20 men and 5 women. With position = 'fill', which party looks like it has a higher female proportion?",
+    answer("Party A, because it has more women (20 > 5)"),
+    answer("Party B, because 5/25 = 20% > 20/100 = 20%"),
+    answer("They look equal, because both have 20% female", correct = TRUE),
+    answer("Cannot tell without seeing the raw numbers"),
+    correct = "Correct! 'fill' normalizes to 100%, so both bars show the same 20% female proportion regardless of total size."
   )
 )
 ```

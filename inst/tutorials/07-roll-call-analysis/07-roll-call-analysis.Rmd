@@ -64,12 +64,12 @@ votes %>%
 
 ```{r quiz-votes}
 quiz(
-  question("What does a high 'yes' count relative to 'voted' indicate?",
-    answer("The bill was controversial"),
-    answer("The bill passed with overwhelming support", correct = TRUE),
-    answer("Many legislators abstained"),
-    answer("The bill was rejected"),
-    correct = "Correct! Most Korean bills pass with very high yes rates."
+  question("A bill has voted = 260, yes = 135, no = 120, abstain = 5. What can you infer?",
+    answer("The bill clearly passed"),
+    answer("This was a highly contentious vote with the assembly nearly split in half", correct = TRUE),
+    answer("Most legislators abstained"),
+    answer("The data has an error because yes + no should equal voted"),
+    correct = "Correct! A near-even yes/no split signals a controversial bill. Note that yes + no + abstain = voted."
   )
 )
 ```
@@ -218,12 +218,12 @@ rice_by_bill %>%
 
 ```{r quiz-rice}
 quiz(
-  question("If a party's Rice Index is 0.8, what does it mean?",
-    answer("80% of members voted yes"),
-    answer("The difference between yes and no proportions is 0.8", correct = TRUE),
-    answer("80% of bills were passed"),
-    answer("The party is 80% cohesive on all issues"),
-    correct = "Correct! Rice Index = |proportion yes - proportion no|."
+  question("Party A: 90 yes, 10 no. Party B: 55 yes, 45 no. Which party has higher Rice Index?",
+    answer("Party B, because more members voted"),
+    answer("Party A, because |0.9 - 0.1| = 0.8 > |0.55 - 0.45| = 0.1", correct = TRUE),
+    answer("They are equal because both have a majority voting yes"),
+    answer("Cannot compare without knowing the bill topic"),
+    correct = "Correct! Party A (Rice = 0.8) is far more cohesive than Party B (Rice = 0.1), where the vote was nearly split."
   )
 )
 ```

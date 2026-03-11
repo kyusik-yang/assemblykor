@@ -138,6 +138,7 @@ pre {
   font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace !important;
   font-size: 13.5px !important;
   line-height: 1.6 !important;
+  font-variant-ligatures: none !important;
   box-shadow: none !important;
   overflow-x: auto;
 }
@@ -147,6 +148,7 @@ pre code {
   color: var(--ak-code-text) !important;
   font-family: inherit !important;
   font-size: inherit !important;
+  font-variant-ligatures: none !important;
   padding: 0 !important;
 }
 
@@ -158,6 +160,7 @@ code {
   border-radius: 4px;
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
   font-size: 0.88em;
+  font-variant-ligatures: none;
   font-weight: 500;
   border: 1px solid var(--ak-border);
 }
@@ -176,6 +179,7 @@ code {
   font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace !important;
   font-size: 13.5px !important;
   line-height: 1.6 !important;
+  font-variant-ligatures: none !important;
   border-radius: 0 !important;
 }
 
@@ -338,6 +342,7 @@ tbody td {
   padding: 8px 14px;
   border-bottom: 1px solid var(--ak-border);
   font-family: 'JetBrains Mono', monospace;
+  font-variant-ligatures: none;
   font-size: 13px;
   color: var(--ak-text);
   background: var(--ak-surface);

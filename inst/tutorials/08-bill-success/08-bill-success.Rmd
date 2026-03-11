@@ -64,16 +64,14 @@ cat("Passed:", sum(bill_analysis$passed), "\n")
 cat("Pass rate:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
 ```
 
-> **Why count "alternative-reflected disposal" as passed?**: This means the bill's content was incorporated into an alternative bill that passed. The original bill is technically discarded, but substantively it succeeded.
-
 ```{r quiz-binary}
 quiz(
-  question("Why do we code 'alternative-reflected disposal' as passed?",
-    answer("Because it's a procedural formality"),
-    answer("Because the bill's content was incorporated into a passed alternative", correct = TRUE),
-    answer("Because the proposer withdrew it voluntarily"),
-    answer("Because it was sent to the next assembly term"),
-    correct = "Correct! The substance of the bill succeeded even though the specific bill was disposed."
+  question("A researcher codes 'alternative-reflected disposal' as failure (0). Another codes it as success (1). Who is more defensible?",
+    answer("Failure, because the original bill was officially discarded"),
+    answer("Success, because the bill's content was incorporated into a passed alternative", correct = TRUE),
+    answer("Neither, because it depends on the research question"),
+    answer("Both are equally valid regardless of context"),
+    correct = "Correct! The bill's substance succeeded. Coding it as failure would undercount policy impact, since the content lives on in the alternative bill."
   )
 )
 ```
@@ -206,12 +204,12 @@ $$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots$
 
 ```{r quiz-logistic}
 quiz(
-  question("Why is OLS problematic for binary outcomes?",
-    answer("It's too slow to compute"),
-    answer("It can predict values outside 0-1 range", correct = TRUE),
-    answer("It requires more observations"),
-    answer("It can't handle multiple predictors"),
-    correct = "Correct! OLS linear predictions can go below 0 or above 1, which doesn't make sense for probabilities."
+  question("Your OLS model predicts a bill's passage probability as -0.12. What does this reveal?",
+    answer("The bill is very unlikely to pass"),
+    answer("The linear model produced an impossible probability, which is why logistic regression is preferred", correct = TRUE),
+    answer("There is a data entry error"),
+    answer("The coefficient should be exponentiated"),
+    correct = "Correct! Probabilities must be between 0 and 1. A negative prediction shows the fundamental limitation of OLS for binary outcomes."
   )
 )
 ```

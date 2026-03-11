@@ -150,12 +150,12 @@ If the coefficient shrinks after adding controls, part of the original effect wa
 
 ```{r quiz-controls}
 quiz(
-  question("Why does adding control variables change the key coefficient?",
-    answer("Controls create omitted variable bias (OVB) that biases the main coefficient", correct = TRUE),
-    answer("Sample size decreases"),
-    answer("Adding variables always shrinks coefficients"),
-    answer("R-squared increases, so coefficients must change"),
-    correct = "Correct! OVB occurs when omitted variables affect both X and Y."
+  question("The wealth coefficient shrinks after adding seniority as a control. What does this suggest?",
+    answer("Seniority causes wealth"),
+    answer("Part of the wealth-bills relationship was actually driven by seniority differences", correct = TRUE),
+    answer("The model has too many variables"),
+    answer("Wealth no longer matters for legislative activity"),
+    correct = "Correct! Seniority is correlated with both wealth and bills, so omitting it inflated the wealth coefficient (omitted variable bias)."
   )
 )
 ```

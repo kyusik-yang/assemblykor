@@ -95,12 +95,12 @@ ggplot(bill_text, aes(x = text_length)) +
 
 ```{r quiz-text}
 quiz(
-  question("What is the typical shape of bill rationale text length distribution?",
-    answer("Close to normal distribution"),
-    answer("Right-skewed (long right tail)", correct = TRUE),
-    answer("Close to uniform distribution"),
-    answer("Bimodal distribution"),
-    correct = "Correct! Most texts are short, but some are very long."
+  question("Given the skewed text length distribution, which summary statistic better represents a 'typical' bill rationale length?",
+    answer("Mean, because it uses all data points"),
+    answer("Median, because it is robust to extreme values", correct = TRUE),
+    answer("Maximum, because it captures the full range"),
+    answer("Standard deviation, because it measures spread"),
+    correct = "Correct! With right-skewed data, the mean is pulled up by very long texts. The median gives a better sense of the typical case."
   )
 )
 ```
@@ -267,12 +267,12 @@ Check whether each committee's distinctive words reflect its policy jurisdiction
 
 ```{r quiz-tfidf}
 quiz(
-  question("What characterizes a word with a high TF-IDF score?",
-    answer("It is the most frequent word across all documents"),
-    answer("It appears frequently in a specific group but rarely overall", correct = TRUE),
-    answer("It only appears in long documents"),
-    answer("It is a word remaining after stopword removal"),
-    correct = "Correct! TF-IDF finds words that are 'distinctively' frequent in a specific committee."
+  question("The word 'patient' appears 500 times in Health Committee bills and 50 times across all other committees. The word 'law' appears 500 times everywhere. Which has a higher TF-IDF for the Health Committee?",
+    answer("'law', because it appears 500 times too"),
+    answer("'patient', because it is concentrated in the Health Committee", correct = TRUE),
+    answer("They have equal TF-IDF since both appear 500 times"),
+    answer("Cannot determine without knowing document lengths"),
+    correct = "Correct! 'patient' is distinctive to Health, while 'law' is common everywhere. TF-IDF rewards rarity across groups."
   )
 )
 ```

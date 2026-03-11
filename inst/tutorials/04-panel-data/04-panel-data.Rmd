@@ -52,12 +52,12 @@ Not all legislators are observed the same number of times. This is an **unbalanc
 
 ```{r quiz-panel}
 quiz(
-  question("What is the key feature of panel data?",
-    answer("Cross-sectional data collected multiple times"),
-    answer("The same units observed repeatedly over time", correct = TRUE),
-    answer("Time series with multiple variables"),
-    answer("Randomly sampled data"),
-    correct = "Correct! Panel data tracks the same individuals (legislators) over time."
+  question("Which of the following is an example of panel data?",
+    answer("Surveying 1,000 different people each year for 5 years"),
+    answer("Tracking the same 200 legislators' wealth annually for 10 years", correct = TRUE),
+    answer("Recording daily stock prices for a single company"),
+    answer("Comparing GDP across 50 countries in 2024"),
+    correct = "Correct! Panel data requires the SAME units observed repeatedly. A new random sample each year is repeated cross-section, not panel."
   )
 )
 ```
@@ -120,12 +120,12 @@ Result: between-person differences are completely eliminated.
 
 ```{r quiz-fe}
 quiz(
-  question("What does individual fixed effects control for?",
-    answer("Time trends common to all units"),
-    answer("All time-invariant individual characteristics", correct = TRUE),
-    answer("Time-varying individual characteristics"),
-    answer("Measurement error"),
-    correct = "Correct! FE absorbs everything about a person that doesn't change over time."
+  question("A legislator from a wealthy family always has higher deposits. With individual FE, this family background effect is:",
+    answer("Estimated as a separate coefficient"),
+    answer("Absorbed into the individual intercept and removed from the estimate", correct = TRUE),
+    answer("Included as a control variable"),
+    answer("Causing bias in the real estate coefficient"),
+    correct = "Correct! FE absorbs ALL time-invariant traits (family background, innate ability, etc.) into each person's intercept."
   )
 )
 ```
@@ -156,12 +156,12 @@ etable(m_pooled, m_fe, m_twfe,
 
 ```{r quiz-twfe}
 quiz(
-  question("What does the year fixed effect control for?",
-    answer("Each legislator's unique traits"),
-    answer("Common time shocks affecting all legislators", correct = TRUE),
-    answer("Individual-specific time trends"),
-    answer("Serial correlation in errors"),
-    correct = "Correct! Year FE absorbs things like nationwide property price changes."
+  question("In 2021, housing prices surged nationwide, increasing all legislators' real estate values. Which model handles this?",
+    answer("Pooled OLS"),
+    answer("Individual FE only"),
+    answer("Two-way FE (individual + year)", correct = TRUE),
+    answer("None of the above"),
+    correct = "Correct! Year FE absorbs common shocks like a nationwide housing boom that affects everyone equally."
   )
 )
 ```

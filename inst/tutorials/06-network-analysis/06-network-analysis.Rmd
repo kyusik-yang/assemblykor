@@ -103,12 +103,12 @@ cat("Mean weight:", round(mean(edge_weights$weight), 1), "\n")
 
 ```{r quiz-network}
 quiz(
-  question("What does an 'edge' represent in a co-sponsorship network?",
-    answer("An individual legislator"),
-    answer("A co-sponsorship tie between two legislators", correct = TRUE),
-    answer("A single bill"),
-    answer("Committee membership"),
-    correct = "Correct! An edge represents the co-sponsorship connection between two legislators."
+  question("Legislators A and B co-sponsored 15 bills together, while A and C co-sponsored 3. In a weighted network, what does this tell us?",
+    answer("A is more important than B and C"),
+    answer("The A-B edge has a higher weight, indicating a stronger collaborative relationship", correct = TRUE),
+    answer("A, B, and C are all in the same community"),
+    answer("B proposed more bills than C"),
+    correct = "Correct! Edge weight captures the strength of the relationship: more co-sponsored bills = stronger tie."
   )
 )
 ```
@@ -211,16 +211,16 @@ between_df <- data.frame(
 between_df %>% arrange(desc(betweenness)) %>% head(10)
 ```
 
-Those with high degree and high betweenness may differ. High-betweenness legislators are not "people who know many people" but "people who connect different groups."
+Do those with high degree always have high betweenness? The scatter plot below reveals the answer.
 
 ```{r quiz-centrality}
 quiz(
-  question("What role does a legislator with high betweenness centrality play?",
-    answer("The legislator who proposed the most bills"),
-    answer("A 'bridge' connecting different groups in the network", correct = TRUE),
-    answer("A legislator active only within their own party"),
-    answer("The most recently elected legislator"),
-    correct = "Correct! High betweenness means connecting diverse groups within the network."
+  question("Legislator X has low degree (few connections) but very high betweenness. What does this suggest?",
+    answer("X is not active in legislation"),
+    answer("X connects groups that would otherwise be disconnected, despite having few ties", correct = TRUE),
+    answer("X is a freshman with no experience"),
+    answer("There is a data error"),
+    correct = "Correct! A low-degree but high-betweenness node is a rare but critical bridge, like a cross-party mediator with selective but strategic connections."
   )
 )
 ```
@@ -370,19 +370,19 @@ table(comm_party$community, comm_party$party) %>%
   arrange(Var1, desc(Freq))
 ```
 
-> **Modularity**: measures how clearly communities are separated. Close to 0 means no different from random; close to 1 means very distinct communities. Values above 0.3 typically indicate meaningful structure.
-
 ```{r quiz-community}
 quiz(
-  question("If the modularity value is 0.5, what does it mean?",
-    answer("The network is divided into 5 communities"),
-    answer("Within-community connections are much denser than in a random network", correct = TRUE),
-    answer("50% of all legislators belong to one community"),
-    answer("Cross-party connections are 50%"),
-    correct = "Correct! Higher modularity means clearer community structure (close to 0 = random)."
+  question("The algorithm finds 3 communities that map almost perfectly to 3 parties. What does this imply about co-sponsorship behavior?",
+    answer("The algorithm is biased toward finding party structures"),
+    answer("Co-sponsorship occurs primarily within parties, not across party lines", correct = TRUE),
+    answer("There are exactly 3 parties in the assembly"),
+    answer("Network analysis cannot capture political dynamics"),
+    correct = "Correct! When detected communities align with parties, it means most collaboration happens within party boundaries, a sign of partisan co-sponsorship."
   )
 )
 ```
+
+> **Modularity**: measures how clearly communities are separated. Close to 0 means no different from random; close to 1 means very distinct communities. Values above 0.3 typically indicate meaningful structure.
 
 ## 8. Cross-Party Connections
 

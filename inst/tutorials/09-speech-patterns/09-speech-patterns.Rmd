@@ -75,12 +75,12 @@ ggplot(role_summary, aes(x = reorder(role, n), y = n)) +
 
 ```{r quiz-roles}
 quiz(
-  question("Who typically gives the most speeches in a committee?",
-    answer("Ministers"),
-    answer("Legislators", correct = TRUE),
-    answer("Committee staff"),
-    answer("Agency heads"),
-    correct = "Correct! Legislators dominate committee proceedings with questions and comments."
+  question("The data shows legislators give far more speeches than ministers. Does this mean legislators contribute more substantive content?",
+    answer("Yes, more speeches means more substance"),
+    answer("Not necessarily, because many legislator speeches are brief procedural remarks or short questions", correct = TRUE),
+    answer("Yes, because legislators are elected representatives"),
+    answer("No, because ministers are always more substantive"),
+    correct = "Correct! Speech count alone doesn't capture substance. Legislators often give many short turns (questions, procedural remarks), while ministers give fewer but longer policy responses."
   )
 )
 ```
@@ -205,16 +205,14 @@ speeches %>%
   theme_minimal()
 ```
 
-Legislators tend to ask **short questions**, while government officials give **longer answers**. This reflects the question-answer structure of committee hearings.
-
 ```{r quiz-role}
 quiz(
-  question("Why do government speakers tend to have longer speeches?",
-    answer("They are more important"),
-    answer("They provide detailed answers to legislators' questions", correct = TRUE),
-    answer("They speak more frequently"),
-    answer("They have more time allocated"),
-    correct = "Correct! The Q&A structure means legislators ask relatively brief questions while government officials provide detailed policy responses."
+  question("The density plot shows government officials' speeches are much longer than legislators'. If you only used mean speech length to measure 'engagement', what would be misleading?",
+    answer("Nothing, longer speeches always mean more engagement"),
+    answer("It would overcount government officials' engagement while undercounting legislators who ask many short but pointed questions", correct = TRUE),
+    answer("It would be biased toward female legislators"),
+    answer("Mean length is always the best measure of engagement"),
+    correct = "Correct! The Q&A structure means legislators ask brief questions and officials give long answers. Using only length would mistake institutional roles for engagement levels."
   )
 )
 ```

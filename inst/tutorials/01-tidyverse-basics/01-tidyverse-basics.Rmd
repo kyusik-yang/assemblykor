@@ -81,12 +81,12 @@ summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
 
 ```{r quiz-nrow}
 quiz(
-  question("How many rows does the legislators dataset have?",
-    answer("661"),
-    answer("947", correct = TRUE),
-    answer("300"),
-    answer("1500"),
-    correct = "Correct! 661 unique legislators across 20th-22nd assemblies produce 947 rows."
+  question("There are 661 unique legislators but 947 rows. Why?",
+    answer("Some rows contain missing data"),
+    answer("Some legislators served in multiple assemblies, creating one row per assembly", correct = TRUE),
+    answer("The dataset includes staff members as well"),
+    answer("There are duplicate entries that need cleaning"),
+    correct = "Correct! A legislator serving in both the 20th and 21st assemblies appears as two separate rows."
   )
 )
 ```
@@ -246,12 +246,12 @@ legislators %>%
 
 ```{r quiz-group}
 quiz(
-  question("What does group_by() + summarise() do?",
-    answer("Filters rows matching a condition"),
-    answer("Splits data into groups and computes summary statistics per group", correct = TRUE),
-    answer("Sorts data in ascending order"),
-    answer("Adds new columns to the data"),
-    correct = "Correct! It's like a pivot table in Excel."
+  question("You want to calculate the median number of bills for each party. Which approach works?",
+    answer("filter(legislators, party) %>% median(n_bills_lead)"),
+    answer("legislators %>% group_by(party) %>% summarise(med = median(n_bills_lead))", correct = TRUE),
+    answer("legislators %>% mutate(med = median(n_bills_lead))"),
+    answer("legislators %>% arrange(party, n_bills_lead)"),
+    correct = "Correct! group_by() splits by party, then summarise() computes the median within each group."
   )
 )
 ```
