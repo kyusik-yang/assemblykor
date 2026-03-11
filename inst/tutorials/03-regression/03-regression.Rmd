@@ -96,7 +96,7 @@ summary(m1)
 
 > **About p-values**: A small p-value means the relationship is unlikely due to chance, NOT that the effect is large. Coefficient magnitude and statistical significance are separate things.
 
-```{r quiz-interpret}
+```{r quiz-interpret, echo=FALSE}
 quiz(
   question("Why is the net_worth coefficient extremely small?",
     answer("The sample size is too small for reliable estimation"),
@@ -148,7 +148,7 @@ data.frame(
 
 If the coefficient shrinks after adding controls, part of the original effect was due to **confounding**.
 
-```{r quiz-controls}
+```{r quiz-controls, echo=FALSE}
 quiz(
   question("The wealth coefficient shrinks after adding seniority as a control. What does this suggest?",
     answer("Seniority is the direct cause of higher wealth levels"),

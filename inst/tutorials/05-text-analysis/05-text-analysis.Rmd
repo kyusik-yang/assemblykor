@@ -93,7 +93,7 @@ ggplot(bill_text, aes(x = text_length)) +
   theme_minimal()
 ```
 
-```{r quiz-text}
+```{r quiz-text, echo=FALSE}
 quiz(
   question("Given the skewed text length distribution, which summary statistic better represents a 'typical' bill rationale length?",
     answer("Mean, because it uses all data points"),
@@ -265,7 +265,7 @@ committee_tfidf %>%
 
 Check whether each committee's distinctive words reflect its policy jurisdiction.
 
-```{r quiz-tfidf}
+```{r quiz-tfidf, echo=FALSE}
 quiz(
   question("The word 'patient' appears 500 times in Health Committee bills and 50 times across all other committees. The word 'law' appears 500 times everywhere. Which has a higher TF-IDF for the Health Committee?",
     answer("'law', because it appears 500 times too"),

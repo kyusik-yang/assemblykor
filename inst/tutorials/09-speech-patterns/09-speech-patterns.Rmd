@@ -73,7 +73,7 @@ ggplot(role_summary, aes(x = reorder(role, n), y = n)) +
   theme_minimal()
 ```
 
-```{r quiz-roles}
+```{r quiz-roles, echo=FALSE}
 quiz(
   question("The data shows legislators give far more speeches than ministers. Does this mean legislators contribute more substantive content?",
     answer("Yes, higher speech count directly indicates more substance"),
@@ -205,7 +205,7 @@ speeches %>%
   theme_minimal()
 ```
 
-```{r quiz-role}
+```{r quiz-role, echo=FALSE}
 quiz(
   question("The density plot shows government officials' speeches are much longer than legislators'. If you only used mean speech length to measure 'engagement', what would be misleading?",
     answer("Nothing, because speech length directly measures effort"),

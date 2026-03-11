@@ -50,7 +50,7 @@ table(obs_per_member)
 
 Not all legislators are observed the same number of times. This is an **unbalanced panel**.
 
-```{r quiz-panel}
+```{r quiz-panel, echo=FALSE}
 quiz(
   question("Which of the following is an example of panel data?",
     answer("Surveying 1,000 different people each year for 5 years"),
@@ -118,7 +118,7 @@ summary(m_fe)
 
 Result: between-person differences are completely eliminated.
 
-```{r quiz-fe}
+```{r quiz-fe, echo=FALSE}
 quiz(
   question("A legislator from a wealthy family always has higher deposits. With individual FE, this family background effect is:",
     answer("Estimated as a separate coefficient in the output"),
@@ -154,7 +154,7 @@ etable(m_pooled, m_fe, m_twfe,
        headers = c("Pooled", "Individual FE", "Two-way FE"))
 ```
 
-```{r quiz-twfe}
+```{r quiz-twfe, echo=FALSE}
 quiz(
   question("In 2021, housing prices surged nationwide, increasing all legislators' real estate values. Which model handles this?",
     answer("Pooled OLS"),

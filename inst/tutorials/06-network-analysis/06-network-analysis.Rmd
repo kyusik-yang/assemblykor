@@ -101,7 +101,7 @@ cat("Edges (connections):", nrow(edge_weights), "\n")
 cat("Mean weight:", round(mean(edge_weights$weight), 1), "\n")
 ```
 
-```{r quiz-network}
+```{r quiz-network, echo=FALSE}
 quiz(
   question("Legislators A and B co-sponsored 15 bills together, while A and C co-sponsored 3. In a weighted network, what does this tell us?",
     answer("A is more central than both B and C in the network"),
@@ -213,7 +213,7 @@ between_df %>% arrange(desc(betweenness)) %>% head(10)
 
 Do those with high degree always have high betweenness? The scatter plot below reveals the answer.
 
-```{r quiz-centrality}
+```{r quiz-centrality, echo=FALSE}
 quiz(
   question("Legislator X has low degree (few connections) but very high betweenness. What does this suggest?",
     answer("X is not very active in the legislative process overall"),
@@ -370,7 +370,7 @@ table(comm_party$community, comm_party$party) %>%
   arrange(Var1, desc(Freq))
 ```
 
-```{r quiz-community}
+```{r quiz-community, echo=FALSE}
 quiz(
   question("The algorithm finds 3 communities that map almost perfectly to 3 parties. What does this imply about co-sponsorship behavior?",
     answer("The algorithm is biased toward detecting party-based clusters"),

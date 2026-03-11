@@ -79,7 +79,7 @@ head(legislators)
 summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
 ```
 
-```{r quiz-nrow}
+```{r quiz-nrow, echo=FALSE}
 quiz(
   question("There are 661 unique legislators but 947 rows. Why?",
     answer("Some rows have missing data that got split into separate entries"),
@@ -244,7 +244,7 @@ legislators %>%
   )
 ```
 
-```{r quiz-group}
+```{r quiz-group, echo=FALSE}
 quiz(
   question("You want to calculate the median number of bills for each party. Which approach works?",
     answer("filter(legislators, party) %>% median(n_bills_lead)"),

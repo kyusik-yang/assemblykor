@@ -62,7 +62,7 @@ votes %>%
   head(5)
 ```
 
-```{r quiz-votes}
+```{r quiz-votes, echo=FALSE}
 quiz(
   question("A bill has voted = 260, yes = 135, no = 120, abstain = 5. What can you infer?",
     answer("The bill clearly passed with a comfortable margin"),
@@ -216,7 +216,7 @@ rice_by_bill %>%
   theme(legend.position = "none")
 ```
 
-```{r quiz-rice}
+```{r quiz-rice, echo=FALSE}
 quiz(
   question("Party A: 90 yes, 10 no. Party B: 55 yes, 45 no. Which party has higher Rice Index?",
     answer("Party B, because more members voted"),

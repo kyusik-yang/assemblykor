@@ -64,7 +64,7 @@ cat("Passed:", sum(bill_analysis$passed), "\n")
 cat("Pass rate:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
 ```
 
-```{r quiz-binary}
+```{r quiz-binary, echo=FALSE}
 quiz(
   question("A researcher codes 'alternative-reflected disposal' as failure (0). Another codes it as success (1). Who is more defensible?",
     answer("Failure, because the original bill was officially discarded"),
@@ -202,7 +202,7 @@ ggplot(bill_leg, aes(x = seniority, y = passed)) +
 
 $$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots$$
 
-```{r quiz-logistic}
+```{r quiz-logistic, echo=FALSE}
 quiz(
   question("Your OLS model predicts a bill's passage probability as -0.12. What does this reveal?",
     answer("The bill is very unlikely to pass based on its features"),

@@ -78,7 +78,7 @@ legislators %>%
 
 Try changing `"fill"` to `"dodge"` or `"stack"` in the code above and see how the chart changes.
 
-```{r quiz-bar}
+```{r quiz-bar, echo=FALSE}
 quiz(
   question("Party A has 80 men and 20 women. Party B has 20 men and 5 women. With position = 'fill', which party looks like it has a higher female proportion?",
     answer("Party A, because it has more women (20 > 5)"),
