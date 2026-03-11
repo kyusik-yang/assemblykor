@@ -65,7 +65,7 @@ list_tutorials <- function() {
 #' current working directory) so students can edit and run it in RStudio.
 #'
 #' @param name Tutorial name (with or without .Rmd extension), or a number
-#'   corresponding to the tutorial order (1-6).
+#'   corresponding to the tutorial order (1-9).
 #' @param dest_dir Directory to copy the file to. Defaults to the current
 #'   working directory.
 #'
@@ -121,7 +121,7 @@ open_tutorial <- function(name, dest_dir = getwd()) {
 #' can type and run code directly in the browser with hints and solutions.
 #' Requires the \pkg{learnr} package.
 #'
-#' @param name Tutorial name or number (1-6). Use \code{\link{list_tutorials}}
+#' @param name Tutorial name or number (1-9). Use \code{\link{list_tutorials}}
 #'   to see available tutorials.
 #'
 #' @seealso \code{\link{open_tutorial}} for the plain Rmd version.

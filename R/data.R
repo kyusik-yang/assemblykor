@@ -25,7 +25,9 @@
 #' }
 #'
 #' @section Tutorials:
-#' Use \code{\link{list_tutorials}} to see available Korean-language tutorials,
+#' Nine Korean-language tutorials covering tidyverse, visualization, regression,
+#' panel data, text analysis, network analysis, roll call analysis, bill success,
+#' and speech patterns. Use \code{\link{list_tutorials}} to see all tutorials,
 #' and \code{\link{open_tutorial}} to copy them to your working directory.
 #'
 #' @docType package

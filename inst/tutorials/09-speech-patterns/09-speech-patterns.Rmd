@@ -1,0 +1,543 @@
+---
+title: "Tutorial 9: Speech Pattern Analysis"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+data(speeches)
+data(legislators)
+set_ko_font()
+tutorial_options(exercise.eval = FALSE)
+```
+
+```{r theme, echo=FALSE}
+htmltools::includeCSS(
+  system.file("tutorials/css/assemblykor.css", package = "assemblykor")
+)
+```
+
+## Learning Objectives
+
+**Research Question**: Who speaks, how much, and about what in National Assembly committees?
+
+Standing committees are the core arena for bill deliberation. Legislators scrutinize the government through questions, and bureaucrats explain policies through answers. Speech data contains rich information about participation patterns, agenda-setting, and question-answer dynamics.
+
+This tutorial focuses on **descriptive statistics and visualization**. You can discover meaningful patterns without complex models.
+
+You will learn:
+
+- Speech data structure and speaker roles
+- Participation measurement: who speaks most and longest?
+- Question-answer turn structure
+- Agenda-specific speech analysis
+- Speech diversity measurement
+
+## 1. Data Structure
+
+The `speeches` data contains all speeches from the 22nd Assembly's Science, ICT, Broadcasting and Communications Committee.
+
+```{r overview, exercise=TRUE}
+cat("Total speeches:", nrow(speeches), "\n")
+cat("Meeting dates:", n_distinct(speeches$date), "\n")
+cat("Speakers:", n_distinct(speeches$speaker_name), "\n")
+```
+
+### Speaker Roles
+
+Various roles participate in committee proceedings:
+
+```{r roles, exercise=TRUE}
+speeches %>%
+  count(role, sort = TRUE) %>%
+  mutate(pct = round(n / sum(n) * 100, 1))
+```
+
+```{r role-plot, exercise=TRUE}
+role_summary <- speeches %>%
+  count(role, sort = TRUE)
+
+ggplot(role_summary, aes(x = reorder(role, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "Speech Count",
+       title = "Speech Count by Speaker Role (22nd, Sci & ICT Committee)") +
+  theme_minimal()
+```
+
+```{r quiz-roles}
+quiz(
+  question("Who typically gives the most speeches in a committee?",
+    answer("Ministers"),
+    answer("Legislators", correct = TRUE),
+    answer("Committee staff"),
+    answer("Agency heads"),
+    correct = "Correct! Legislators dominate committee proceedings with questions and comments."
+  )
+)
+```
+
+## 2. Participation Analysis
+
+### Speech Frequency
+
+```{r freq-top, exercise=TRUE}
+leg_speeches <- speeches %>%
+  filter(role == "legislator")
+
+top_speakers <- leg_speeches %>%
+  count(speaker_name, sort = TRUE) %>%
+  head(15)
+
+ggplot(top_speakers, aes(x = reorder(speaker_name, n), y = n)) +
+  geom_col(fill = "coral") +
+  coord_flip() +
+  labs(x = NULL, y = "Speech Count",
+       title = "Most Frequent Speakers (22nd, Sci & ICT, Top 15)") +
+  theme_minimal()
+```
+
+### Speech Length
+
+Speech length matters as much as frequency. Some legislators ask short questions frequently, others deliver long statements.
+
+```{r length-analysis, exercise=TRUE}
+leg_speeches <- speeches %>%
+  filter(role == "legislator") %>%
+  mutate(speech_length = nchar(speech))
+
+speaker_stats <- leg_speeches %>%
+  group_by(speaker_name) %>%
+  summarise(
+    n_speeches = n(),
+    total_chars = sum(speech_length),
+    avg_length = round(mean(speech_length)),
+    median_length = median(speech_length)
+  ) %>%
+  filter(n_speeches >= 10) %>%
+  arrange(desc(total_chars))
+
+head(speaker_stats, 10)
+```
+
+### Frequency vs Length
+
+```{r freq-vs-length, exercise=TRUE}
+leg_speeches <- speeches %>%
+  filter(role == "legislator") %>%
+  mutate(speech_length = nchar(speech))
+
+speaker_stats <- leg_speeches %>%
+  group_by(speaker_name) %>%
+  summarise(
+    n_speeches = n(),
+    avg_length = round(mean(speech_length))
+  ) %>%
+  filter(n_speeches >= 10)
+
+ggplot(speaker_stats, aes(x = n_speeches, y = avg_length)) +
+  geom_point(alpha = 0.6, color = "steelblue", size = 2) +
+  labs(
+    x = "Number of Speeches", y = "Average Speech Length (characters)",
+    title = "Speech Frequency vs Average Length"
+  ) +
+  theme_minimal()
+```
+
+Do frequent speakers also speak longer, or do they tend to ask short questions?
+
+## 3. Role-based Speech Patterns
+
+The question-answer structure of committees creates distinct patterns by role.
+
+```{r role-length, exercise=TRUE}
+speeches %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_group = case_match(role,
+      "legislator" ~ "Legislator",
+      "chair" ~ "Chair",
+      c("minister", "vice_minister", "senior_bureaucrat") ~ "Government",
+      "committee_staff" ~ "Staff",
+      .default = "Other"
+    )
+  ) %>%
+  group_by(role_group) %>%
+  summarise(
+    n = n(),
+    avg_length = round(mean(speech_length)),
+    median_length = round(median(speech_length)),
+    total_chars = sum(speech_length)
+  ) %>%
+  arrange(desc(total_chars))
+```
+
+### Length Distribution by Role
+
+```{r role-density, exercise=TRUE}
+speeches %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_group = case_match(role,
+      "legislator" ~ "Legislator",
+      c("minister", "vice_minister", "senior_bureaucrat") ~ "Government",
+      .default = NA_character_
+    )
+  ) %>%
+  filter(!is.na(role_group)) %>%
+  ggplot(aes(x = speech_length, fill = role_group)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("Legislator" = "steelblue", "Government" = "coral")) +
+  labs(
+    x = "Speech Length (characters, log scale)",
+    y = "Density", fill = NULL,
+    title = "Legislator vs Government Speech Length Distribution"
+  ) +
+  theme_minimal()
+```
+
+Legislators tend to ask **short questions**, while government officials give **longer answers**. This reflects the question-answer structure of committee hearings.
+
+```{r quiz-role}
+quiz(
+  question("Why do government speakers tend to have longer speeches?",
+    answer("They are more important"),
+    answer("They provide detailed answers to legislators' questions", correct = TRUE),
+    answer("They speak more frequently"),
+    answer("They have more time allocated"),
+    correct = "Correct! The Q&A structure means legislators ask relatively brief questions while government officials provide detailed policy responses."
+  )
+)
+```
+
+## 4. Turn Structure
+
+Use `speech_order` to track the sequence of speeches within a meeting.
+
+```{r turn-structure, exercise=TRUE}
+sample_date <- speeches %>%
+  count(date, sort = TRUE) %>%
+  head(1) %>%
+  pull(date)
+
+turns <- speeches %>%
+  filter(date == sample_date) %>%
+  arrange(speech_order) %>%
+  mutate(
+    role_group = case_match(role,
+      "legislator" ~ "Legislator",
+      "chair" ~ "Chair",
+      c("minister", "vice_minister", "senior_bureaucrat",
+        "agency_head") ~ "Government",
+      .default = "Other"
+    ),
+    speech_length = nchar(speech)
+  ) %>%
+  head(40)
+
+ggplot(turns, aes(x = speech_order, y = speech_length, fill = role_group)) +
+  geom_col(width = 0.8) +
+  scale_fill_manual(values = c(
+    "Legislator" = "steelblue", "Government" = "coral",
+    "Chair" = "gray70", "Other" = "gray90"
+  )) +
+  labs(
+    x = "Speech Order", y = "Speech Length (characters)",
+    fill = "Role",
+    title = paste("Meeting Turn Structure (", sample_date, ")")
+  ) +
+  theme_minimal()
+```
+
+Notice the alternating pattern of legislator (blue) and government (red) speeches, reflecting the Q&A format.
+
+## 5. Agenda-specific Speech Analysis
+
+Filter speeches by keyword to analyze specific policy topics.
+
+```{r agenda-keywords, exercise=TRUE}
+agendas <- list(
+  "AI"            = "\uc778\uacf5\uc9c0\ub2a5|AI|\uc5d0\uc774\uc544\uc774",
+  "Semiconductor" = "\ubc18\ub3c4\uccb4|\uce69|\ud30c\uc6b4\ub4dc\ub9ac",
+  "Broadcasting"  = "\ubc29\uc1a1|\ubbf8\ub514\uc5b4|OTT|\ub137\ud50c\ub9ad\uc2a4",
+  "Telecom"       = "\ud1b5\uc2e0|5G|\uc774\ub3d9\ud1b5\uc2e0|\uc8fc\ud30c\uc218",
+  "Privacy"       = "\uac1c\uc778\uc815\ubcf4|\ud504\ub77c\uc774\ubc84\uc2dc|\ub370\uc774\ud130\ubcf4\ud638"
+)
+
+agenda_counts <- do.call(rbind, lapply(names(agendas), function(topic) {
+  n <- sum(str_detect(speeches$speech, agendas[[topic]]))
+  data.frame(topic = topic, n_mentions = n)
+}))
+
+ggplot(agenda_counts, aes(x = reorder(topic, n_mentions), y = n_mentions)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "Related Speeches",
+       title = "Speech Frequency by Agenda (22nd, Sci & ICT)") +
+  theme_minimal()
+```
+
+### Agenda Trends Over Time
+
+```{r agenda-trend, exercise=TRUE}
+agendas <- list(
+  "AI"            = "\uc778\uacf5\uc9c0\ub2a5|AI|\uc5d0\uc774\uc544\uc774",
+  "Semiconductor" = "\ubc18\ub3c4\uccb4|\uce69|\ud30c\uc6b4\ub4dc\ub9ac",
+  "Broadcasting"  = "\ubc29\uc1a1|\ubbf8\ub514\uc5b4|OTT|\ub137\ud50c\ub9ad\uc2a4",
+  "Telecom"       = "\ud1b5\uc2e0|5G|\uc774\ub3d9\ud1b5\uc2e0|\uc8fc\ud30c\uc218",
+  "Privacy"       = "\uac1c\uc778\uc815\ubcf4|\ud504\ub77c\uc774\ubc84\uc2dc|\ub370\uc774\ud130\ubcf4\ud638"
+)
+
+agenda_trend <- do.call(rbind, lapply(names(agendas), function(topic) {
+  speeches %>%
+    mutate(month = format(date, "%Y-%m")) %>%
+    group_by(month) %>%
+    summarise(
+      mentions = sum(str_detect(speech, agendas[[topic]])),
+      total = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(topic = topic, pct = mentions / total * 100)
+}))
+
+agenda_trend %>%
+  mutate(month_date = as.Date(paste0(month, "-01"))) %>%
+  ggplot(aes(x = month_date, y = pct, color = topic)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  labs(x = NULL, y = "Related Speech Proportion (%)",
+       color = "Agenda",
+       title = "Agenda Trends Over Time (22nd, Sci & ICT)") +
+  theme_minimal()
+```
+
+Do any agendas spike at specific times? Try to identify what events might have caused the spikes.
+
+## 6. Member Agenda Profiles
+
+Even within the same committee, legislators focus on different topics.
+
+```{r member-agenda, exercise=TRUE}
+leg_speeches <- speeches %>%
+  filter(role == "legislator")
+
+agendas <- list(
+  "AI"            = "\uc778\uacf5\uc9c0\ub2a5|AI|\uc5d0\uc774\uc544\uc774",
+  "Semiconductor" = "\ubc18\ub3c4\uccb4|\uce69|\ud30c\uc6b4\ub4dc\ub9ac",
+  "Broadcasting"  = "\ubc29\uc1a1|\ubbf8\ub514\uc5b4|OTT|\ub137\ud50c\ub9ad\uc2a4",
+  "Telecom"       = "\ud1b5\uc2e0|5G|\uc774\ub3d9\ud1b5\uc2e0|\uc8fc\ud30c\uc218",
+  "Privacy"       = "\uac1c\uc778\uc815\ubcf4|\ud504\ub77c\uc774\ubc84\uc2dc|\ub370\uc774\ud130\ubcf4\ud638"
+)
+
+member_agenda <- do.call(rbind, lapply(names(agendas), function(topic) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n_total = n(),
+      n_topic = sum(str_detect(speech, agendas[[topic]])),
+      .groups = "drop"
+    ) %>%
+    filter(n_total >= 20) %>%
+    mutate(topic = topic, pct = n_topic / n_total * 100)
+}))
+
+member_agenda %>%
+  group_by(topic) %>%
+  slice_max(pct, n = 3) %>%
+  select(topic, speaker_name, n_total, n_topic, pct) %>%
+  arrange(topic, desc(pct))
+```
+
+### Member Agenda Heatmap
+
+```{r member-heatmap, exercise=TRUE, fig.height=7}
+leg_speeches <- speeches %>%
+  filter(role == "legislator")
+
+agendas <- list(
+  "AI"            = "\uc778\uacf5\uc9c0\ub2a5|AI|\uc5d0\uc774\uc544\uc774",
+  "Semiconductor" = "\ubc18\ub3c4\uccb4|\uce69|\ud30c\uc6b4\ub4dc\ub9ac",
+  "Broadcasting"  = "\ubc29\uc1a1|\ubbf8\ub514\uc5b4|OTT|\ub137\ud50c\ub9ad\uc2a4",
+  "Telecom"       = "\ud1b5\uc2e0|5G|\uc774\ub3d9\ud1b5\uc2e0|\uc8fc\ud30c\uc218",
+  "Privacy"       = "\uac1c\uc778\uc815\ubcf4|\ud504\ub77c\uc774\ubc84\uc2dc|\ub370\uc774\ud130\ubcf4\ud638"
+)
+
+member_agenda <- do.call(rbind, lapply(names(agendas), function(topic) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n_total = n(),
+      n_topic = sum(str_detect(speech, agendas[[topic]])),
+      .groups = "drop"
+    ) %>%
+    filter(n_total >= 20) %>%
+    mutate(topic = topic, pct = n_topic / n_total * 100)
+}))
+
+active_members <- leg_speeches %>%
+  count(speaker_name) %>%
+  filter(n >= 30) %>%
+  pull(speaker_name)
+
+heatmap_data <- member_agenda %>%
+  filter(speaker_name %in% active_members) %>%
+  select(speaker_name, topic, pct)
+
+ggplot(heatmap_data, aes(x = topic, y = speaker_name, fill = pct)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(pct, 1)), size = 2.5) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  labs(x = NULL, y = NULL, fill = "Speech %",
+       title = "Member Agenda Profile (22nd, Sci & ICT)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## 7. Speech Diversity
+
+Some legislators spread their attention across topics, while others concentrate on a few.
+
+```{r diversity, exercise=TRUE}
+leg_speeches <- speeches %>%
+  filter(role == "legislator")
+
+agendas <- list(
+  "AI"            = "\uc778\uacf5\uc9c0\ub2a5|AI|\uc5d0\uc774\uc544\uc774",
+  "Semiconductor" = "\ubc18\ub3c4\uccb4|\uce69|\ud30c\uc6b4\ub4dc\ub9ac",
+  "Broadcasting"  = "\ubc29\uc1a1|\ubbf8\ub514\uc5b4|OTT|\ub137\ud50c\ub9ad\uc2a4",
+  "Telecom"       = "\ud1b5\uc2e0|5G|\uc774\ub3d9\ud1b5\uc2e0|\uc8fc\ud30c\uc218",
+  "Privacy"       = "\uac1c\uc778\uc815\ubcf4|\ud504\ub77c\uc774\ubc84\uc2dc|\ub370\uc774\ud130\ubcf4\ud638"
+)
+
+member_agenda <- do.call(rbind, lapply(names(agendas), function(topic) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n_total = n(),
+      n_topic = sum(str_detect(speech, agendas[[topic]])),
+      .groups = "drop"
+    ) %>%
+    filter(n_total >= 20) %>%
+    mutate(topic = topic, pct = n_topic / n_total * 100)
+}))
+
+active_members <- leg_speeches %>%
+  count(speaker_name) %>%
+  filter(n >= 30) %>%
+  pull(speaker_name)
+
+member_concentration <- member_agenda %>%
+  filter(speaker_name %in% active_members) %>%
+  group_by(speaker_name) %>%
+  summarise(
+    max_pct = max(pct),
+    n_topics_active = sum(pct > 5)
+  )
+
+ggplot(member_concentration, aes(x = n_topics_active, y = max_pct)) +
+  geom_jitter(width = 0.2, alpha = 0.6, color = "steelblue", size = 3) +
+  labs(
+    x = "Active Agendas (>5% speeches)",
+    y = "Max Agenda Share (%)",
+    title = "Member Concentration vs Diversity in Agenda Coverage"
+  ) +
+  theme_minimal()
+```
+
+## Summary
+
+| Analysis | What It Reveals |
+|----------|-----------------|
+| Speech frequency | Active vs passive members |
+| Speech length | Question style (brief Q vs long statement) |
+| Role comparison | Committee Q&A structure |
+| Agenda tracking | Changes in policy attention over time |
+| Member agenda profiles | Individual specialization |
+
+> **Key insight**: Good descriptive statistics and visualization can reveal as much as complex models. Understanding your data thoroughly is always the first step.
+
+## Exercises
+
+### Exercise 1: Chair Speech Patterns
+
+Analyze the chair's (`role == "chair"`) speech patterns. How does the chair's speech length compare to legislators and ministers?
+
+```{r ex1, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex1-solution}
+speeches %>%
+  mutate(speech_length = nchar(speech)) %>%
+  filter(role %in% c("legislator", "chair", "minister")) %>%
+  group_by(role) %>%
+  summarise(
+    n = n(),
+    avg = round(mean(speech_length)),
+    median = median(speech_length)
+  )
+```
+
+### Exercise 2: Seniority and Speech Patterns
+
+Join with `legislators` data using `member_id` and compare speech patterns by **seniority**. Do senior legislators speak more frequently and/or longer?
+
+```{r ex2, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex2-hint}
+# Join leg_speeches with legislators (assembly == 22)
+# Group by seniority
+# Compare n_speeches per member and avg_length
+leg_22 <- legislators %>%
+  filter(assembly == 22) %>%
+  select(member_id, seniority)
+
+speeches %>%
+  filter(role == "legislator") %>%
+  mutate(speech_length = nchar(speech)) %>%
+  inner_join(leg_22, by = "member_id") %>%
+  group_by(seniority) %>%
+  summarise(
+    n_members = n_distinct(member_id),
+    avg_speeches = round(n() / n_members),
+    avg_length = round(mean(speech_length))
+  )
+```
+
+### Exercise 3: Custom Keywords
+
+Create your own keyword dictionary (e.g., "regulation", "innovation", "protection") and analyze usage patterns by member and over time.
+
+```{r ex3, exercise=TRUE}
+# Your code here
+# Example:
+# frames <- list(
+#   "Regulation" = "...",
+#   "Innovation" = "...",
+#   "Protection" = "..."
+# )
+
+```
+
+```{r ex3-hint}
+frames <- list(
+  "Regulation" = "\uaddc\uc81c|\uaddc\uc815|\uc81c\ud55c|\uae08\uc9c0",
+  "Innovation" = "\ud601\uc2e0|\ubc1c\uc804|\uc131\uc7a5|\ucd09\uc9c4",
+  "Protection" = "\ubcf4\ud638|\uc548\uc804|\ud53c\ud574|\ubc29\uc9c0"
+)
+
+# Apply the same pattern from the agenda analysis
+```

@@ -1,6 +1,6 @@
 ---
-title: "튜토리얼 1: R 기초와 tidyverse"
-subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+title: "Tutorial 1: R Basics and tidyverse"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
@@ -22,112 +22,209 @@ htmltools::includeCSS(
 )
 ```
 
-## 학습 목표
+## Learning Objectives
 
-- R에서 데이터를 불러오고 구조를 파악하는 방법을 익힌다
-- `dplyr`의 핵심 함수 5개를 사용할 수 있다
-- 파이프 연산자(`%>%`)로 분석 흐름을 연결할 수 있다
+**Research Question**: How has the composition of the Korean National Assembly changed?
 
-## 1. 데이터 살펴보기
+In this tutorial, you will explore data on 947 legislators across the 20th-22nd assemblies while learning essential R tools.
 
-`assemblykor` 패키지의 `legislators` 데이터는 20-22대 국회의원 947명의 기록입니다.
+You will learn:
 
-`str()`로 데이터 구조를 확인해봅시다.
+- Loading and inspecting data in R
+- 5 core `dplyr` functions: `filter()`, `select()`, `mutate()`, `arrange()`, `summarise()`
+- Connecting analysis steps with the pipe operator (`%>%`)
+- Joining two datasets together
 
-```{r explore, exercise=TRUE}
+## 1. Loading Data
+
+```{r load-data, exercise=TRUE}
+library(assemblykor)
+library(dplyr)
+
+data(legislators)
+dim(legislators)
+```
+
+### Inspecting Data Structure
+
+Always check the structure first. This is the most important first step.
+
+```{r str-data, exercise=TRUE}
 str(legislators)
 ```
 
-`head()`와 `summary()`도 시도해보세요:
+947 rows, 15 columns. Each row = one legislator's record in one assembly term. The same legislator serving in both the 20th and 21st assemblies appears as two rows.
 
-```{r explore2, exercise=TRUE}
+### Key Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `member_id` | Unique legislator ID | Same across terms |
+| `assembly` | Assembly number | 20, 21, 22 |
+| `name` | Name (Korean) | |
+| `party` | Party affiliation | |
+| `district_type` | Election type | constituency, proportional |
+| `gender` | Gender | M, F |
+| `seniority` | Terms elected | 1 = freshman |
+| `n_bills` | Total bills (lead + co-sponsored) | Median ~700 |
+| `n_bills_lead` | **Lead-sponsored** bills only | Median ~56 |
+
+> **Note**: `n_bills` includes both lead and co-sponsorship. Korean legislators actively co-sponsor, so some have thousands. Use `n_bills_lead` for bills the legislator personally led.
+
+```{r explore-head, exercise=TRUE}
 head(legislators)
+```
+
+```{r explore-summary, exercise=TRUE}
+summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
 ```
 
 ```{r quiz-nrow}
 quiz(
-  question("legislators 데이터는 몇 개의 행(row)을 가지고 있나요?",
+  question("How many rows does the legislators dataset have?",
     answer("661"),
     answer("947", correct = TRUE),
     answer("300"),
     answer("1500"),
-    correct = "맞습니다! 661명의 고유 의원이 20-22대에 걸쳐 947개 행으로 기록되어 있습니다."
+    correct = "Correct! 661 unique legislators across 20th-22nd assemblies produce 947 rows."
   )
 )
 ```
 
-## 2. filter(): 행 선택하기
+## 2. filter(): Selecting Rows
 
-`filter()`는 조건에 맞는 행만 골라냅니다.
+`filter()` selects rows that meet specified conditions.
+
+**Syntax**: `filter(data, condition1, condition2, ...)`
+
+Multiple conditions separated by commas are combined with AND.
 
 ```{r filter-demo, exercise=TRUE}
-# 22대 여성 의원만
+# 22nd assembly female legislators only
 women_22 <- filter(legislators, assembly == 22, gender == "F")
 nrow(women_22)
 ```
 
-아래 코드를 수정해서 **22대 초선 의원** 수를 구해보세요:
+### Common Comparison Operators
 
-```{r filter-ex, exercise=TRUE}
-# seniority == 1 이면 초선
+| Operator | Meaning | Example |
+|----------|---------|---------|
+| `==` | Equal | `assembly == 22` |
+| `!=` | Not equal | `party != "independent"` |
+| `>`, `>=` | Greater | `seniority >= 3` |
+| `<`, `<=` | Less | `n_bills_lead < 10` |
+| `%in%` | In a set | `party %in% c("A", "B")` |
+
+Try finding **22nd assembly freshmen** (seniority == 1):
+
+```{r filter-ex, exercise=TRUE, exercise.blanks="___"}
 freshmen <- filter(legislators, ___, ___)
 nrow(freshmen)
 ```
 
 ```{r filter-ex-hint}
-# assembly와 seniority 조건을 넣으세요
 freshmen <- filter(legislators, assembly == 22, seniority == 1)
 nrow(freshmen)
 ```
 
-## 3. select(): 열 선택하기
+## 3. select(): Choosing Columns
 
 ```{r select-demo, exercise=TRUE}
-# 이름, 정당, 대표발의 건수만
 legislators %>%
   filter(assembly == 22) %>%
   select(name, party, n_bills_lead) %>%
   head(10)
 ```
 
-## 4. mutate(): 새 변수 만들기
+The `%>%` (pipe) connects operations: "take data, THEN filter, THEN select columns, THEN show first 10."
 
-`mutate()`로 기존 변수를 활용해 새로운 변수를 만듭니다.
+```{r select-patterns, exercise=TRUE}
+# Select columns starting with "n_"
+legislators %>%
+  select(name, starts_with("n_")) %>%
+  head(5)
+```
+
+## 4. The Pipe Operator `%>%`
+
+The pipe passes the result on the left as the **first argument** to the function on the right.
+
+Without pipe (hard to read):
+
+```{r pipe-without, exercise=TRUE}
+# Must read from inside out
+head(select(filter(legislators, assembly == 22), name, party), 5)
+```
+
+With pipe (natural reading order):
+
+```{r pipe-with, exercise=TRUE}
+legislators %>%
+  filter(assembly == 22) %>%
+  select(name, party) %>%
+  head(5)
+```
+
+> **Tip**: In RStudio, `Ctrl+Shift+M` (Mac: `Cmd+Shift+M`) inserts the pipe.
+
+## 5. mutate(): Creating New Variables
 
 ```{r mutate-demo, exercise=TRUE}
-# 공동발의 참여 건수와 대표발의 비율
 legislators %>%
   mutate(
     n_cosponsor = n_bills - n_bills_lead,
     lead_ratio  = round(n_bills_lead / n_bills, 3)
   ) %>%
   filter(assembly == 22) %>%
-  select(name, n_bills, n_bills_lead, n_cosponsor, lead_ratio) %>%
+  select(name, party, n_bills_lead, n_cosponsor, lead_ratio) %>%
   arrange(desc(lead_ratio)) %>%
   head(10)
 ```
 
-## 5. group_by() + summarise()
+## 6. arrange(): Sorting
 
-그룹별 요약 통계를 구할 때 가장 많이 쓰는 패턴입니다.
+```{r arrange-demo, exercise=TRUE}
+legislators %>%
+  filter(assembly == 22) %>%
+  arrange(desc(n_bills_lead)) %>%
+  select(name, party, district_type, seniority, n_bills_lead) %>%
+  head(10)
+```
+
+## 7. group_by() + summarise()
+
+This is the most powerful `dplyr` pattern. Group data and compute summaries per group.
 
 ```{r group-demo, exercise=TRUE}
-# 정당별 평균 대표발의 건수 (22대)
+legislators %>%
+  group_by(assembly) %>%
+  summarise(
+    total       = n(),
+    n_women     = sum(gender == "F"),
+    pct_women   = round(n_women / total * 100, 1),
+    avg_senior  = round(mean(seniority, na.rm = TRUE), 1),
+    median_bills = median(n_bills_lead)
+  )
+```
+
+### Party Comparison
+
+```{r group-party, exercise=TRUE}
 legislators %>%
   filter(assembly == 22) %>%
   group_by(party) %>%
   summarise(
-    n      = n(),
-    avg    = mean(n_bills_lead),
-    median = median(n_bills_lead)
+    n          = n(),
+    pct_women  = round(sum(gender == "F") / n() * 100, 1),
+    avg_bills  = round(mean(n_bills_lead), 1)
   ) %>%
   filter(n >= 5) %>%
-  arrange(desc(avg))
+  arrange(desc(n))
 ```
 
-대수별 여성 의원 비율을 계산해보세요:
+Calculate female legislator proportion by assembly:
 
-```{r group-ex, exercise=TRUE}
+```{r group-ex, exercise=TRUE, exercise.blanks="___"}
 legislators %>%
   group_by(___) %>%
   summarise(
@@ -147,56 +244,112 @@ legislators %>%
   )
 ```
 
-## 6. 두 데이터 합치기 (join)
+```{r quiz-group}
+quiz(
+  question("What does group_by() + summarise() do?",
+    answer("Filters rows matching a condition"),
+    answer("Splits data into groups and computes summary statistics per group", correct = TRUE),
+    answer("Sorts data in ascending order"),
+    answer("Adds new columns to the data"),
+    correct = "Correct! It's like a pivot table in Excel."
+  )
+)
+```
 
-`member_id`를 기준으로 의원 정보와 재산 정보를 연결합니다.
+## 8. Exploring Other Datasets
+
+```{r bills-explore, exercise=TRUE}
+data(bills)
+dim(bills)
+head(bills %>% select(bill_name, committee, propose_date, result), 5)
+```
+
+```{r bills-result, exercise=TRUE}
+bills %>%
+  count(result, sort = TRUE) %>%
+  head(8)
+```
+
+```{r wealth-explore, exercise=TRUE}
+data(wealth)
+dim(wealth)
+summary(wealth$net_worth / 1e6)
+```
+
+> **Units**: The `wealth` data uses **thousands of KRW** (1,000 won). Divide by 1e6 to get billions of KRW.
+
+## 9. Joining Two Datasets
+
+Join links datasets by a common key column.
+
+| Function | Description |
+|----------|-------------|
+| `inner_join()` | Keep only matching rows |
+| `left_join()` | Keep all rows from left |
+| `full_join()` | Keep all rows from both |
 
 ```{r join-demo, exercise=TRUE}
 leg_wealth <- legislators %>%
-  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+  filter(assembly == 22) %>%
+  inner_join(
+    wealth %>% filter(year == 2024),
+    by = "member_id"
+  )
 
-dim(leg_wealth)
+cat("After join:", nrow(leg_wealth), "rows\n")
+cat("Original 22nd:", nrow(filter(legislators, assembly == 22)), "rows\n")
 ```
 
-성별에 따른 순자산 차이를 확인해보세요:
-
-```{r join-ex, exercise=TRUE}
+```{r join-analysis, exercise=TRUE}
 leg_wealth <- legislators %>%
-  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
 
 leg_wealth %>%
   group_by(gender) %>%
   summarise(
     n = n(),
-    median_nw = median(net_worth / 1e6, na.rm = TRUE)
+    median_nw_bn = round(median(net_worth / 1e6, na.rm = TRUE), 1)
   )
 ```
 
-## 연습 문제
+## Summary
 
-### 문제 1
+| Function | Purpose | Analogy |
+|----------|---------|---------|
+| `filter()` | Select rows | Excel filter |
+| `select()` | Select columns | Keep relevant columns |
+| `mutate()` | Add new columns | Calculated field |
+| `arrange()` | Sort | Ascending/descending |
+| `group_by() + summarise()` | Group summary | Pivot table |
+| `%>%` (pipe) | Connect steps | "and then" |
+| `inner_join()` | Merge data | VLOOKUP |
 
-22대 국회에서 비례대표(`district_type == "proportional"`) 의원은 몇 명인가?
+## Exercises
 
-```{r q1, exercise=TRUE}
+### Exercise 1: Proportional Representatives
+
+How many proportional representatives (`district_type == "proportional"`) are in the 22nd Assembly?
+
+```{r ex1, exercise=TRUE}
 
 ```
 
-```{r q1-solution}
+```{r ex1-solution}
 legislators %>%
   filter(assembly == 22, district_type == "proportional") %>%
   nrow()
 ```
 
-### 문제 2
+### Exercise 2: Freshman Ratio
 
-대수별로 초선(`seniority == 1`) 의원의 비율을 계산하시오.
+Calculate the proportion of freshmen (`seniority == 1`) by assembly.
 
-```{r q2, exercise=TRUE}
+```{r ex2, exercise=TRUE}
 
 ```
 
-```{r q2-solution}
+```{r ex2-solution}
 legislators %>%
   group_by(assembly) %>%
   summarise(
@@ -206,30 +359,57 @@ legislators %>%
   )
 ```
 
-### 문제 3
+### Exercise 3: Bill Results
 
-`bills` 데이터에서 가장 많은 법안이 배정된 상임위원회 상위 5개를 구하시오.
+Calculate the number of bills and the rate of original passage (`result == "original passage"`) by assembly.
 
-```{r q3, exercise=TRUE}
+```{r ex3, exercise=TRUE}
 
 ```
 
-```{r q3-solution}
+```{r ex3-solution}
 bills %>%
-  count(committee, sort = TRUE) %>%
-  head(5)
+  group_by(assembly) %>%
+  summarise(
+    n_bills = n(),
+    n_passed = sum(result == "\uc6d0\uc548\uac00\uacb0", na.rm = TRUE),
+    pass_rate = round(n_passed / n_bills * 100, 1)
+  )
 ```
 
-### 문제 4
+### Exercise 4: Wealth and Legislation
 
-의원별 대표발의 건수(`n_bills_lead`)와 순자산(`net_worth`)을 합친 데이터프레임을 만들어 상관계수를 구하시오.
+Find the correlation between lead-sponsored bills (`n_bills_lead`) and net worth. You need to join two datasets first.
 
-```{r q4, exercise=TRUE}
+```{r ex4, exercise=TRUE}
 
 ```
 
-```{r q4-solution}
+```{r ex4-solution}
 merged <- legislators %>%
-  inner_join(wealth, by = "member_id", relationship = "many-to-many")
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
+
 cor(merged$n_bills_lead, merged$net_worth, use = "complete.obs")
+```
+
+### Exercise 5: District Type Comparison
+
+Design an analysis comparing constituency vs proportional legislators' activity patterns. Choose at least 3 metrics.
+
+```{r ex5, exercise=TRUE}
+
+```
+
+```{r ex5-hint}
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(district_type) %>%
+  summarise(
+    n = n(),
+    median_lead = median(n_bills_lead),
+    median_total = median(n_bills),
+    pct_women = round(sum(gender == "F") / n() * 100, 1),
+    avg_seniority = round(mean(seniority, na.rm = TRUE), 1)
+  )
 ```

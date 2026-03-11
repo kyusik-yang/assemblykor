@@ -1,6 +1,6 @@
 ---
-title: "튜토리얼 2: ggplot2로 국회 데이터 시각화"
-subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+title: "Tutorial 2: Data Visualization with ggplot2"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
@@ -10,24 +10,13 @@ library(learnr)
 library(assemblykor)
 library(dplyr)
 library(ggplot2)
+library(tidyr)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-theme_set(theme_gray(base_family = ko_font))
-
 data(legislators)
 data(bills)
 data(wealth)
 data(seminars)
+set_ko_font()
 tutorial_options(exercise.eval = FALSE)
 ```
 
@@ -37,15 +26,29 @@ htmltools::includeCSS(
 )
 ```
 
-## 학습 목표
+## Learning Objectives
 
-- `ggplot2`의 기본 문법(aes, geom, labs)을 이해한다
-- 막대, 히스토그램, 산점도, 박스플롯을 그릴 수 있다
-- `facet_wrap()`으로 소그룹 비교 시각화를 할 수 있다
+**Research Question**: Visualizing the Korean National Assembly - who does what?
 
-## 1. 막대 그래프: 정당별 의원 수
+You will learn:
 
-```{r bar-party, exercise=TRUE, fig.height=4}
+- The ggplot2 grammar: **data + mapping(aes) + geometry(geom)**
+- 6 core chart types: bar, histogram, boxplot, scatter, line, facet
+- Polishing graphs for clear communication
+
+## 1. ggplot2 Basics
+
+Every ggplot starts with three elements:
+
+1. **Data**: which data frame?
+2. **Mapping** (`aes`): which variables map to x, y, color?
+3. **Geometry** (`geom_*`): points, lines, bars?
+
+Layers are added with `+`.
+
+## 2. Bar Charts: Category Comparison
+
+```{r bar-basic, exercise=TRUE, fig.height=4}
 legislators %>%
   filter(assembly == 22) %>%
   count(party) %>%
@@ -53,115 +56,220 @@ legislators %>%
   ggplot(aes(x = reorder(party, n), y = n)) +
   geom_col(fill = "steelblue") +
   coord_flip() +
-  labs(x = NULL, y = "의원 수", title = "22대 국회 정당별 의석 수")
+  labs(x = NULL, y = "Seats", title = "22nd Assembly Party Seats")
 ```
 
-### 쌓은 막대: 성별 구성
+### Stacked Bars: Proportion Comparison
 
-```{r bar-gender, exercise=TRUE, fig.height=4}
+```{r bar-stacked, exercise=TRUE, fig.height=4}
 legislators %>%
-  filter(assembly == 22) %>%
+  filter(assembly == 22,
+         party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
   count(party, gender) %>%
-  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
   ggplot(aes(x = party, y = n, fill = gender)) +
   geom_col(position = "fill") +
-  scale_fill_manual(values = c("F" = "#e66101", "M" = "#5e3c99"),
-                    labels = c("여성", "남성")) +
-  labs(x = NULL, y = "비율", fill = "성별",
-       title = "주요 정당의 성별 구성 (22대)")
-```
-
-## 2. 히스토그램: 의원 재산 분포
-
-```{r hist-wealth, exercise=TRUE, fig.height=4}
-ggplot(wealth, aes(x = net_worth / 1e6)) +
-  geom_histogram(bins = 50, fill = "coral", color = "white") +
-  labs(x = "순자산 (10억 원)", y = "빈도",
-       title = "국회의원 순자산 분포") +
+  scale_fill_manual(values = c("F" = "#E66101", "M" = "#5E3C99"),
+                    labels = c("Female", "Male")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = NULL, y = "Proportion", fill = "Gender",
+       title = "Gender Composition of Major Parties (22nd)") +
   theme_minimal()
 ```
 
-꼬리가 긴 분포입니다. 로그 변환을 시도해보세요:
+`position = "fill"` normalizes each bar to 100%. Try changing to `"dodge"` for side-by-side bars.
+
+```{r quiz-bar}
+quiz(
+  question("What does position = 'fill' do in a stacked bar chart?",
+    answer("Stacks bars on top of each other"),
+    answer("Places bars side by side"),
+    answer("Normalizes each bar to 100%", correct = TRUE),
+    answer("Fills bars with color"),
+    correct = "Correct! 'fill' makes each bar represent 100%, making proportions comparable."
+  )
+)
+```
+
+## 3. Histograms: Distribution
+
+```{r hist-basic, exercise=TRUE, fig.height=4}
+ggplot(wealth, aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 50, fill = "coral", color = "white") +
+  labs(x = "Net Worth (billion KRW)", y = "Count",
+       title = "Legislator Net Worth Distribution") +
+  theme_minimal()
+```
+
+### Log Scale for Skewed Data
 
 ```{r hist-log, exercise=TRUE, fig.height=4}
 wealth %>%
   filter(net_worth > 0) %>%
-  ggplot(aes(x = log10(net_worth))) +
+  ggplot(aes(x = net_worth / 1e6)) +
   geom_histogram(bins = 40, fill = "darkgreen", color = "white") +
-  labs(x = "log10(순자산, 천원)", y = "빈도",
-       title = "순자산의 로그 분포") +
+  scale_x_log10(labels = scales::comma) +
+  labs(x = "Net Worth (billion KRW, log scale)", y = "Count",
+       title = "Net Worth Distribution (Log Scale)") +
   theme_minimal()
 ```
 
-## 3. 박스플롯: 그룹 간 비교
+### Density Curves: Group Comparison
 
-강남 부동산 보유 여부에 따른 순자산 차이를 봅시다:
-
-```{r box-gangnam, exercise=TRUE, fig.height=4}
+```{r density-compare, exercise=TRUE, fig.height=4}
 wealth %>%
-  filter(year == 2025) %>%
-  ggplot(aes(x = has_gangnam_property, y = net_worth / 1e6)) +
-  geom_boxplot(fill = c("lightblue", "salmon")) +
-  scale_x_discrete(labels = c("비보유", "보유")) +
-  labs(x = "강남 부동산", y = "순자산 (10억 원)",
-       title = "강남 부동산 보유 여부에 따른 순자산") +
+  filter(net_worth > 0) %>%
+  mutate(gangnam = ifelse(has_gangnam_property, "Gangnam Owner", "Non-owner")) %>%
+  ggplot(aes(x = net_worth / 1e6, fill = gangnam)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("Gangnam Owner" = "#D95F02", "Non-owner" = "#7570B3")) +
+  labs(x = "Net Worth (billion KRW, log scale)", y = "Density",
+       fill = NULL,
+       title = "Net Worth by Gangnam Property Ownership") +
   theme_minimal()
 ```
 
-## 4. 산점도: 두 변수의 관계
+## 4. Boxplots: Group Comparison
 
-```{r scatter, exercise=TRUE, fig.height=4}
+```{r boxplot-seniority, exercise=TRUE, fig.height=4}
+leg_w <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
+
+ggplot(leg_w, aes(x = factor(seniority), y = net_worth / 1e6)) +
+  geom_boxplot(fill = "lightblue", outlier.alpha = 0.3) +
+  labs(x = "Seniority (terms)", y = "Net Worth (billion KRW)",
+       title = "Net Worth by Seniority (22nd Assembly)") +
+  theme_minimal()
+```
+
+## 5. Scatter Plots: Relationships
+
+```{r scatter-groups, exercise=TRUE, fig.height=4}
 legislators %>%
   filter(assembly == 22) %>%
   ggplot(aes(x = seniority, y = n_bills_lead, color = gender)) +
-  geom_jitter(width = 0.2, alpha = 0.6, size = 2) +
-  geom_smooth(method = "lm", se = FALSE) +
-  scale_color_manual(values = c("F" = "#e66101", "M" = "#5e3c99"),
-                     labels = c("여성", "남성")) +
-  labs(x = "선수 (당선 횟수)", y = "대표발의 건수",
-       color = "성별",
-       title = "선수와 입법 생산성의 관계 (22대)") +
+  geom_jitter(width = 0.2, alpha = 0.5, size = 2) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  scale_color_manual(values = c("F" = "#E66101", "M" = "#5E3C99"),
+                     labels = c("Female", "Male")) +
+  labs(x = "Seniority", y = "Lead-sponsored Bills",
+       color = "Gender",
+       title = "Seniority and Legislative Productivity (22nd)") +
   theme_minimal()
 ```
 
-## 5. 시계열 꺾은선
+`geom_jitter()` adds slight random displacement to overlapping points. `geom_smooth(method = "lm")` adds a trend line.
+
+## 6. Line Charts: Trends Over Time
 
 ```{r line-bills, exercise=TRUE, fig.height=4}
 bills %>%
   mutate(month = as.Date(format(propose_date, "%Y-%m-01"))) %>%
   count(month) %>%
+  filter(!is.na(month)) %>%
   ggplot(aes(x = month, y = n)) +
-  geom_line(color = "steelblue") +
-  labs(x = "월", y = "발의 건수",
-       title = "월별 법안 발의 건수 (20-22대)") +
+  geom_line(color = "steelblue", linewidth = 0.8) +
+  labs(x = NULL, y = "Monthly Bills Proposed",
+       title = "Monthly Bill Proposals (20th-22nd)") +
   theme_minimal()
 ```
 
-## 6. facet_wrap(): 소그룹 비교
+### Government vs Opposition: Cross-party Cooperation
 
-대수별 대표발의 건수 히스토그램을 나란히 그려보세요:
+```{r line-seminar, exercise=TRUE, fig.height=4}
+seminars %>%
+  filter(year >= 2016) %>%
+  group_by(year, is_governing) %>%
+  summarise(avg_cross = mean(cross_party_ratio, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "Government", "Opposition")) %>%
+  ggplot(aes(x = year, y = avg_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("Government" = "tomato", "Opposition" = "dodgerblue")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year", y = "Cross-party Seminar Ratio", color = NULL,
+       title = "Government vs Opposition Cross-party Cooperation") +
+  theme_minimal()
+```
 
-```{r facet-ex, exercise=TRUE, fig.height=4}
+## 7. facet_wrap(): Side-by-side Comparison
+
+```{r facet-bills, exercise=TRUE, fig.height=4}
 legislators %>%
   ggplot(aes(x = n_bills_lead)) +
-  geom_histogram(bins = 30, fill = "steelblue") +
-  facet_wrap(~ assembly) +
-  labs(x = "대표발의 건수", y = "빈도",
-       title = "대수별 대표발의 건수 분포") +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ assembly, ncol = 3) +
+  labs(x = "Lead-sponsored Bills", y = "Count",
+       title = "Bill Distribution by Assembly") +
   theme_minimal()
 ```
 
-## 연습 문제
+## 8. Polishing: From Basic to Finished
 
-### 문제 1
+### Step 1: Bare Minimum
 
-22대 국회 상임위원회별 법안 수를 막대그래프로 그리시오 (상위 10개만).
+```{r polish-1, exercise=TRUE, fig.height=4}
+df_party <- legislators %>%
+  filter(assembly == 22,
+         party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  group_by(party) %>%
+  summarise(median_bills = median(n_bills_lead))
 
-```{r q1, exercise=TRUE, fig.height=5}
+ggplot(df_party, aes(x = party, y = median_bills)) +
+  geom_col()
+```
+
+### Step 2: Add Colors, Labels, and Values
+
+```{r polish-2, exercise=TRUE, fig.height=4}
+party_colors <- c(
+  "\uad6d\ubbfc\uc758\ud798" = "#E61E2B",
+  "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9" = "#004EA2",
+  "\uc870\uad6d\ud601\uc2e0\ub2f9" = "#00B0F0"
+)
+
+df_party <- legislators %>%
+  filter(assembly == 22,
+         party %in% names(party_colors)) %>%
+  group_by(party) %>%
+  summarise(median_bills = median(n_bills_lead))
+
+ggplot(df_party, aes(x = reorder(party, -median_bills),
+                     y = median_bills, fill = party)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = median_bills), vjust = -0.5, size = 4.5) +
+  scale_fill_manual(values = party_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(x = NULL, y = "Median Lead Bills",
+       title = "Legislative Productivity by Party (22nd)") +
+  theme_minimal(base_size = 13)
+```
+
+## Chart Selection Guide
+
+| Goal | Chart Type | geom |
+|------|-----------|------|
+| Category comparison | Bar chart | `geom_col()` |
+| Distribution | Histogram / density | `geom_histogram()` / `geom_density()` |
+| Group distribution comparison | Boxplot | `geom_boxplot()` |
+| Two-variable relationship | Scatter plot | `geom_point()` / `geom_jitter()` |
+| Trend over time | Line chart | `geom_line()` |
+| Subgroup patterns | Faceting | `facet_wrap()` |
+| Proportion composition | Stacked bar | `geom_col(position = "fill")` |
+
+## Exercises
+
+### Exercise 1: Committee Bill Counts
+
+Plot the top 10 committees by bill count in the 22nd Assembly.
+
+```{r ex1, exercise=TRUE, fig.height=5}
 
 ```
 
-```{r q1-solution, fig.height=5}
+```{r ex1-solution, fig.height=5}
 bills %>%
   filter(assembly == 22) %>%
   count(committee, sort = TRUE) %>%
@@ -169,31 +277,44 @@ bills %>%
   ggplot(aes(x = reorder(committee, n), y = n)) +
   geom_col(fill = "steelblue") +
   coord_flip() +
-  labs(x = NULL, y = "법안 수", title = "22대 상임위원회별 법안 수 (상위 10개)") +
+  labs(x = NULL, y = "Bills", title = "Top 10 Committees by Bill Count (22nd)") +
   theme_minimal()
 ```
 
-### 문제 2
+### Exercise 2: Seoul Property Boxplot
 
-`seminars` 데이터에서 선수(`seniority`)별 세미나 개최 건수의 산점도를 그리고 추세선을 추가하시오.
+Compare real estate assets by Seoul property ownership using a boxplot.
 
-```{r q2, exercise=TRUE, fig.height=4}
+```{r ex2, exercise=TRUE, fig.height=4}
 
 ```
 
-```{r q2-solution, fig.height=4}
+```{r ex2-hint}
+# Use wealth data, filter year == 2024
+# x = has_seoul_property, y = real_estate / 1e6
+```
+
+### Exercise 3: Seminar Scatter
+
+Plot seniority vs seminar count with a trend line.
+
+```{r ex3, exercise=TRUE, fig.height=4}
+
+```
+
+```{r ex3-solution, fig.height=4}
 ggplot(seminars, aes(x = seniority, y = n_seminars)) +
-  geom_jitter(alpha = 0.3, width = 0.2) +
+  geom_jitter(alpha = 0.3, width = 0.2, color = "steelblue") +
   geom_smooth(method = "lm", color = "red") +
-  labs(x = "선수", y = "세미나 개최 건수",
-       title = "선수와 정책세미나 활동") +
+  labs(x = "Seniority", y = "Seminars",
+       title = "Seniority and Seminar Activity") +
   theme_minimal()
 ```
 
-### 문제 3
+### Exercise 4: Free Exploration
 
-자유 주제: 오늘 배운 시각화 기법 중 하나를 선택하여 흥미로운 패턴을 찾아보세요.
+Choose any visualization technique from this tutorial and find an interesting pattern.
 
-```{r q3, exercise=TRUE, fig.height=5}
+```{r ex4, exercise=TRUE, fig.height=5}
 
 ```

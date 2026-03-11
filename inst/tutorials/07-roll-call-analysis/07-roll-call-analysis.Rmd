@@ -1,0 +1,535 @@
+---
+title: "Tutorial 7: Roll Call Analysis"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(assemblykor)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+data(votes)
+data(roll_calls)
+data(legislators)
+set_ko_font()
+tutorial_options(exercise.eval = FALSE)
+```
+
+```{r theme, echo=FALSE}
+htmltools::includeCSS(
+  system.file("tutorials/css/assemblykor.css", package = "assemblykor")
+)
+```
+
+## Learning Objectives
+
+**Research Question**: How cohesive are Korean parties in legislative voting?
+
+In a democracy, **roll call voting** is a core function of the legislature. Analyzing who votes yes and no reveals party cohesion, rebel members, and ideological distances between legislators.
+
+You will learn:
+
+- The structure of plenary vote data
+- Measuring party cohesion: Rice Index
+- Identifying rebel voters
+- Visualizing voting patterns: heatmaps
+- Measuring inter-legislator agreement
+
+## 1. Understanding Vote Data
+
+`assemblykor` includes two voting datasets:
+
+| Dataset | Level | Scope | Rows |
+|---------|-------|-------|------|
+| `votes` | **bill-level** aggregate | 20th-22nd | 7,997 |
+| `roll_calls` | **member-level** record | 22nd only | 368,210 |
+
+### votes: Bill-level results
+
+```{r votes-overview, exercise=TRUE}
+cat("Number of bills:", nrow(votes), "\n")
+cat("By assembly:\n")
+table(votes$assembly)
+```
+
+```{r votes-example, exercise=TRUE}
+votes %>%
+  select(bill_name, assembly, voted, yes, no, abstain) %>%
+  head(5)
+```
+
+```{r quiz-votes}
+quiz(
+  question("What does a high 'yes' count relative to 'voted' indicate?",
+    answer("The bill was controversial"),
+    answer("The bill passed with overwhelming support", correct = TRUE),
+    answer("Many legislators abstained"),
+    answer("The bill was rejected"),
+    correct = "Correct! Most Korean bills pass with very high yes rates."
+  )
+)
+```
+
+### Yes Rate Distribution
+
+Most bills pass with overwhelming majorities. Controversial bills are the minority.
+
+```{r yes-rate-dist, exercise=TRUE}
+votes <- votes %>%
+  mutate(yes_rate = yes / voted)
+
+ggplot(votes, aes(x = yes_rate)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    x = "Yes Rate",
+    y = "Number of Bills",
+    title = "Distribution of Yes Rates in Plenary Votes (20th-22nd)"
+  ) +
+  theme_minimal()
+```
+
+### Finding Contentious Bills
+
+```{r contentious, exercise=TRUE}
+votes %>%
+  mutate(yes_rate = yes / voted) %>%
+  filter(yes_rate < 0.7) %>%
+  arrange(yes_rate) %>%
+  select(bill_name, assembly, yes_rate, yes, no) %>%
+  head(10)
+```
+
+## 2. roll_calls: Member-level Records
+
+```{r rc-overview, exercise=TRUE}
+cat("Vote records:", nrow(roll_calls), "\n")
+cat("Members:", n_distinct(roll_calls$member_id), "\n")
+cat("Bills:", n_distinct(roll_calls$bill_id), "\n")
+
+# Vote types
+table(roll_calls$vote)
+```
+
+```{r rc-recode, exercise=TRUE}
+# Recode votes to English for analysis convenience
+roll_calls <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  ))
+
+table(roll_calls$vote_en)
+```
+
+## 3. Party Cohesion: Rice Index
+
+The **Rice Index** is a classic measure of party cohesion:
+
+$$\text{Rice Index} = |\text{proportion yes} - \text{proportion no}|$$
+
+- 1: all members voted the same way (perfect cohesion)
+- 0: evenly split between yes and no (complete division)
+
+### Calculate Rice Index by Bill
+
+```{r rice-calc, exercise=TRUE}
+# Only actual votes (exclude absences)
+rc_voted <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  )) %>%
+  filter(vote_en %in% c("yes", "no"))
+
+# Rice Index by bill and party
+rice_by_bill <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    n_voted = n(),
+    n_yes = sum(vote_en == "yes"),
+    n_no = sum(vote_en == "no"),
+    rice = abs(n_yes - n_no) / n_voted,
+    .groups = "drop"
+  ) %>%
+  filter(n_voted >= 5)
+
+# Major parties' average Rice Index
+rice_by_bill %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  group_by(party) %>%
+  summarise(
+    n_votes = n(),
+    mean_rice = round(mean(rice), 3),
+    median_rice = round(median(rice), 3),
+    min_rice = round(min(rice), 3)
+  )
+```
+
+### Rice Index Distribution
+
+```{r rice-plot, exercise=TRUE}
+rc_voted <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  )) %>%
+  filter(vote_en %in% c("yes", "no"))
+
+rice_by_bill <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    n_voted = n(),
+    n_yes = sum(vote_en == "yes"),
+    n_no = sum(vote_en == "no"),
+    rice = abs(n_yes - n_no) / n_voted,
+    .groups = "drop"
+  ) %>%
+  filter(n_voted >= 5)
+
+rice_by_bill %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  ggplot(aes(x = rice, fill = party)) +
+  geom_histogram(bins = 30, alpha = 0.7, position = "identity") +
+  scale_fill_manual(values = c(
+    "\uad6d\ubbfc\uc758\ud798" = "#E61E2B",
+    "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9" = "#004EA2",
+    "\uc870\uad6d\ud601\uc2e0\ub2f9" = "#00B0F0"
+  )) +
+  facet_wrap(~ party, ncol = 1) +
+  labs(
+    x = "Rice Index", y = "Number of Bills",
+    fill = NULL,
+    title = "Party Cohesion (Rice Index) Distribution"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r quiz-rice}
+quiz(
+  question("If a party's Rice Index is 0.8, what does it mean?",
+    answer("80% of members voted yes"),
+    answer("The difference between yes and no proportions is 0.8", correct = TRUE),
+    answer("80% of bills were passed"),
+    answer("The party is 80% cohesive on all issues"),
+    correct = "Correct! Rice Index = |proportion yes - proportion no|."
+  )
+)
+```
+
+## 4. Finding Rebel Voters
+
+A **rebel vote** occurs when a member votes against the party majority.
+
+```{r rebel-calc, exercise=TRUE}
+rc_voted <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  )) %>%
+  filter(vote_en %in% c("yes", "no"))
+
+# Determine party majority per bill
+party_majority <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    majority_vote = ifelse(sum(vote_en == "yes") >= sum(vote_en == "no"),
+                           "yes", "no"),
+    .groups = "drop"
+  )
+
+# Identify rebel votes
+rebel_votes <- rc_voted %>%
+  inner_join(party_majority, by = c("bill_id", "party")) %>%
+  mutate(is_rebel = vote_en != majority_vote)
+
+# Rebel rate per member
+rebel_rate <- rebel_votes %>%
+  group_by(member_id, member_name, party) %>%
+  summarise(
+    n_votes = n(),
+    n_rebel = sum(is_rebel),
+    rebel_rate = round(n_rebel / n_votes, 3),
+    .groups = "drop"
+  ) %>%
+  filter(n_votes >= 50)
+
+rebel_rate %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9")) %>%
+  arrange(desc(rebel_rate)) %>%
+  head(10)
+```
+
+### Rebel Vote Distribution by Party
+
+```{r rebel-plot, exercise=TRUE}
+rc_voted <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  )) %>%
+  filter(vote_en %in% c("yes", "no"))
+
+party_majority <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    majority_vote = ifelse(sum(vote_en == "yes") >= sum(vote_en == "no"),
+                           "yes", "no"),
+    .groups = "drop"
+  )
+
+rebel_votes <- rc_voted %>%
+  inner_join(party_majority, by = c("bill_id", "party")) %>%
+  mutate(is_rebel = vote_en != majority_vote)
+
+rebel_rate <- rebel_votes %>%
+  group_by(member_id, member_name, party) %>%
+  summarise(
+    n_votes = n(),
+    n_rebel = sum(is_rebel),
+    rebel_rate = round(n_rebel / n_votes, 3),
+    .groups = "drop"
+  ) %>%
+  filter(n_votes >= 50)
+
+rebel_rate %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  ggplot(aes(x = party, y = rebel_rate, fill = party)) +
+  geom_boxplot(alpha = 0.7, show.legend = FALSE) +
+  scale_fill_manual(values = c(
+    "\uad6d\ubbfc\uc758\ud798" = "#E61E2B",
+    "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9" = "#004EA2",
+    "\uc870\uad6d\ud601\uc2e0\ub2f9" = "#00B0F0"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = NULL, y = "Rebel Vote Rate",
+    title = "Rebel Vote Rates by Party (22nd Assembly)"
+  ) +
+  theme_minimal()
+```
+
+## 5. Voting Pattern Heatmap
+
+Visualizing voting patterns reveals the party structure at a glance.
+
+```{r heatmap, exercise=TRUE, fig.height=8}
+votes_with_rate <- votes %>%
+  mutate(yes_rate = yes / voted)
+
+# Contentious bills: 50-85% yes rate
+contentious_bills <- votes_with_rate %>%
+  filter(assembly == 22, yes_rate >= 0.45, yes_rate <= 0.85) %>%
+  arrange(yes_rate) %>%
+  head(30) %>%
+  pull(bill_id)
+
+# Member-level votes for contentious bills (two major parties)
+rc_heat <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  )) %>%
+  filter(bill_id %in% contentious_bills,
+         party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9")) %>%
+  mutate(vote_num = case_match(vote_en,
+    "yes" ~ 1, "no" ~ -1, "abstain" ~ 0, .default = NA_real_
+  )) %>%
+  filter(!is.na(vote_num))
+
+# Vote matrix (member x bill)
+vote_matrix <- rc_heat %>%
+  select(member_name, bill_id, vote_num, party) %>%
+  pivot_wider(names_from = bill_id, values_from = vote_num, values_fill = 0) %>%
+  arrange(party, member_name)
+
+# Convert back to long format for ggplot
+heat_data <- vote_matrix %>%
+  pivot_longer(cols = -c(member_name, party),
+               names_to = "bill_id", values_to = "vote_num") %>%
+  mutate(
+    vote_label = case_match(vote_num,
+      1 ~ "Yes", -1 ~ "No", 0 ~ "Abstain/Absent"
+    ),
+    member_name = factor(member_name, levels = vote_matrix$member_name)
+  )
+
+ggplot(heat_data, aes(x = bill_id, y = member_name, fill = vote_label)) +
+  geom_tile(color = "white", linewidth = 0.1) +
+  scale_fill_manual(values = c(
+    "Yes" = "#4DAF4A", "No" = "#E41A1C", "Abstain/Absent" = "#CCCCCC"
+  )) +
+  labs(
+    x = "Bill", y = NULL, fill = "Vote",
+    title = "Member Voting Patterns on Contentious Bills (22nd)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
+  )
+```
+
+When colors are clearly divided by party (one side green, other side red), it indicates strong partisan voting.
+
+## 6. Inter-member Voting Agreement
+
+We can measure how similarly two legislators vote using **agreement rate**: the proportion of bills where they voted the same way.
+
+```{r agreement, exercise=TRUE}
+votes_with_rate <- votes %>%
+  mutate(yes_rate = yes / voted)
+
+contentious_bills <- votes_with_rate %>%
+  filter(assembly == 22, yes_rate >= 0.45, yes_rate <= 0.85) %>%
+  arrange(yes_rate) %>%
+  head(30) %>%
+  pull(bill_id)
+
+rc_heat <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes",
+    "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain",
+    .default = "absent"
+  )) %>%
+  filter(bill_id %in% contentious_bills,
+         party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9")) %>%
+  mutate(vote_num = case_match(vote_en,
+    "yes" ~ 1, "no" ~ -1, "abstain" ~ 0, .default = NA_real_
+  )) %>%
+  filter(!is.na(vote_num))
+
+vote_matrix <- rc_heat %>%
+  select(member_name, bill_id, vote_num, party) %>%
+  pivot_wider(names_from = bill_id, values_from = vote_num, values_fill = 0) %>%
+  arrange(party, member_name)
+
+# Sample 20 members (10 per party)
+set.seed(42)
+sample_names <- vote_matrix %>%
+  group_by(party) %>%
+  slice_sample(n = 10) %>%
+  pull(member_name)
+
+vote_mat <- vote_matrix %>%
+  filter(member_name %in% sample_names) %>%
+  select(-party)
+member_names_ordered <- vote_mat$member_name
+vote_mat <- vote_mat %>% select(-member_name) %>% as.matrix()
+rownames(vote_mat) <- member_names_ordered
+
+# Agreement matrix
+n_bills_mat <- ncol(vote_mat)
+agreement <- matrix(0, nrow(vote_mat), nrow(vote_mat))
+for (i in 1:nrow(vote_mat)) {
+  for (j in 1:nrow(vote_mat)) {
+    agreement[i, j] <- sum(vote_mat[i, ] == vote_mat[j, ]) / n_bills_mat
+  }
+}
+rownames(agreement) <- rownames(vote_mat)
+colnames(agreement) <- rownames(vote_mat)
+
+agree_df <- as.data.frame(as.table(agreement)) %>%
+  rename(member1 = Var1, member2 = Var2, agreement = Freq)
+
+ggplot(agree_df, aes(x = member1, y = member2, fill = agreement)) +
+  geom_tile() +
+  scale_fill_gradient2(
+    low = "#E41A1C", mid = "white", high = "#4DAF4A",
+    midpoint = 0.5, labels = scales::percent
+  ) +
+  labs(
+    x = NULL, y = NULL, fill = "Agreement",
+    title = "Inter-member Voting Agreement (22nd, Contentious Bills)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+```
+
+High agreement within party (green blocks) and low agreement across parties (red blocks) indicates that party is the key determinant of voting behavior.
+
+## Summary
+
+| Concept | Meaning | Measurement |
+|---------|---------|-------------|
+| Yes Rate | Bill controversy | `yes / voted` |
+| Rice Index | Party cohesion | `|yes_prop - no_prop|` |
+| Rebel Vote | Voting against party | Disagreement with majority |
+| Agreement | Behavioral similarity | Pairwise agreement matrix |
+
+These analyses form the foundation of **legislative behavior** research.
+
+## Exercises
+
+### Exercise 1: Absenteeism
+
+Find the 10 members with the highest absence rate in the 22nd Assembly.
+
+```{r ex1, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex1-hint}
+# Group by member, count absent votes, calculate rate
+roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "\ucc2c\uc131" ~ "yes", "\ubc18\ub300" ~ "no",
+    "\uae30\uad8c" ~ "abstain", .default = "absent")) %>%
+  group_by(member_name, party) %>%
+  summarise(n_total = n(), n_absent = sum(vote_en == "absent"),
+            absent_rate = round(n_absent / n_total, 3), .groups = "drop") %>%
+  arrange(desc(absent_rate)) %>%
+  head(10)
+```
+
+### Exercise 2: Rice by Controversy
+
+Compare Rice Index for contentious bills (yes rate 50-85%) vs non-contentious bills (90%+). What differences emerge?
+
+```{r ex2, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex2-hint}
+# Join rice_by_bill with bill-level yes_rate, then compare
+# Contentious bills naturally have lower Rice Index
+# because parties split on controversial issues
+```
+
+### Exercise 3: Committee Cohesion
+
+Compare party cohesion across different committees. Do some policy areas show more intra-party disagreement?
+
+```{r ex3, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex3-hint}
+# Join rice_by_bill with votes to get committee info
+# Group by party and committee, then compare mean Rice Index
+```

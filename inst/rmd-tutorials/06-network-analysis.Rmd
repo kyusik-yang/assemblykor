@@ -1,49 +1,74 @@
 ---
 title: "튜토리얼 6: 공동발의 네트워크 분석"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 6)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-ggplot2::theme_set(ggplot2::theme_gray(base_family = ko_font))
-```
-
-## 학습 목표
-
-- 공동발의 데이터로 네트워크(그래프)를 구축할 수 있다
-- 중심성(centrality) 지표를 계산하고 해석할 수 있다
-- 네트워크 시각화와 커뮤니티 탐지를 수행할 수 있다
-
-## 1. 준비
-
-```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 6)
 library(assemblykor)
 library(dplyr)
 library(ggplot2)
-
-# igraph가 없으면 설치
-if (!requireNamespace("igraph", quietly = TRUE)) {
-  install.packages("igraph")
-}
-library(igraph)
-
+set_ko_font()
 data(legislators)
 data(bills)
 ```
 
-## 2. 공동발의 데이터 다운로드
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 누가 누구와 함께 법안을 만드는가?
+
+국회의원은 혼자서 법안을 발의하지 않습니다. 대표발의자 외에 여러 의원이
+공동발의자로 참여합니다. 이 공동발의 관계를 **네트워크(그래프)**로 구성하면,
+의원들의 협력 구조, 정당 간 관계, 핵심 인물을 파악할 수 있습니다.
+
+배울 내용:
+
+- 네트워크란 무엇인가: 노드와 엣지의 개념
+- 공동발의 데이터로 네트워크 구축하기
+- 중심성(centrality) 지표: 누가 네트워크의 중심인가?
+- 커뮤니티 탐지: 밀접하게 연결된 그룹 찾기
+- 네트워크 시각화
+
+---
+
+## 1. 네트워크의 기본 개념
+
+네트워크(그래프)는 두 가지 요소로 구성됩니다:
+
+- **노드(node, 꼭짓점)**: 분석 단위. 여기서는 **의원**
+- **엣지(edge, 변)**: 노드 간의 관계. 여기서는 **공동발의 관계**
+
+```{r concept, echo=FALSE, fig.height=3.5}
+if (!requireNamespace("igraph", quietly = TRUE)) {
+  install.packages("igraph")
+}
+library(igraph)
+# 간단한 예시 네트워크
+g_ex <- graph_from_data_frame(
+  data.frame(from = c("A", "A", "B", "C", "D"),
+             to   = c("B", "C", "C", "D", "E")),
+  directed = FALSE
+)
+set.seed(1)
+plot(g_ex, vertex.size = 30, vertex.color = "lightblue",
+     vertex.label.cex = 1.2, edge.width = 2,
+     main = "네트워크의 기본 구조")
+```
+
+위 그림에서:
+- A, B, C, D, E가 **노드** (5개)
+- 선들이 **엣지** (5개)
+- C는 3개의 엣지가 연결되어 있어 가장 **연결 중심성(degree)**이 높음
+
+---
+
+## 2. 공동발의 데이터 가져오기
 
 ```{r download, eval=FALSE}
 proposers <- get_proposers()
@@ -53,30 +78,40 @@ proposers <- get_proposers()
 proposers <- tryCatch(
   get_proposers(),
   error = function(e) {
-    message("다운로드 실패. 튜토리얼 진행 불가.")
+    message("다운로드 실패.")
     NULL
   }
 )
 ```
 
-```{r}
-dim(proposers)
-head(proposers)
+```{r check}
+if (is.null(proposers)) {
+  cat("데이터를 다운로드할 수 없습니다. 인터넷 연결을 확인하세요.\n")
+} else {
+  cat("공동발의 기록:", nrow(proposers), "건\n")
+  head(proposers)
+}
 ```
+
+---
 
 ## 3. 엣지리스트 만들기
 
-대표발의자와 공동발의자를 연결합니다.
+네트워크를 만들려면, "누구와 누구가 연결되었는가"를 나타내는
+**엣지리스트(edge list)**가 필요합니다.
+
+법안 하나에서 대표발의자와 공동발의자를 연결합니다.
 
 ```{r edgelist}
 # 22대 법안으로 한정
 props_22 <- proposers %>%
   filter(propose_date >= as.Date("2024-05-30"))
 
-# 대표발의자 - 공동발의자 쌍
+# 대표발의자와 공동발의자 분리
 leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
 cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
 
+# 대표-공동발의 쌍 만들기
 edges <- inner_join(leads, cosponsors, by = "bill_id") %>%
   filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor)
 
@@ -86,9 +121,18 @@ edge_weights <- edges %>%
 
 cat("노드(의원):", n_distinct(c(edge_weights$lead, edge_weights$cosponsor)), "\n")
 cat("엣지(연결):", nrow(edge_weights), "\n")
+cat("평균 가중치:", round(mean(edge_weights$weight), 1), "\n")
 ```
 
+---
+
 ## 4. igraph 네트워크 생성
+
+```{r}
+library(igraph)
+```
+
+`igraph`는 R에서 가장 널리 쓰이는 네트워크 분석 패키지입니다.
 
 ```{r create-graph}
 g <- graph_from_data_frame(edge_weights, directed = FALSE)
@@ -98,54 +142,95 @@ leg_22 <- legislators %>%
   filter(assembly == 22) %>%
   distinct(member_id, .keep_all = TRUE)
 
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$party  <- leg_22$party[match(V(g)$name, leg_22$member_id)]
 V(g)$gender <- leg_22$gender[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+V(g)$label  <- leg_22$name[match(V(g)$name, leg_22$member_id)]
 
 cat("노드:", vcount(g), "\n")
 cat("엣지:", ecount(g), "\n")
 cat("밀도:", round(graph.density(g), 4), "\n")
 ```
 
-## 5. 중심성 지표
+> **네트워크 밀도**: 가능한 모든 연결 중 실제로 존재하는 연결의 비율.
+> 밀도가 1이면 모든 노드가 서로 연결, 0이면 아무 연결 없음.
+> 보통 공동발의 네트워크의 밀도는 상당히 높습니다.
 
-```{r centrality}
-# 연결 중심성 (degree centrality)
+---
+
+## 5. 중심성 지표: 누가 네트워크의 중심인가?
+
+"네트워크에서 중요한 노드"를 정의하는 방법은 여러 가지입니다.
+각 지표는 "중요하다"의 다른 측면을 포착합니다.
+
+### 연결 중심성 (Degree Centrality)
+
+가장 단순한 지표: **얼마나 많은 다른 의원과 연결되어 있는가?**
+
+```{r degree}
 V(g)$degree <- degree(g)
 
-# 매개 중심성 (betweenness centrality)
-V(g)$betweenness <- betweenness(g, normalized = TRUE)
-
-# 근접 중심성 (closeness centrality)
-V(g)$closeness <- closeness(g, normalized = TRUE)
-
-# 결과 정리
-centrality_df <- data.frame(
-  member_id   = V(g)$name,
-  name        = V(g)$label,
-  party       = V(g)$party,
-  degree      = V(g)$degree,
-  betweenness = round(V(g)$betweenness, 6),
-  closeness   = round(V(g)$closeness, 6),
+degree_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = V(g)$degree,
   stringsAsFactors = FALSE
 ) %>%
   filter(!is.na(name))
 
 # 연결 중심성 상위 10명
-centrality_df %>%
+degree_df %>%
   arrange(desc(degree)) %>%
   head(10)
 ```
 
-### 매개 중심성 상위 의원
+### 매개 중심성 (Betweenness Centrality)
 
-```{r betweenness-top}
-centrality_df %>%
+**서로 다른 그룹을 연결하는 "다리" 역할을 하는 의원**은 누구인가?
+매개 중심성은 네트워크의 최단 경로 중 해당 노드를 지나가는 비율을 측정합니다.
+
+```{r betweenness}
+V(g)$betweenness <- betweenness(g, normalized = TRUE)
+
+between_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  betweenness = round(V(g)$betweenness, 6),
+  stringsAsFactors = FALSE
+) %>%
+  filter(!is.na(name))
+
+between_df %>%
   arrange(desc(betweenness)) %>%
   head(10)
 ```
 
-매개 중심성이 높은 의원은 서로 다른 그룹을 연결하는 "다리" 역할을 합니다.
+연결 중심성이 높은 의원과 매개 중심성이 높은 의원이 다를 수 있습니다.
+매개 중심성이 높은 의원은 "많은 사람을 아는 사람"이 아니라
+"서로 다른 그룹을 연결하는 사람"입니다.
+
+### 중심성 비교 산점도
+
+```{r centrality-scatter}
+centrality_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = V(g)$degree,
+  betweenness = V(g)$betweenness,
+  stringsAsFactors = FALSE
+) %>%
+  filter(!is.na(name), !is.na(party))
+
+ggplot(centrality_df, aes(x = degree, y = betweenness)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  labs(
+    x = "연결 중심성 (Degree)",
+    y = "매개 중심성 (Betweenness)",
+    title = "두 가지 중심성 지표 비교"
+  ) +
+  theme_minimal()
+```
+
+---
 
 ## 6. 정당별 네트워크 구조
 
@@ -156,84 +241,78 @@ centrality_df %>%
   summarise(
     n = n(),
     avg_degree = round(mean(degree), 1),
-    avg_betweenness = round(mean(betweenness), 6),
-    max_degree = max(degree)
+    max_degree = max(degree),
+    avg_between = round(mean(betweenness), 6)
   )
 ```
+
+### 정당별 연결 중심성 분포
 
 ```{r party-boxplot}
 centrality_df %>%
   filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
   ggplot(aes(x = party, y = degree, fill = party)) +
-  geom_boxplot(show.legend = FALSE) +
-  labs(x = NULL, y = "연결 중심성 (degree)",
-       title = "정당별 공동발의 네트워크 연결 중심성") +
+  geom_boxplot(show.legend = FALSE, alpha = 0.7) +
+  scale_fill_manual(values = c(
+    "국민의힘" = "#E61E2B",
+    "더불어민주당" = "#004EA2",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  labs(
+    x = NULL, y = "연결 중심성 (Degree)",
+    title = "정당별 공동발의 네트워크 연결 중심성"
+  ) +
   theme_minimal()
 ```
 
+---
+
 ## 7. 커뮤니티 탐지
 
-네트워크에서 밀접하게 연결된 하위 그룹(커뮤니티)을 찾습니다.
+네트워크에서 밀접하게 연결된 하위 그룹을 **커뮤니티(community)**라 합니다.
+알고리즘이 자동으로 커뮤니티를 찾아줍니다.
+
+### Louvain 알고리즘
 
 ```{r community}
-# Louvain 알고리즘
 comm <- cluster_louvain(g)
 V(g)$community <- membership(comm)
 
-cat("커뮤니티 수:", max(membership(comm)), "\n")
+cat("발견된 커뮤니티 수:", max(membership(comm)), "\n")
 cat("모듈성(modularity):", round(modularity(comm), 3), "\n")
+```
 
-# 커뮤니티와 정당의 관계
+> **모듈성(modularity)**: 커뮤니티 구분이 얼마나 명확한지를 나타냅니다.
+> 0에 가까우면 무작위와 다를 바 없고, 1에 가까우면 커뮤니티가 매우 뚜렷합니다.
+> 보통 0.3 이상이면 의미 있는 구조가 있다고 봅니다.
+
+### 커뮤니티와 정당의 관계
+
+커뮤니티가 정당과 어느 정도 일치하는지 확인합시다.
+
+```{r comm-party}
 comm_party <- data.frame(
   community = V(g)$community,
   party = V(g)$party
 ) %>%
   filter(!is.na(party))
 
-table(comm_party$community, comm_party$party) %>%
-  as.data.frame() %>%
-  filter(Freq > 5) %>%
+comm_table <- table(comm_party$community, comm_party$party)
+comm_table_df <- as.data.frame(comm_table) %>%
+  filter(Freq > 3) %>%
   arrange(Var1, desc(Freq))
+
+comm_table_df
 ```
 
-커뮤니티가 정당과 어느 정도 일치하나요? 모듈성 값은 무엇을 의미하나요?
+각 커뮤니티가 특정 정당에 의해 지배되나요?
+만약 그렇다면, 공동발의가 주로 같은 당 안에서 이루어진다는 뜻입니다.
 
-## 8. 네트워크 시각화
+---
 
-```{r network-viz}
-# 주요 2당 의원만 시각화 (전체는 너무 복잡)
-main_parties <- c("국민의힘", "더불어민주당")
-keep <- V(g)$party %in% main_parties & !is.na(V(g)$party)
-g_sub <- induced_subgraph(g, which(keep))
+## 8. 초당적 연결 분석
 
-# 색상 지정
-party_colors <- ifelse(V(g_sub)$party == "국민의힘", "tomato", "dodgerblue")
-
-# 레이아웃
-set.seed(42)
-layout <- layout_with_fr(g_sub)
-
-# 약한 연결 제거 (가중치 10 미만)
-g_viz <- delete_edges(g_sub, which(E(g_sub)$weight < 10))
-
-plot(g_viz,
-     vertex.color = party_colors,
-     vertex.size = sqrt(degree(g_viz)) * 0.8,
-     vertex.label = NA,
-     edge.width = E(g_viz)$weight / 50,
-     edge.color = rgb(0, 0, 0, 0.1),
-     layout = layout,
-     main = "22대 국회 공동발의 네트워크 (국민의힘 vs 더불어민주당)")
-
-legend("bottomleft",
-       legend = main_parties,
-       col = c("tomato", "dodgerblue"),
-       pch = 19, pt.cex = 1.5, bty = "n")
-```
-
-## 9. 초당적 연결
-
-정당 간 공동발의(cross-party edges)의 비율을 계산합니다.
+정당 간 공동발의(cross-party edges)는 얼마나 되는지 계산합니다.
 
 ```{r cross-party}
 edge_df <- as_data_frame(g, what = "edges") %>%
@@ -249,16 +328,173 @@ cat("초당적 엣지:", sum(edge_df$cross_party), "\n")
 cat("초당적 비율:", round(mean(edge_df$cross_party) * 100, 1), "%\n")
 ```
 
+### 정당 간 연결 히트맵
+
+어떤 정당 쌍이 가장 많이 공동발의하는지 히트맵으로 봅시다.
+
+```{r cross-party-heatmap}
+party_pair <- edge_df %>%
+  filter(party_from %in% c("국민의힘", "더불어민주당", "조국혁신당"),
+         party_to %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  count(party_from, party_to) %>%
+  mutate(n_log = log10(n + 1))
+
+ggplot(party_pair, aes(x = party_from, y = party_to, fill = n_log)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = scales::comma(n)), size = 4) +
+  scale_fill_gradient(low = "lightyellow", high = "tomato",
+                      guide = "none") +
+  labs(
+    x = NULL, y = NULL,
+    title = "정당 간 공동발의 횟수"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+대각선(같은 당 내)이 비대각선(다른 당 간)보다 훨씬 크면,
+공동발의가 정당 경계 안에서 주로 이루어진다는 것입니다.
+
+---
+
+## 9. 네트워크 시각화
+
+```{r network-viz}
+# 주요 2당만 시각화 (전체는 너무 복잡)
+main_parties <- c("국민의힘", "더불어민주당")
+keep <- V(g)$party %in% main_parties & !is.na(V(g)$party)
+g_sub <- induced_subgraph(g, which(keep))
+
+party_colors <- ifelse(V(g_sub)$party == "국민의힘", "#E61E2B", "#004EA2")
+
+set.seed(42)
+layout <- layout_with_fr(g_sub)
+
+# 약한 연결 제거 (시각적 가독성)
+g_viz <- delete_edges(g_sub, which(E(g_sub)$weight < 10))
+
+plot(g_viz,
+     vertex.color = party_colors,
+     vertex.size = sqrt(degree(g_viz)) * 0.8,
+     vertex.label = NA,
+     edge.width = E(g_viz)$weight / 50,
+     edge.color = rgb(0, 0, 0, 0.08),
+     layout = layout,
+     main = "22대 국회 공동발의 네트워크 (국민의힘 vs 더불어민주당)")
+
+legend("bottomleft",
+       legend = main_parties,
+       col = c("#E61E2B", "#004EA2"),
+       pch = 19, pt.cex = 1.5, bty = "n")
+```
+
+두 정당이 네트워크에서 분리되어 있나요, 아니면 섞여 있나요?
+이 시각화에서 정당 간 공동발의 구조를 직관적으로 파악할 수 있습니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 개념 | 의미 | 함수 |
+|------|------|------|
+| 노드/엣지 | 분석 단위 / 관계 | `graph_from_data_frame()` |
+| 연결 중심성 | 연결이 많은 노드 | `degree()` |
+| 매개 중심성 | 다리 역할을 하는 노드 | `betweenness()` |
+| 커뮤니티 탐지 | 밀접한 하위 그룹 | `cluster_louvain()` |
+| 모듈성 | 커뮤니티 구분의 명확성 | `modularity()` |
+| 초당적 비율 | 정당 간 공동발의 | 엣지 속성 비교 |
+
+다음 튜토리얼에서는 **기명투표 분석**을 다룹니다.
+같은 당 의원이 얼마나 일치해서 투표하는지, 이탈투표는 누가 하는지 분석합니다.
+
 ---
 
 ## 연습 문제
 
-1. 21대 국회의 공동발의 네트워크를 구축하고, 22대와 비교하시오. 밀도, 평균 연결 중심성, 초당적 비율이 어떻게 달라지는가?
+### 문제 1 (기초)
 
-2. 여성 의원의 매개 중심성 평균과 남성 의원의 매개 중심성 평균을 비교하시오. 성별에 따른 네트워크 위치 차이가 있는가?
+여성 의원과 남성 의원의 평균 매개 중심성을 비교하시오.
+성별에 따른 네트워크 위치 차이가 있는가?
 
-3. 특정 위원회(예: 국토교통위원회) 소속 의원들만으로 하위 네트워크를 구성하고 시각화하시오.
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
 
-4. Louvain 대신 `cluster_walktrap()` 또는 `cluster_edge_betweenness()` 알고리즘을 사용하여 커뮤니티를 탐지하고, 결과를 비교하시오.
+```
 
-5. (심화) 한 의원이 다른 의원의 법안에 공동발의한 횟수를 가중치로 사용하여 가중 네트워크를 분석하시오. 가중 중심성 지표가 비가중 지표와 어떻게 다른가?
+<details>
+<summary>정답 보기</summary>
+```{r}
+data.frame(
+  name = V(g)$label,
+  gender = V(g)$gender,
+  betweenness = V(g)$betweenness
+) %>%
+  filter(!is.na(gender)) %>%
+  group_by(gender) %>%
+  summarise(
+    n = n(),
+    avg_between = round(mean(betweenness), 6),
+    median_between = round(median(betweenness), 6)
+  )
+```
+</details>
+
+### 문제 2 (응용)
+
+Louvain 대신 `cluster_walktrap()` 알고리즘으로 커뮤니티를 탐지하고,
+Louvain 결과와 비교하시오. 모듈성과 커뮤니티 수가 어떻게 다른가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+comm_wt <- cluster_walktrap(g)
+
+data.frame(
+  Algorithm = c("Louvain", "Walktrap"),
+  Communities = c(max(membership(comm)), max(membership(comm_wt))),
+  Modularity = c(round(modularity(comm), 3), round(modularity(comm_wt), 3))
+)
+```
+</details>
+
+### 문제 3 (도전)
+
+21대 국회의 공동발의 네트워크를 구축하고, 22대와 비교하시오.
+밀도, 평균 연결 중심성, 초당적 비율 중 하나 이상을 비교하여 보고하시오.
+(힌트: `proposers`에서 `propose_date`로 대수를 구분)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+# 21대 엣지리스트
+props_21 <- proposers %>%
+  filter(propose_date >= as.Date("2020-05-30"),
+         propose_date < as.Date("2024-05-30"))
+
+leads_21 <- props_21 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cos_21 <- props_21 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+
+ew_21 <- inner_join(leads_21, cos_21, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g_21 <- graph_from_data_frame(ew_21, directed = FALSE)
+
+data.frame(
+  Assembly = c("21대", "22대"),
+  Nodes = c(vcount(g_21), vcount(g)),
+  Edges = c(ecount(g_21), ecount(g)),
+  Density = c(round(graph.density(g_21), 4), round(graph.density(g), 4)),
+  Avg_Degree = c(round(mean(degree(g_21)), 1), round(mean(degree(g)), 1))
+)
+```
+</details>

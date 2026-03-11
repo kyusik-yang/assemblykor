@@ -1,20 +1,44 @@
 ---
 title: "튜토리얼 1: R 기초와 tidyverse"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(assemblykor)
+library(dplyr)
+data(legislators)
+data(bills)
+data(wealth)
 ```
 
-## 학습 목표
+## 이 튜토리얼에서 배울 것
 
-- R에서 데이터를 불러오고 구조를 파악하는 방법을 익힌다
-- `dplyr`의 핵심 함수 5개를 사용할 수 있다
-- 파이프 연산자(`%>%`)로 분석 흐름을 연결할 수 있다
+**연구 질문**: 한국 국회의 구성은 어떻게 변해왔는가?
 
-## 1. 패키지와 데이터 불러오기
+이 튜토리얼에서는 20-22대 국회의원 데이터를 탐색하면서 R의 기본 도구를 익힙니다.
+단순히 함수를 외우는 것이 아니라, "어떤 질문에 답하기 위해 이 도구가 필요한가?"를
+생각하며 진행합니다.
+
+배울 내용:
+
+- R에서 데이터를 불러오고 구조를 파악하는 방법
+- `dplyr` 핵심 함수 5개: `filter()`, `select()`, `mutate()`, `arrange()`, `summarise()`
+- 파이프 연산자(`%>%`)로 분석 흐름을 자연스럽게 연결하기
+- 두 데이터를 `join`으로 합치기
+
+---
+
+## 1. 데이터 불러오기
+
+`assemblykor` 패키지에는 한국 국회 관련 데이터가 내장되어 있습니다.
+`library()`로 패키지를 불러오고, `data()`로 데이터를 메모리에 올립니다.
 
 ```{r}
 library(assemblykor)
@@ -23,139 +47,514 @@ library(dplyr)
 data(legislators)
 ```
 
-`str()`로 데이터 구조를 확인해봅시다.
+### 데이터 구조 파악하기
+
+처음 데이터를 받으면 반드시 구조부터 확인합니다.
+이 습관은 분석 실수를 줄여주는 가장 중요한 첫 단계입니다.
 
 ```{r}
+# 행(row)과 열(column)의 수
+dim(legislators)
+```
+
+947개 행, 15개 열입니다. 행 하나가 무엇을 의미하는지 아는 것이 중요합니다.
+여기서 **한 행 = 한 의원의 한 대(assembly)에서의 기록**입니다.
+같은 의원이 20대와 21대에 모두 활동했다면, 두 개의 행으로 나타납니다.
+
+```{r}
+# 변수 이름과 타입 확인
 str(legislators)
 ```
 
-947개 행은 20-22대 국회의원 기록입니다. 한 의원이 여러 대에 걸쳐 활동하면 여러 행으로 나타납니다.
+### 주요 변수 이해하기
 
-## 2. 데이터 살펴보기
+| 변수 | 설명 | 예시 |
+|------|------|------|
+| `member_id` | 의원 고유 식별자 | 대를 걸쳐 동일 |
+| `assembly` | 국회 대수 | 20, 21, 22 |
+| `name` | 이름 (한글) | 홍길동 |
+| `party` | 소속 정당 | 더불어민주당 |
+| `district_type` | 선출 방식 | constituency (지역구), proportional (비례대표) |
+| `gender` | 성별 | M (남), F (여) |
+| `seniority` | 선수 (당선 횟수) | 1 = 초선, 2 = 재선, ... |
+| `n_bills` | 발의 참여 총건수 (대표 + 공동) | 중앙값 약 700 |
+| `n_bills_lead` | **대표발의** 건수 | 중앙값 약 56 |
+
+> **주의**: `n_bills`는 대표발의와 공동발의(연서)를 합산한 수치입니다.
+> 한국 국회에서는 공동발의 문화가 활발하여, `n_bills`가 수천 건에 달하는
+> 의원도 있습니다. 순수하게 "이 의원이 주도한 법안"을 보려면
+> `n_bills_lead`를 사용하세요.
+
+### 처음 몇 행 확인하기
 
 ```{r}
-# 처음 6행
 head(legislators)
-
-# 요약 통계
-summary(legislators$n_bills_lead)
-
-# 대수별 의원 수
-table(legislators$assembly)
 ```
 
-## 3. dplyr 핵심 함수
-
-### filter(): 행 선택하기
+### 요약 통계
 
 ```{r}
-# 22대 여성 의원만
+summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
+```
+
+대표발의 건수의 최솟값이 0, 최댓값이 696입니다. 의원 간 편차가 크다는 것을
+알 수 있습니다. 왜 이런 차이가 생길까요? 이 질문을 가지고 계속 진행해봅시다.
+
+---
+
+## 2. filter(): 조건에 맞는 행 골라내기
+
+분석할 때 "전체 데이터 중에서 특정 조건에 맞는 부분만 보고 싶다"는
+상황이 자주 생깁니다. `filter()`가 바로 그 역할을 합니다.
+
+**기본 문법**: `filter(데이터, 조건1, 조건2, ...)`
+
+여러 조건을 쉼표로 나열하면 **AND** (모두 만족)입니다.
+
+```{r}
+# 22대 여성 의원만 골라내기
 women_22 <- filter(legislators, assembly == 22, gender == "F")
 nrow(women_22)
 ```
 
-### select(): 열 선택하기
+22대 국회에 여성 의원이 `r nrow(women_22)`명 있습니다.
+전체 의원 수 대비 몇 퍼센트인지 계산해봅시다.
 
 ```{r}
-# 이름, 정당, 발의 건수만
-select(legislators, name, party, n_bills_lead)
+total_22 <- nrow(filter(legislators, assembly == 22))
+cat("22대 여성 의원 비율:", round(nrow(women_22) / total_22 * 100, 1), "%")
 ```
 
-### mutate(): 새 변수 만들기
+### 자주 쓰는 비교 연산자
+
+| 연산자 | 의미 | 예시 |
+|--------|------|------|
+| `==` | 같다 | `assembly == 22` |
+| `!=` | 같지 않다 | `party != "무소속"` |
+| `>`, `>=` | 크다, 크거나 같다 | `seniority >= 3` |
+| `<`, `<=` | 작다, 작거나 같다 | `n_bills_lead < 10` |
+| `%in%` | 목록 안에 있다 | `party %in% c("국민의힘", "더불어민주당")` |
 
 ```{r}
-# 공동발의 참여 건수 = 전체 - 대표발의
-legislators <- mutate(legislators,
-  n_cosponsor = n_bills - n_bills_lead,
-  lead_ratio  = n_bills_lead / n_bills
-)
+# 3선 이상 의원
+senior <- filter(legislators, assembly == 22, seniority >= 3)
+cat("22대 3선 이상 의원:", nrow(senior), "명")
 ```
 
-### arrange(): 정렬하기
+```{r}
+# 양대 정당 소속 의원
+two_party <- filter(legislators, assembly == 22,
+                    party %in% c("국민의힘", "더불어민주당"))
+cat("양대 정당 의원:", nrow(two_party), "명 /", total_22, "명 중")
+```
+
+---
+
+## 3. select(): 필요한 열만 골라보기
+
+데이터에 15개 열이 있지만, 분석 목적에 따라 몇 개만 필요한 경우가 많습니다.
+`select()`로 원하는 열만 뽑아 데이터를 깔끔하게 정리할 수 있습니다.
 
 ```{r}
-# 대표발의 많은 순으로
+# 이름, 정당, 대표발의 건수만
 legislators %>%
   filter(assembly == 22) %>%
-  arrange(desc(n_bills_lead)) %>%
   select(name, party, n_bills_lead) %>%
   head(10)
 ```
 
-### group_by() + summarise(): 그룹별 요약
+여기서 `%>%`(파이프)가 처음 등장했습니다. 다음 섹션에서 자세히 설명하겠지만,
+"그리고 나서"라고 읽으면 됩니다: 데이터를 **필터하고** 그리고 나서 **열을 고르고**
+그리고 나서 **처음 10개만 보여줘**.
+
+### 열 선택의 다양한 방법
 
 ```{r}
-# 정당별 평균 대표발의 건수 (22대)
+# 특정 열 제외하기 (- 기호)
 legislators %>%
-  filter(assembly == 22) %>%
-  group_by(party) %>%
-  summarise(
-    n      = n(),
-    avg    = mean(n_bills_lead),
-    median = median(n_bills_lead)
-  ) %>%
-  filter(n >= 5) %>%
-  arrange(desc(avg))
+  select(-name_hanja, -name_eng, -committees) %>%
+  head(3)
 ```
 
-## 4. 파이프로 분석 연결하기
+```{r}
+# 특정 패턴으로 시작하는 열
+legislators %>%
+  select(name, starts_with("n_")) %>%
+  head(5)
+```
 
-대수별 여성 의원 비율을 계산해봅시다.
+---
+
+## 4. 파이프 연산자 `%>%`: 분석 흐름 연결하기
+
+파이프(`%>%`)는 tidyverse의 핵심 아이디어입니다.
+왼쪽의 결과를 오른쪽 함수의 **첫 번째 인자**로 넘깁니다.
+
+파이프 없이 쓰면:
+
+```{r eval=FALSE}
+# 파이프 없이 - 안쪽부터 바깥쪽으로 읽어야 함 (읽기 어려움)
+head(select(filter(legislators, assembly == 22), name, party), 5)
+```
+
+파이프로 쓰면:
+
+```{r}
+# 파이프 사용 - 위에서 아래로 자연스럽게 읽힘
+legislators %>%
+  filter(assembly == 22) %>%
+  select(name, party) %>%
+  head(5)
+```
+
+"legislators 데이터를 가져와서 → 22대만 골라서 → 이름과 정당만 뽑아서 →
+처음 5개를 보여줘." 글로 쓴 것과 코드가 거의 같은 순서입니다.
+
+> **팁**: RStudio에서 `Ctrl+Shift+M` (Mac: `Cmd+Shift+M`)을 누르면
+> 파이프 연산자가 자동 입력됩니다.
+
+---
+
+## 5. mutate(): 새 변수 만들기
+
+기존 변수를 조합해서 새로운 변수를 만들 때 `mutate()`를 씁니다.
+원래 데이터가 바뀌는 것이 아니라, 열이 추가된 새 데이터가 만들어집니다.
+
+**질문**: 대표발의와 공동발의의 비율은 의원마다 얼마나 다를까?
+
+```{r}
+legislators_extended <- legislators %>%
+  mutate(
+    n_cosponsor = n_bills - n_bills_lead,
+    lead_ratio  = round(n_bills_lead / n_bills, 3)
+  )
+
+# 22대 의원 중 대표발의 비율이 가장 높은 10명
+legislators_extended %>%
+  filter(assembly == 22) %>%
+  select(name, party, n_bills_lead, n_cosponsor, lead_ratio) %>%
+  arrange(desc(lead_ratio)) %>%
+  head(10)
+```
+
+`lead_ratio`가 높은 의원은 공동발의보다 직접 발의를 많이 하는 의원입니다.
+어떤 특성의 의원이 이 비율이 높을까요? (선수? 정당? 성별?)
+이런 질문이 회귀분석(튜토리얼 3)으로 이어집니다.
+
+---
+
+## 6. arrange(): 정렬하기
+
+`arrange()`는 데이터를 특정 변수 기준으로 정렬합니다.
+`desc()`를 쓰면 내림차순(큰 것부터)입니다.
+
+```{r}
+# 22대 국회에서 대표발의를 가장 많이 한 의원 10명
+legislators %>%
+  filter(assembly == 22) %>%
+  arrange(desc(n_bills_lead)) %>%
+  select(name, party, district_type, seniority, n_bills_lead) %>%
+  head(10)
+```
+
+상위 10명의 특징을 살펴보세요. 특정 정당이나 선수에 집중되어 있나요?
+
+---
+
+## 7. group_by() + summarise(): 그룹별 요약
+
+이것이 `dplyr`에서 가장 강력한 패턴입니다.
+데이터를 그룹으로 나누고(`group_by`), 각 그룹의 요약 통계를
+계산합니다(`summarise`).
+
+**질문**: 대수별로 국회 구성은 어떻게 달라졌는가?
 
 ```{r}
 legislators %>%
   group_by(assembly) %>%
   summarise(
-    total = n(),
-    n_women = sum(gender == "F"),
-    pct_women = round(n_women / total * 100, 1)
+    total       = n(),
+    n_women     = sum(gender == "F"),
+    pct_women   = round(n_women / total * 100, 1),
+    n_pr        = sum(district_type == "proportional"),
+    avg_senior  = round(mean(seniority, na.rm = TRUE), 1),
+    median_bills = median(n_bills_lead)
   )
 ```
 
-## 5. 다른 데이터도 불러보기
+이 하나의 테이블에서 여러 가지를 읽을 수 있습니다:
+
+- 여성 의원 비율이 대수마다 어떻게 변하고 있는지
+- 비례대표 의원 수의 변화
+- 평균 선수와 법안 활동의 추이
+
+### 정당별 비교
 
 ```{r}
-data(bills)
-data(wealth)
-
-# 법안 데이터 구조
-dim(bills)
-head(bills$bill_name, 5)
-
-# 재산 데이터 구조
-dim(wealth)
-summary(wealth$net_worth / 1e6)  # 단위: 10억원
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(party) %>%
+  summarise(
+    n          = n(),
+    pct_women  = round(sum(gender == "F") / n() * 100, 1),
+    pct_pr     = round(sum(district_type == "proportional") / n() * 100, 1),
+    avg_bills  = round(mean(n_bills_lead), 1)
+  ) %>%
+  filter(n >= 5) %>%
+  arrange(desc(n))
 ```
 
-## 6. 두 데이터 합치기 (join)
+> **해석할 때 주의할 점**: 이 표에서 "A 정당이 B 정당보다 평균 발의 건수가 많다"는
+> 사실을 확인할 수 있지만, 그 **이유**는 이 표만으로는 알 수 없습니다.
+> 정당 효과인지, 선수 차이 때문인지, 또 다른 요인 때문인지를 분리하려면
+> 회귀분석(튜토리얼 3)이 필요합니다.
 
-의원 정보와 재산 정보를 `member_id`로 연결합니다.
+### 두 변수로 그룹 나누기
 
 ```{r}
-leg_wealth <- legislators %>%
-  inner_join(wealth, by = "member_id", relationship = "many-to-many")
-
-dim(leg_wealth)
-
-# 성별에 따른 순자산 차이
-leg_wealth %>%
-  group_by(gender) %>%
+# 대수별 + 성별 대표발의 건수
+legislators %>%
+  group_by(assembly, gender) %>%
   summarise(
     n = n(),
-    median_nw = median(net_worth / 1e6, na.rm = TRUE)
+    median_bills = median(n_bills_lead),
+    .groups = "drop"
   )
 ```
 
 ---
 
+## 8. 다른 데이터도 살펴보기
+
+`assemblykor`에는 의원 데이터 외에도 법안, 재산 데이터가 있습니다.
+
+```{r}
+data(bills)
+data(wealth)
+```
+
+### 법안 데이터
+
+```{r}
+dim(bills)
+head(bills %>% select(bill_name, committee, propose_date, result), 5)
+```
+
+60,925건의 법안 메타데이터입니다. `result` 열에서 법안의 최종 처리 결과를 볼 수 있습니다.
+
+```{r}
+# 법안 처리 결과 분포
+bills %>%
+  count(result, sort = TRUE) %>%
+  head(8)
+```
+
+대부분의 법안이 "임기만료폐기" (국회 임기가 끝나면서 자동 폐기)되는 것을
+알 수 있습니다. 원안 그대로 통과되는 법안은 전체의 극히 일부입니다.
+
+### 재산 데이터
+
+```{r}
+dim(wealth)
+
+# 순자산 요약 (10억 원 단위로 변환)
+summary(wealth$net_worth / 1e6)
+```
+
+> **단위**: `wealth` 데이터의 금액은 **천원(1,000원)** 단위입니다.
+> 10억 원 = 1,000,000 (백만 단위). 분석할 때 `/ 1e6`으로 나누면
+> 10억 원 단위가 됩니다.
+
+---
+
+## 9. 두 데이터 합치기 (join)
+
+서로 다른 데이터를 공통 열(키)로 연결하는 것을 **join**이라 합니다.
+`legislators`와 `wealth`는 `member_id`라는 공통 식별자를 가지고 있어,
+의원의 인적 정보와 재산 정보를 합칠 수 있습니다.
+
+### join의 종류
+
+| 함수 | 설명 |
+|------|------|
+| `inner_join()` | 양쪽 모두에 있는 행만 |
+| `left_join()` | 왼쪽 데이터 기준, 오른쪽에 없으면 NA |
+| `full_join()` | 양쪽 모든 행 포함 |
+
+```{r}
+leg_wealth <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(
+    wealth %>% filter(year == 2024),
+    by = "member_id"
+  )
+
+cat("합친 후 행 수:", nrow(leg_wealth), "\n")
+cat("원래 22대 의원:", nrow(filter(legislators, assembly == 22)), "\n")
+```
+
+행 수가 줄어들었다면, 일부 의원의 재산 데이터가 없다는 뜻입니다.
+`inner_join`은 양쪽 모두에 존재하는 경우만 남기기 때문입니다.
+
+### 합친 데이터로 분석하기
+
+```{r}
+# 성별에 따른 순자산 차이
+leg_wealth %>%
+  group_by(gender) %>%
+  summarise(
+    n = n(),
+    median_nw_bn = round(median(net_worth / 1e6, na.rm = TRUE), 1),
+    avg_nw_bn    = round(mean(net_worth / 1e6, na.rm = TRUE), 1)
+  )
+```
+
+```{r}
+# 강남 부동산 보유 여부에 따른 순자산
+leg_wealth %>%
+  group_by(has_gangnam_property) %>%
+  summarise(
+    n = n(),
+    median_nw_bn = round(median(net_worth / 1e6, na.rm = TRUE), 1)
+  )
+```
+
+---
+
+## 정리: 오늘 배운 것
+
+| 함수 | 용도 | 비유 |
+|------|------|------|
+| `filter()` | 행 선택 | 엑셀에서 필터 걸기 |
+| `select()` | 열 선택 | 필요한 열만 남기기 |
+| `mutate()` | 새 열 추가 | 새 계산 열 만들기 |
+| `arrange()` | 정렬 | 오름차순/내림차순 |
+| `group_by() + summarise()` | 그룹 요약 | 피벗 테이블 |
+| `%>%` (파이프) | 연결 | "그리고 나서" |
+| `inner_join()` | 데이터 합치기 | VLOOKUP |
+
+다음 튜토리얼에서는 이 데이터를 **ggplot2로 시각화**합니다.
+숫자 표만으로는 놓치기 쉬운 패턴을 그래프로 발견하는 방법을 배웁니다.
+
+---
+
 ## 연습 문제
 
-1. 22대 국회에서 비례대표(`district_type == "proportional"`) 의원은 몇 명인가?
+### 문제 1 (기초)
 
-2. 대수별로 초선(`seniority == 1`) 의원의 비율을 계산하시오.
+22대 국회에서 비례대표(`district_type == "proportional"`) 의원은 몇 명인가?
 
-3. `wealth` 데이터에서 2025년 기준, 강남 부동산 보유 의원(`has_gangnam_property == TRUE`)의 평균 순자산과 비보유 의원의 평균 순자산을 비교하시오.
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
 
-4. `bills` 데이터에서 가장 많은 법안이 배정된 상임위원회 상위 5개를 구하시오.
+```
 
-5. 의원별 대표발의 건수(`n_bills_lead`)와 순자산(`net_worth`)을 합친 데이터프레임을 만들어 상관계수를 구하시오.
+<details>
+<summary>정답 보기</summary>
+```{r}
+legislators %>%
+  filter(assembly == 22, district_type == "proportional") %>%
+  nrow()
+```
+</details>
+
+### 문제 2 (기초)
+
+대수별로 초선(`seniority == 1`) 의원의 비율을 계산하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+legislators %>%
+  group_by(assembly) %>%
+  summarise(
+    total = n(),
+    freshmen = sum(seniority == 1, na.rm = TRUE),
+    pct = round(freshmen / total * 100, 1)
+  )
+```
+</details>
+
+### 문제 3 (응용)
+
+`bills` 데이터에서 대수별(`assembly`) 법안 수와 원안가결 비율을 구하시오.
+(힌트: `result == "원안가결"`인 법안의 비율)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+bills %>%
+  group_by(assembly) %>%
+  summarise(
+    n_bills = n(),
+    n_passed = sum(result == "원안가결", na.rm = TRUE),
+    pass_rate = round(n_passed / n_bills * 100, 1)
+  )
+```
+</details>
+
+### 문제 4 (응용)
+
+의원별 대표발의 건수(`n_bills_lead`)와 2024년 순자산(`net_worth`)의 상관계수를
+구하시오. 두 데이터를 합치는 과정이 필요합니다.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+merged <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
+
+cor(merged$n_bills_lead, merged$net_worth, use = "complete.obs")
+```
+상관계수가 0에 가까우면 재산과 입법 활동 사이에 강한 선형 관계가 없다는 뜻입니다.
+하지만 선형 관계가 없다고 해서 아무 관계도 없다는 것은 아닙니다.
+튜토리얼 3에서 이 관계를 더 자세히 분석합니다.
+</details>
+
+### 문제 5 (도전)
+
+다음 질문에 답하는 분석을 처음부터 끝까지 직접 설계하시오:
+**"지역구 의원과 비례대표 의원의 입법 활동 패턴은 어떻게 다른가?"**
+
+비교할 지표를 최소 3개 선택하고, 결과를 해석하는 문장을 1-2줄 작성하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>예시 답안</summary>
+```{r}
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(district_type) %>%
+  summarise(
+    n = n(),
+    median_lead = median(n_bills_lead),
+    median_total = median(n_bills),
+    pct_women = round(sum(gender == "F") / n() * 100, 1),
+    avg_seniority = round(mean(seniority, na.rm = TRUE), 1)
+  )
+```
+이 결과를 보면, 지역구 의원과 비례대표 의원은 입법 활동량,
+여성 비율, 평균 선수 등에서 차이를 보일 수 있습니다.
+다만, 이 차이가 선출 방식 자체의 효과인지, 다른 요인(정당, 경력 등) 때문인지는
+이 표만으로는 판단할 수 없습니다.
+</details>

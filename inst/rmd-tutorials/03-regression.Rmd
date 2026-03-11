@@ -1,48 +1,47 @@
 ---
 title: "튜토리얼 3: 회귀분석"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-ggplot2::theme_set(ggplot2::theme_gray(base_family = ko_font))
-```
-
-## 학습 목표
-
-- `lm()`으로 OLS 회귀분석을 실행하고 결과를 해석할 수 있다
-- 다중회귀에서 통제변수의 역할을 이해한다
-- 로그 변환과 상호작용 항을 사용할 수 있다
-
-## 1. 준비
-
-```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
 library(assemblykor)
 library(dplyr)
 library(ggplot2)
-
+set_ko_font()
 data(legislators)
 data(wealth)
 ```
 
+## 이 튜토리얼에서 배울 것
+
 **연구 질문**: 국회의원의 재산은 입법 활동에 영향을 미치는가?
 
-22대 의원 데이터를 재산 정보와 결합합니다.
+튜토리얼 1에서 재산과 발의 건수의 상관계수를 구했습니다.
+하지만 상관계수만으로는 "다른 조건이 같을 때에도 관계가 유지되는가?"를
+알 수 없습니다. 회귀분석은 이 질문에 답하는 도구입니다.
+
+배울 내용:
+
+- `lm()`으로 단순/다중 회귀분석을 실행하고 결과를 읽는 방법
+- 통제변수의 역할: 왜 변수를 추가하면 계수가 바뀌는가?
+- 로그 변환: 치우친 변수를 다루는 방법
+- 상호작용 항: 효과가 그룹마다 다를 때
+- 회귀 결과를 시각화하는 방법
+
+---
+
+## 1. 데이터 준비
+
+22대 의원의 인적 정보와 2024년 재산 데이터를 합칩니다.
 
 ```{r}
-# 2024년 재산과 22대 의원 정보 결합
 df <- legislators %>%
   filter(assembly == 22) %>%
   inner_join(
@@ -50,46 +49,125 @@ df <- legislators %>%
     by = "member_id"
   )
 
-dim(df)
+cat("분석 대상:", nrow(df), "명\n")
 ```
 
-## 2. 단순회귀: 재산과 발의 건수
+---
+
+## 2. 회귀분석이란?
+
+**핵심 아이디어**: "X가 한 단위 변할 때, Y는 평균적으로 얼마나 변하는가?"
+
+산점도에 직선을 긋는 것이 회귀분석의 기본입니다. 이 직선은
+데이터 점들과의 거리(오차)를 최소화하는 **최적의 직선**입니다.
+
+$$Y = \beta_0 + \beta_1 X + \epsilon$$
+
+- $\beta_0$ (절편): X가 0일 때 Y의 예측값
+- $\beta_1$ (기울기): X가 1 증가할 때 Y의 평균 변화량
+- $\epsilon$ (오차): 모형이 설명하지 못하는 부분
+
+### 시각적으로 이해하기
+
+```{r ols-visual}
+ggplot(df, aes(x = net_worth / 1e6, y = n_bills_lead)) +
+  geom_point(alpha = 0.4, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    x = "순자산 (10억 원)",
+    y = "대표발의 건수",
+    title = "순자산과 입법 활동의 관계",
+    subtitle = "빨간 선 = 회귀 직선, 회색 영역 = 95% 신뢰구간"
+  ) +
+  theme_minimal()
+```
+
+점들이 직선 주위에 넓게 퍼져 있다면, 순자산만으로는 발의 건수를
+잘 설명하지 못한다는 뜻입니다.
+
+---
+
+## 3. 단순회귀 실행하기
 
 ```{r simple-ols}
 m1 <- lm(n_bills_lead ~ net_worth, data = df)
 summary(m1)
 ```
 
-계수를 해석해봅시다:
-- `net_worth`의 단위는 천원(1,000원)이므로, 10억 원 = 1,000,000 단위
-- 계수가 매우 작다면, 재산의 단위가 너무 크기 때문일 수 있습니다
+### 결과 읽는 법
 
-```{r scatter-simple}
-ggplot(df, aes(x = net_worth / 1e6, y = n_bills_lead)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", color = "red") +
-  labs(x = "순자산 (10억 원)", y = "대표발의 건수",
-       title = "순자산과 입법 활동") +
-  theme_minimal()
+`summary()` 출력에서 중요한 부분:
+
+| 항목 | 위치 | 의미 |
+|------|------|------|
+| `Estimate` | Coefficients 테이블 | 추정된 계수 ($\hat{\beta}$) |
+| `Std. Error` | Coefficients 테이블 | 계수의 불확실성 |
+| `Pr(>|t|)` | Coefficients 테이블 | p-value (0.05 미만이면 통계적으로 유의) |
+| `R-squared` | 하단 | 모형이 설명하는 분산의 비율 (0~1) |
+
+```{r interpret-m1}
+cat("net_worth 계수:", round(coef(m1)["net_worth"], 6), "\n")
+cat("p-value:", round(summary(m1)$coefficients["net_worth", 4], 4), "\n")
+cat("R-squared:", round(summary(m1)$r.squared, 4), "\n")
 ```
 
-## 3. 로그 변환
+R-squared가 매우 낮다면, 순자산 하나로는 발의 건수의 변동을
+거의 설명하지 못한다는 뜻입니다.
 
-재산 데이터는 보통 오른쪽으로 치우친 분포입니다. 로그 변환을 적용해봅시다.
+> **p-value에 대해**: p-value가 작다는 것은 "이 관계가 우연히 나타났을
+> 가능성이 낮다"는 뜻이지, "관계가 크다"는 뜻이 아닙니다.
+> 계수의 크기(실질적 의미)와 통계적 유의성은 별개입니다.
 
-```{r log-transform}
+---
+
+## 4. 로그 변환: 치우친 변수 다루기
+
+재산 데이터는 대부분 오른쪽으로 치우져 있습니다 (소수의 극부자가 평균을 끌어올림).
+이런 경우 로그 변환을 하면 관계를 더 잘 포착할 수 있습니다.
+
+```{r log-why, fig.height=3.5}
+library(patchwork)
+
+p1 <- ggplot(df, aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 40, fill = "steelblue", color = "white") +
+  labs(x = "순자산 (10억 원)", y = "빈도", title = "원래 스케일") +
+  theme_minimal()
+
+p2 <- df %>%
+  filter(net_worth > 0) %>%
+  ggplot(aes(x = log(net_worth))) +
+  geom_histogram(bins = 40, fill = "coral", color = "white") +
+  labs(x = "log(순자산)", y = "빈도", title = "로그 변환 후") +
+  theme_minimal()
+
+p1 + p2
+```
+
+로그 변환 후 분포가 훨씬 대칭적입니다.
+
+```{r log-model}
 df <- df %>%
-  mutate(log_nw = log(pmax(net_worth, 1)))  # 음수/0 방지
+  mutate(log_nw = log(pmax(net_worth, 1)))  # 0 이하 값 방지
 
 m2 <- lm(n_bills_lead ~ log_nw, data = df)
 summary(m2)
 ```
 
-**해석**: 로그-선형 모형에서 계수의 의미는 "순자산이 1% 증가할 때, 대표발의 건수가 β/100 만큼 변화"입니다.
+> **해석 방법**: 로그 변환된 변수의 계수는 "X가 1% 증가할 때 Y가 β/100 변화"로
+> 해석합니다. 정확히는 log(X)가 1 증가하면 Y가 β 변화이므로,
+> X가 약 2.7배(= e배) 될 때 Y가 β만큼 변합니다.
 
-## 4. 다중회귀: 통제변수 추가
+---
 
-성별, 선수, 선거구 유형을 통제합니다.
+## 5. 다중회귀: 다른 요인 통제하기
+
+단순회귀의 한계: 재산이 높은 의원이 발의를 더 많이 한다고 해도,
+그것이 재산 때문인지, 아니면 재산이 높은 의원이 동시에 경험이 많은
+(선수가 높은) 의원이기 때문인지 구분할 수 없습니다.
+
+**다중회귀**는 여러 변수를 동시에 넣어, 각 변수의 **독립적 효과**를 추정합니다.
+
+$$Y = \beta_0 + \beta_1 \text{log\_nw} + \beta_2 \text{gender} + \beta_3 \text{seniority} + \beta_4 \text{district\_type} + \epsilon$$
 
 ```{r multiple}
 m3 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type,
@@ -97,21 +175,32 @@ m3 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type,
 summary(m3)
 ```
 
-통제변수를 추가했을 때 `log_nw`의 계수가 어떻게 변했나요? 이것이 왜 중요한지 생각해봅시다.
-
-### 계수 비교
+### 계수가 바뀌었나?
 
 ```{r coef-compare}
-cat("Model 2 (bivariate):  log_nw =", round(coef(m2)["log_nw"], 3), "\n")
-cat("Model 3 (controls):   log_nw =", round(coef(m3)["log_nw"], 3), "\n")
+data.frame(
+  Model = c("단순회귀 (M2)", "다중회귀 (M3)"),
+  log_nw_coef = c(round(coef(m2)["log_nw"], 3),
+                  round(coef(m3)["log_nw"], 3)),
+  log_nw_p = c(round(summary(m2)$coefficients["log_nw", 4], 4),
+               round(summary(m3)$coefficients["log_nw", 4], 4)),
+  R_squared = c(round(summary(m2)$r.squared, 3),
+                round(summary(m3)$r.squared, 3))
+)
 ```
 
-## 5. 범주형 변수
+통제변수를 추가했을 때 재산의 계수가 줄어들었다면,
+처음에 보였던 재산의 효과 중 일부가 사실 성별, 선수, 선거구 유형의
+차이에 의한 것이었음을 의미합니다. 이것을 **교란(confounding)**이라 합니다.
 
-정당을 통제변수로 추가합니다. R은 자동으로 더미 변수를 생성합니다.
+---
+
+## 6. 범주형 변수와 기준 범주
+
+정당을 모형에 추가하면 어떤 일이 생기는지 봅시다.
 
 ```{r categorical}
-# 주요 3당만 유지 (소수 정당은 표본이 너무 작음)
+# 주요 3당만 (소수 정당은 표본 부족)
 df_3party <- df %>%
   filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당"))
 
@@ -120,7 +209,16 @@ m4 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type + party,
 summary(m4)
 ```
 
-**기준 범주(reference category)**: R은 알파벳/가나다 순으로 첫 번째 범주를 기준으로 잡습니다. `relevel()`로 변경할 수 있습니다.
+R은 범주형 변수를 자동으로 **더미 변수**로 변환합니다.
+하나의 범주가 **기준(reference)**이 되고, 나머지 범주의 계수는
+"기준 대비 차이"를 나타냅니다.
+
+```{r}
+# 기준 범주 확인
+cat("기준 정당:", levels(factor(df_3party$party))[1])
+```
+
+기준 범주를 바꾸고 싶다면:
 
 ```{r relevel}
 df_3party$party <- relevel(factor(df_3party$party), ref = "국민의힘")
@@ -129,9 +227,16 @@ m4b <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type + party,
 summary(m4b)
 ```
 
-## 6. 상호작용 항
+> **기준 범주가 바뀌어도 모형의 설명력은 같습니다.**
+> 달라지는 것은 각 범주의 계수뿐입니다.
 
-재산의 효과가 성별에 따라 다른지 확인합니다.
+---
+
+## 7. 상호작용 항: 효과가 그룹마다 다를 때
+
+**질문**: 재산의 효과가 남성과 여성에게 같은가?
+
+상호작용 항(`*`)은 두 변수의 조합 효과를 추정합니다.
 
 ```{r interaction}
 m5 <- lm(n_bills_lead ~ log_nw * gender + seniority + district_type,
@@ -139,58 +244,226 @@ m5 <- lm(n_bills_lead ~ log_nw * gender + seniority + district_type,
 summary(m5)
 ```
 
-상호작용 항 `log_nw:genderM`이 유의미한가요? 유의미하다면, 재산의 효과가 남성과 여성에게 다르게 작용한다는 뜻입니다.
+`log_nw:genderM`이 상호작용 항입니다.
+
+- 유의미하다면: 재산의 효과가 성별에 따라 다르다
+- 유의미하지 않다면: 재산의 효과가 성별에 관계없이 비슷하다
+
+### 상호작용 시각화
 
 ```{r interaction-plot}
 ggplot(df, aes(x = log_nw, y = n_bills_lead, color = gender)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = "lm", se = FALSE) +
-  scale_color_manual(values = c("F" = "#e66101", "M" = "#5e3c99"),
-                     labels = c("여성", "남성")) +
-  labs(x = "log(순자산)", y = "대표발의 건수",
-       color = "성별",
-       title = "재산과 발의 활동: 성별 상호작용") +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("F" = "#E66101", "M" = "#5E3C99"),
+    labels = c("여성", "남성")
+  ) +
+  labs(
+    x = "log(순자산)",
+    y = "대표발의 건수",
+    color = "성별",
+    title = "재산과 발의 활동: 성별 상호작용"
+  ) +
   theme_minimal()
 ```
 
-## 7. 모형 진단
+두 선의 기울기가 비슷하면 상호작용이 없는 것이고,
+기울기가 다르면 상호작용이 있는 것입니다.
 
-```{r diagnostics, fig.height=6}
+---
+
+## 8. 회귀 결과 시각화
+
+### 계수 플롯 (Coefficient Plot)
+
+회귀 결과를 표가 아닌 그래프로 보여주면 더 직관적입니다.
+
+```{r coef-plot}
+# m3의 계수와 신뢰구간 추출
+coef_df <- broom::tidy(m3, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term = case_match(term,
+      "log_nw" ~ "log(순자산)",
+      "genderM" ~ "남성 (vs 여성)",
+      "seniority" ~ "선수",
+      "district_typeproportional" ~ "비례대표 (vs 지역구)"
+    )
+  )
+
+ggplot(coef_df, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high),
+                  color = "steelblue", size = 0.8) +
+  labs(
+    x = "추정 계수 (95% 신뢰구간)",
+    y = NULL,
+    title = "대표발의 건수의 결정 요인 (다중회귀)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+- 신뢰구간이 0을 포함하면 통계적으로 유의하지 않음
+- 신뢰구간이 0의 왼쪽이면 음의 효과, 오른쪽이면 양의 효과
+- 구간이 좁을수록 추정이 정밀함
+
+> **`broom` 패키지**: `tidy()`는 회귀 결과를 깔끔한 데이터프레임으로 변환합니다.
+> 시각화나 모형 비교에 매우 편리합니다.
+> 설치: `install.packages("broom")`
+
+---
+
+## 9. 모형 진단
+
+회귀분석은 몇 가지 가정에 기반합니다. 이 가정이 심하게 위반되면
+결과를 신뢰하기 어렵습니다. 진단 그래프로 확인해봅시다.
+
+```{r diagnostics, fig.height=8}
 par(mfrow = c(2, 2))
 plot(m3)
 ```
 
-- **Residuals vs Fitted**: 패턴이 없어야 함 (등분산성)
-- **Q-Q plot**: 점이 대각선 위에 있어야 함 (정규성)
-- **Scale-Location**: 수평선이어야 함
-- **Residuals vs Leverage**: 극단값(influential points) 확인
+| 그래프 | 확인하는 것 | 좋은 신호 |
+|--------|-----------|----------|
+| Residuals vs Fitted | 등분산성 | 수평 띠, 패턴 없음 |
+| Q-Q Plot | 오차의 정규성 | 점이 대각선 위에 놓임 |
+| Scale-Location | 등분산성 (재확인) | 수평 추세선 |
+| Residuals vs Leverage | 영향력 큰 관측치 | 극단적으로 떨어진 점 없음 |
 
-## 8. 결과 정리
+대부분의 사회과학 데이터에서 가정이 완벽히 충족되지는 않습니다.
+중요한 것은 **심각한 위반**이 있는지 확인하는 것입니다.
+
+---
+
+## 10. 결과 비교 정리
+
+여러 모형의 결과를 나란히 비교합니다.
 
 ```{r results-table}
 models <- list(m1, m2, m3)
 results <- data.frame(
-  Model = paste0("M", 1:3),
+  Model = c("M1: 원래 스케일", "M2: 로그 변환", "M3: 통제변수 추가"),
   Key_var = c("net_worth", "log(net_worth)", "log(net_worth)"),
   Coef = sapply(models, \(m) round(coef(m)[2], 4)),
   SE = sapply(models, \(m) round(summary(m)$coef[2, 2], 4)),
   p = sapply(models, \(m) round(summary(m)$coef[2, 4], 4)),
   R2 = sapply(models, \(m) round(summary(m)$r.squared, 3)),
-  Controls = c("None", "None", "Gender, Seniority, District")
+  N = sapply(models, \(m) nobs(m))
 )
 print(results, row.names = FALSE)
 ```
+
+통제변수를 추가했을 때 R-squared가 높아지고, 재산의 계수가 변하는 패턴을
+관찰해보세요. 이것이 **교란 변수 통제**의 효과입니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+1. **단순회귀**: 하나의 변수로 결과를 예측
+2. **로그 변환**: 치우친 변수를 대칭적으로 만들기
+3. **다중회귀**: 여러 변수를 동시에 통제하여 독립적 효과 추정
+4. **범주형 변수**: 자동으로 더미 변수 생성, 기준 범주 이해
+5. **상호작용 항**: 효과가 그룹마다 다른지 검정
+6. **시각화**: 계수 플롯으로 결과를 직관적으로 전달
+7. **모형 진단**: 가정 위반 여부 확인
+
+다음 튜토리얼에서는 **패널 데이터**를 다룹니다. 같은 의원을
+여러 시점에서 관찰할 때, 관찰되지 않는 개인 특성을 통제하는
+**고정효과(fixed effects)** 모형을 배웁니다.
 
 ---
 
 ## 연습 문제
 
-1. 부동산 자산(`real_estate`)을 독립변수로 사용하여 대표발의 건수를 예측하는 회귀모형을 추정하시오. 순자산(`net_worth`)을 사용했을 때와 결과가 어떻게 다른가?
+### 문제 1 (기초)
 
-2. 강남 부동산 보유 여부(`has_gangnam_property`)를 더미변수로 추가한 모형을 추정하시오. 통계적으로 유의미한가?
+부동산 자산(`real_estate`)을 독립변수로 사용하여 대표발의 건수를 예측하는
+회귀모형을 추정하시오. 순자산(`net_worth`)을 사용했을 때와 결과가 어떻게 다른가?
 
-3. `seminars` 데이터를 사용하여, 세미나 개최 건수(`n_seminars`)가 초당적 협력 비율(`cross_party_ratio`)에 미치는 영향을 분석하시오. 여당 여부(`is_governing`)를 통제하시오.
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
 
-4. 종속변수를 로그 변환한 log-log 모형(`log(n_bills_lead) ~ log_nw`)을 추정하고, 계수의 의미를 탄력성(elasticity)으로 해석하시오.
+```
 
-5. 모든 통제변수를 포함한 "최선의 모형"을 구성하고, adjusted R-squared를 기준으로 모형 간 비교표를 만드시오.
+<details>
+<summary>정답 보기</summary>
+```{r}
+m_re <- lm(n_bills_lead ~ real_estate, data = df)
+summary(m_re)
+cat("\n순자산 R2:", round(summary(m1)$r.squared, 4),
+    "\n부동산 R2:", round(summary(m_re)$r.squared, 4))
+```
+</details>
+
+### 문제 2 (기초)
+
+강남 부동산 보유 여부(`has_gangnam_property`)를 통제변수로 추가한 다중회귀 모형을
+추정하시오. 이 변수가 통계적으로 유의미한가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+m_gangnam <- lm(n_bills_lead ~ log_nw + has_gangnam_property + gender +
+                  seniority + district_type, data = df)
+summary(m_gangnam)
+```
+</details>
+
+### 문제 3 (응용)
+
+`seminars` 데이터를 사용하여, 세미나 개최 건수(`n_seminars`)가 초당적 협력
+비율(`cross_party_ratio`)에 미치는 영향을 분석하시오. 여당 여부(`is_governing`)와
+선수(`seniority`)를 통제하시오. 결과를 계수 플롯으로 시각화하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+data(seminars)
+m_sem <- lm(cross_party_ratio ~ n_seminars + is_governing + seniority,
+            data = seminars)
+summary(m_sem)
+
+broom::tidy(m_sem, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high), color = "steelblue") +
+  labs(x = "추정 계수 (95% CI)", y = NULL,
+       title = "초당적 협력의 결정 요인") +
+  theme_minimal()
+```
+</details>
+
+### 문제 4 (도전)
+
+종속변수를 로그 변환한 log-log 모형(`log(n_bills_lead) ~ log_nw`)을 추정하고,
+계수의 의미를 **탄력성(elasticity)**으로 해석하시오.
+(힌트: log-log 모형에서 계수는 "X가 1% 증가할 때 Y가 β% 변화"로 해석됩니다.)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+df_log <- df %>% filter(n_bills_lead > 0, net_worth > 0)
+m_loglog <- lm(log(n_bills_lead) ~ log(net_worth), data = df_log)
+summary(m_loglog)
+cat("\n해석: 순자산이 1% 증가하면, 대표발의 건수가",
+    round(coef(m_loglog)[2], 3), "% 변화합니다.")
+```
+</details>

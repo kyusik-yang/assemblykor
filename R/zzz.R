@@ -46,7 +46,7 @@
     "    get_proposers()            Co-sponsorship records\n",
     "\n",
     "  Tutorials:\n",
-    "    list_tutorials()           See all 6 tutorials\n",
+    "    list_tutorials()           See all 9 tutorials\n",
     "    run_tutorial(1)            Launch in browser (interactive)\n",
     "    open_tutorial(1)           Copy Rmd to working directory\n",
     "\n",

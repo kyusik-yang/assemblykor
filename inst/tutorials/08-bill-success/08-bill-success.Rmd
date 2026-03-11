@@ -1,0 +1,481 @@
+---
+title: "Tutorial 8: Bill Success Factors"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+data(bills)
+data(legislators)
+set_ko_font()
+tutorial_options(exercise.eval = FALSE)
+```
+
+```{r theme, echo=FALSE}
+htmltools::includeCSS(
+  system.file("tutorials/css/assemblykor.css", package = "assemblykor")
+)
+```
+
+## Learning Objectives
+
+**Research Question**: What determines whether a bill passes in the Korean National Assembly?
+
+Tens of thousands of bills are proposed each term, but only a fraction actually pass. What factors determine success? Proposer seniority? Party? Committee?
+
+Since the outcome is binary (pass/fail), we use **logistic regression** instead of OLS.
+
+You will learn:
+
+- Exploring bill processing outcomes
+- Why logistic regression is needed for binary outcomes
+- Running logistic regression with `glm()`
+- Interpreting odds ratios
+- Visualizing predicted probabilities
+
+## 1. Bill Processing Outcomes
+
+```{r result-overview, exercise=TRUE}
+bills %>%
+  count(result, sort = TRUE) %>%
+  mutate(pct = round(n / sum(n) * 100, 1)) %>%
+  head(10)
+```
+
+Most bills die from "term expiration" (the assembly term ends before they are processed). This is a distinctive feature of the Korean National Assembly.
+
+### Creating a Binary Variable
+
+```{r binary, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(
+    passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")),
+    year = as.integer(format(propose_date, "%Y"))
+  )
+
+cat("Total bills:", nrow(bill_analysis), "\n")
+cat("Passed:", sum(bill_analysis$passed), "\n")
+cat("Pass rate:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
+```
+
+> **Why count "alternative-reflected disposal" as passed?**: This means the bill's content was incorporated into an alternative bill that passed. The original bill is technically discarded, but substantively it succeeded.
+
+```{r quiz-binary}
+quiz(
+  question("Why do we code 'alternative-reflected disposal' as passed?",
+    answer("Because it's a procedural formality"),
+    answer("Because the bill's content was incorporated into a passed alternative", correct = TRUE),
+    answer("Because the proposer withdrew it voluntarily"),
+    answer("Because it was sent to the next assembly term"),
+    correct = "Correct! The substance of the bill succeeded even though the specific bill was disposed."
+  )
+)
+```
+
+### Pass Rate by Assembly
+
+```{r pass-rate-assembly, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_analysis %>%
+  group_by(assembly) %>%
+  summarise(
+    n = n(),
+    n_passed = sum(passed),
+    pass_rate = round(mean(passed) * 100, 1)
+  )
+```
+
+## 2. Proposer Characteristics and Bill Success
+
+```{r merge-legislator, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+cat("Analysis sample:", nrow(bill_leg), "bills (with proposer info)\n")
+```
+
+### Pass Rate by Seniority
+
+```{r pass-by-seniority, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+pass_senior <- bill_leg %>%
+  group_by(seniority) %>%
+  summarise(n = n(), pass_rate = mean(passed)) %>%
+  filter(n >= 50)
+
+ggplot(pass_senior, aes(x = seniority, y = pass_rate)) +
+  geom_col(fill = "steelblue", width = 0.6) +
+  geom_text(aes(label = paste0(round(pass_rate * 100, 1), "%")),
+            vjust = -0.5, size = 3.5) +
+  scale_y_continuous(labels = scales::percent,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(x = "Seniority (terms elected)", y = "Bill Pass Rate",
+       title = "Bill Pass Rate by Proposer Seniority") +
+  theme_minimal()
+```
+
+### Pass Rate by Committee
+
+```{r pass-by-committee, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+pass_committee <- bill_leg %>%
+  group_by(committee) %>%
+  summarise(n = n(), pass_rate = mean(passed)) %>%
+  filter(n >= 100) %>%
+  arrange(desc(pass_rate))
+
+ggplot(pass_committee %>% head(15),
+       aes(x = reorder(committee, pass_rate), y = pass_rate)) +
+  geom_col(fill = "coral") +
+  geom_text(aes(label = paste0(round(pass_rate * 100, 1), "%")),
+            hjust = -0.1, size = 3) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(x = NULL, y = "Pass Rate",
+       title = "Bill Pass Rate by Committee (Top 15)") +
+  theme_minimal()
+```
+
+## 3. Why Logistic Regression?
+
+When the outcome is 0 or 1, OLS has problems:
+
+```{r ols-problem, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+ggplot(bill_leg, aes(x = seniority, y = passed)) +
+  geom_jitter(height = 0.05, alpha = 0.05, color = "gray50") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"),
+              color = "blue", se = FALSE) +
+  labs(
+    x = "Seniority", y = "Passed (0 = No, 1 = Yes)",
+    title = "OLS (red) vs Logistic (blue) Comparison"
+  ) +
+  theme_minimal()
+```
+
+- **Red line (OLS)**: Straight line that can exceed 0-1 range
+- **Blue line (Logistic)**: S-curve always between 0 and 1
+
+**Logistic regression** models log-odds instead of probability directly:
+
+$$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots$$
+
+```{r quiz-logistic}
+quiz(
+  question("Why is OLS problematic for binary outcomes?",
+    answer("It's too slow to compute"),
+    answer("It can predict values outside 0-1 range", correct = TRUE),
+    answer("It requires more observations"),
+    answer("It can't handle multiple predictors"),
+    correct = "Correct! OLS linear predictions can go below 0 or above 1, which doesn't make sense for probabilities."
+  )
+)
+```
+
+## 4. Running Logistic Regression
+
+In R, use `glm()` with `family = binomial`:
+
+```{r logit-simple, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+m1 <- glm(passed ~ seniority, data = bill_leg, family = binomial)
+summary(m1)
+```
+
+### Odds Ratios
+
+Logistic regression coefficients are in **log-odds** units. Exponentiate to get **odds ratios**:
+
+```{r odds-ratio, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+m1 <- glm(passed ~ seniority, data = bill_leg, family = binomial)
+exp(coef(m1))
+```
+
+> **Interpreting odds ratios**: When seniority increases by 1, the odds of passing multiply by this factor.
+> - OR = 1: no effect
+> - OR > 1: higher odds of passing
+> - OR < 1: lower odds of passing
+
+## 5. Multiple Logistic Regression
+
+Control for multiple factors simultaneously:
+
+```{r logit-multiple, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+bill_leg_model <- bill_leg %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  mutate(party = relevel(factor(party), ref = "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9"))
+
+m2 <- glm(passed ~ seniority + gender + district_type + party,
+           data = bill_leg_model, family = binomial)
+summary(m2)
+```
+
+### Odds Ratio Visualization
+
+```{r or-plot, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+bill_leg_model <- bill_leg %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  mutate(party = relevel(factor(party), ref = "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9"))
+
+m2 <- glm(passed ~ seniority + gender + district_type + party,
+           data = bill_leg_model, family = binomial)
+
+or_df <- broom::tidy(m2, conf.int = TRUE, exponentiate = TRUE) %>%
+  filter(term != "(Intercept)")
+
+ggplot(or_df, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "gray50") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high),
+                  color = "steelblue", size = 0.8) +
+  labs(
+    x = "Odds Ratio (95% CI)",
+    y = NULL,
+    title = "Determinants of Bill Passage (Logistic Regression)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+- Point right of 1: **increases** odds of passage
+- Point left of 1: **decreases** odds of passage
+- CI crossing 1: not statistically significant
+
+## 6. Predicted Probabilities
+
+Converting logistic results to **predicted probabilities** makes them more intuitive.
+
+```{r predicted-prob, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+bill_leg_model <- bill_leg %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  mutate(party = relevel(factor(party), ref = "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9"))
+
+m2 <- glm(passed ~ seniority + gender + district_type + party,
+           data = bill_leg_model, family = binomial)
+
+# Predicted probabilities by seniority and party
+new_party <- expand.grid(
+  seniority = 1:5,
+  gender = "M",
+  district_type = "constituency",
+  party = factor(c("\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uad6d\ubbfc\uc758\ud798", "\uc870\uad6d\ud601\uc2e0\ub2f9"),
+                 levels = levels(bill_leg_model$party))
+)
+
+new_party$pred_prob <- predict(m2, newdata = new_party, type = "response")
+
+ggplot(new_party, aes(x = seniority, y = pred_prob, color = party)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(
+    "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9" = "#004EA2",
+    "\uad6d\ubbfc\uc758\ud798" = "#E61E2B",
+    "\uc870\uad6d\ud601\uc2e0\ub2f9" = "#00B0F0"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Seniority", y = "Predicted Pass Probability",
+       color = "Party",
+       title = "Predicted Bill Pass Probability by Party and Seniority") +
+  theme_minimal()
+```
+
+## 7. Model Comparison
+
+```{r model-compare, exercise=TRUE}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+bill_leg_model <- bill_leg %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  mutate(party = relevel(factor(party), ref = "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9"))
+
+m1 <- glm(passed ~ seniority, data = bill_leg_model, family = binomial)
+m2 <- glm(passed ~ seniority + gender + district_type + party,
+           data = bill_leg_model, family = binomial)
+m3 <- glm(passed ~ seniority + gender + district_type + party + assembly,
+           data = bill_leg_model, family = binomial)
+
+data.frame(
+  Model = c("M1: Seniority only", "M2: + Individual traits", "M3: + Assembly"),
+  AIC = c(round(AIC(m1)), round(AIC(m2)), round(AIC(m3))),
+  Pseudo_R2 = c(
+    round(1 - m1$deviance / m1$null.deviance, 4),
+    round(1 - m2$deviance / m2$null.deviance, 4),
+    round(1 - m3$deviance / m3$null.deviance, 4)
+  )
+)
+```
+
+> **AIC**: Lower is better. Balances model fit and complexity.
+
+> **Pseudo R-squared**: Analogous to OLS R-squared. Higher means better explanatory power, but values tend to be lower than OLS R-squared.
+
+## Summary
+
+| Concept | Description |
+|---------|-------------|
+| Binary DV | Outcome is 0/1 (pass/fail) |
+| Logistic regression | `glm(..., family = binomial)` |
+| Odds ratio (OR) | `exp(coefficient)`, >1 means higher odds |
+| Predicted probability | `predict(..., type = "response")` |
+| AIC | Model comparison metric (lower = better) |
+
+## Exercises
+
+### Exercise 1: Gender Effect
+
+Run a logistic regression with only `gender` as predictor. What is the odds ratio for male vs female?
+
+```{r ex1, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex1-solution}
+bill_analysis <- bills %>%
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+m_gender <- glm(passed ~ gender, data = bill_leg, family = binomial)
+exp(coef(m_gender))
+```
+
+### Exercise 2: Committee Effects
+
+Add `committee` to the model. Which 3 committees have the highest odds of bill passage? (Use only the top 10 committees by bill count.)
+
+```{r ex2, exercise=TRUE}
+# Your code here
+
+```
+
+```{r ex2-hint}
+# Filter to top 10 committees first
+# Then run glm with committee as a factor variable
+# Use broom::tidy(model, exponentiate = TRUE) to get odds ratios
+```
+
+### Exercise 3: Co-sponsorship
+
+Does the number of co-sponsors affect bill passage? Use `get_proposers()` to count co-sponsors per bill and test with logistic regression.
+
+```{r ex3, exercise=TRUE}
+# This requires downloading proposer data first
+# proposers <- get_proposers()
+# Then count co-sponsors per bill and merge with bill data
+
+```
+
+```{r ex3-hint}
+# proposers <- get_proposers()
+# n_cosponsors <- proposers %>%
+#   filter(!is_lead) %>%
+#   count(bill_id, name = "n_cosponsors")
+# bill_cosponsor <- bill_analysis %>%
+#   inner_join(n_cosponsors, by = "bill_id")
+# m <- glm(passed ~ n_cosponsors, data = bill_cosponsor, family = binomial)
+```

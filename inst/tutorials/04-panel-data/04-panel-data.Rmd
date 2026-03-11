@@ -1,6 +1,6 @@
 ---
-title: "튜토리얼 4: 패널 데이터와 고정효과"
-subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+title: "Tutorial 4: Panel Data and Fixed Effects"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
@@ -11,21 +11,9 @@ library(assemblykor)
 library(dplyr)
 library(ggplot2)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-theme_set(theme_gray(base_family = ko_font))
-
 data(wealth)
 data(seminars)
+set_ko_font()
 tutorial_options(exercise.eval = FALSE)
 ```
 
@@ -35,48 +23,55 @@ htmltools::includeCSS(
 )
 ```
 
-## 학습 목표
+## Learning Objectives
 
-- 패널 데이터의 구조(개체 x 시간)를 이해한다
-- 합동 OLS, 개체 고정효과, 양방향 고정효과의 차이를 설명할 수 있다
-- `fixest::feols()`로 고정효과 모형을 추정할 수 있다
+**Research Question**: Does becoming the governing party reduce cross-party cooperation?
 
-## 1. 패널 데이터란?
+You will learn:
 
-`wealth` 데이터는 **의원-연도** 패널입니다. 같은 의원이 여러 해에 걸쳐 관측됩니다.
+- Panel data structure (unit x time)
+- Between vs within variation
+- Pooled OLS, individual FE, two-way FE
+- `fixest::feols()` for fixed effects estimation
+- Cluster standard errors
+
+## 1. What Is Panel Data?
+
+**Panel data** observes the same units repeatedly over time. The `wealth` data is a legislator-year panel.
 
 ```{r panel-structure, exercise=TRUE}
-cat("관측치:", nrow(wealth), "\n")
-cat("의원 수:", n_distinct(wealth$member_id), "\n")
-cat("연도:", paste(sort(unique(wealth$year)), collapse = ", "), "\n")
+cat("Observations:", nrow(wealth), "\n")
+cat("Legislators:", n_distinct(wealth$member_id), "\n")
+cat("Year range:", paste(range(wealth$year), collapse = "-"), "\n")
 
-# 의원별 관측 횟수
 obs_per_member <- wealth %>% count(member_id) %>% pull(n)
 table(obs_per_member)
 ```
 
+Not all legislators are observed the same number of times. This is an **unbalanced panel**.
+
 ```{r quiz-panel}
 quiz(
-  question("패널 데이터의 핵심 특징은?",
-    answer("횡단면 데이터를 여러 번 수집한 것"),
-    answer("같은 개체를 여러 시점에서 반복 관측한 것", correct = TRUE),
-    answer("시계열 데이터를 여러 변수로 확장한 것"),
-    answer("무작위 추출된 표본 데이터"),
-    correct = "맞습니다! 패널 데이터는 동일 개체(의원)를 시간에 걸쳐 추적합니다."
+  question("What is the key feature of panel data?",
+    answer("Cross-sectional data collected multiple times"),
+    answer("The same units observed repeatedly over time", correct = TRUE),
+    answer("Time series with multiple variables"),
+    answer("Randomly sampled data"),
+    correct = "Correct! Panel data tracks the same individuals (legislators) over time."
   )
 )
 ```
 
-## 2. Between vs Within 변동
+## 2. Between vs Within Variation
 
-고정효과 모형의 핵심: **개인 간 차이(between)**와 **개인 내 변화(within)**를 구분합니다.
+- **Between**: Rich legislator vs poor legislator (level differences)
+- **Within**: How does the SAME legislator's wealth change over time?
 
 ```{r between-within, exercise=TRUE, fig.height=4}
-# 예시: 5명의 의원 선택
 set.seed(42)
 sample_ids <- wealth %>%
   count(member_id) %>%
-  filter(n >= 5) %>%
+  filter(n >= 6) %>%
   slice_sample(n = 5) %>%
   pull(member_id)
 
@@ -85,75 +80,75 @@ wealth %>%
   ggplot(aes(x = year, y = net_worth / 1e6, color = name, group = member_id)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
-  labs(x = "연도", y = "순자산 (10억 원)", color = "의원",
-       title = "개별 의원의 순자산 변화 (5명 표본)") +
+  labs(x = "Year", y = "Net Worth (billion KRW)", color = "Legislator",
+       title = "Individual Net Worth Trajectories (5 legislators)") +
   theme_minimal()
 ```
 
-- **Between**: 부자 의원 vs 가난한 의원 (수준 차이)
-- **Within**: 같은 의원의 재산이 시간에 따라 어떻게 변하는가 (변화)
+**Fixed effects** uses ONLY within variation: "What changed within the same person?"
 
-## 3. 합동 OLS (Pooled OLS)
+## 3. Pooled OLS
 
-개체 간 차이를 무시하고 모든 관측치를 한꺼번에 분석합니다.
+Ignoring individual differences:
 
 ```{r pooled, exercise=TRUE}
 m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
 summary(m_pooled)
 ```
 
-**문제**: 관측되지 않는 개인 특성(능력, 가문 배경 등)이 편의를 발생시킬 수 있습니다.
+**Problem**: Unobserved individual traits (family background, business ability) can bias estimates. This is **omitted variable bias (OVB)**.
 
-## 4. 개체 고정효과 (Individual Fixed Effects)
+## 4. Individual Fixed Effects
 
-각 의원에 대한 더미변수를 추가하여 관측되지 않는 개인 특성을 통제합니다.
+Each legislator gets their own intercept, absorbing all time-invariant personal characteristics.
 
 ```{r fe-individual, exercise=TRUE}
 library(fixest)
-m_fe <- feols(deposits ~ real_estate + n_properties | member_id,
-              data = wealth)
+m_fe <- feols(deposits ~ real_estate + n_properties | member_id, data = wealth)
 summary(m_fe)
 ```
 
-`| member_id`가 고정효과를 지정하는 부분입니다. 이 모형은 **같은 의원 내에서** 부동산 보유가 예금에 미치는 영향만 추정합니다.
+`| member_id` specifies the fixed effect. This estimates the effect of real estate on deposits **within the same legislator**.
+
+### How It Works
+
+1. Calculate each legislator's personal mean
+2. Subtract the mean from all observations (demeaning)
+3. Run OLS on the demeaned data
+
+Result: between-person differences are completely eliminated.
 
 ```{r quiz-fe}
 quiz(
-  question("개체 고정효과가 통제하는 것은?",
-    answer("시간에 따라 변하는 공통 추세"),
-    answer("개인별로 시간에 따라 변하지 않는 특성", correct = TRUE),
-    answer("개인별로 시간에 따라 변하는 특성"),
-    answer("측정 오차"),
-    correct = "맞습니다! 고정효과는 개인의 시불변(time-invariant) 특성을 흡수합니다."
+  question("What does individual fixed effects control for?",
+    answer("Time trends common to all units"),
+    answer("All time-invariant individual characteristics", correct = TRUE),
+    answer("Time-varying individual characteristics"),
+    answer("Measurement error"),
+    correct = "Correct! FE absorbs everything about a person that doesn't change over time."
   )
 )
 ```
 
-### 합동 OLS vs 고정효과 비교
+### Pooled OLS vs Fixed Effects
 
 ```{r compare-pooled-fe, exercise=TRUE}
 library(fixest)
 m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
-m_fe <- feols(deposits ~ real_estate + n_properties | member_id,
-              data = wealth)
+m_fe <- feols(deposits ~ real_estate + n_properties | member_id, data = wealth)
 
-etable(m_pooled, m_fe,
-       headers = c("Pooled OLS", "Individual FE"))
+etable(m_pooled, m_fe, headers = c("Pooled OLS", "Individual FE"))
 ```
 
-계수가 어떻게 달라졌나요? 이유를 생각해봅시다.
+## 5. Two-Way Fixed Effects
 
-## 5. 양방향 고정효과 (Two-Way FE)
-
-연도 고정효과를 추가하면, 모든 의원에게 공통으로 작용하는 시간 추세(예: 부동산 가격 상승)를 통제합니다.
+Add year FE to control for common time trends (e.g., housing price booms).
 
 ```{r twfe, exercise=TRUE}
 library(fixest)
 m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
-m_fe <- feols(deposits ~ real_estate + n_properties | member_id,
-              data = wealth)
-m_twfe <- feols(deposits ~ real_estate + n_properties | member_id + year,
-                data = wealth)
+m_fe <- feols(deposits ~ real_estate + n_properties | member_id, data = wealth)
+m_twfe <- feols(deposits ~ real_estate + n_properties | member_id + year, data = wealth)
 
 etable(m_pooled, m_fe, m_twfe,
        headers = c("Pooled", "Individual FE", "Two-way FE"))
@@ -161,67 +156,36 @@ etable(m_pooled, m_fe, m_twfe,
 
 ```{r quiz-twfe}
 quiz(
-  question("양방향 고정효과에서 '연도 고정효과'가 통제하는 것은?",
-    answer("각 의원의 고유한 특성"),
-    answer("모든 의원에게 공통으로 영향을 미치는 시간 추세", correct = TRUE),
-    answer("의원별 시간 추세"),
-    answer("측정 오차의 자기상관"),
-    correct = "맞습니다! 예를 들어 2021-2022년 전체 부동산 가격 상승 같은 공통 충격을 통제합니다."
+  question("What does the year fixed effect control for?",
+    answer("Each legislator's unique traits"),
+    answer("Common time shocks affecting all legislators", correct = TRUE),
+    answer("Individual-specific time trends"),
+    answer("Serial correlation in errors"),
+    correct = "Correct! Year FE absorbs things like nationwide property price changes."
   )
 )
 ```
 
-## 6. 세미나 데이터로 DiD 연습
+## 6. DiD with Seminars Data
 
-**연구 질문**: 여당이 되면 초당적 세미나 협력이 줄어드는가?
-
-`seminars` 데이터에서 `is_governing`(여당 여부)이 자연스러운 처치 변수 역할을 합니다.
+**Research Question**: Does becoming the governing party reduce cross-party cooperation?
 
 ```{r did-prep, exercise=TRUE}
 sem_panel <- seminars %>%
   filter(n_seminars > 0, year >= 2016)
 
-cat("관측치:", nrow(sem_panel), "\n")
-cat("의원 수:", n_distinct(sem_panel$name), "\n")
+cat("Observations:", nrow(sem_panel), "\n")
+cat("Legislators:", n_distinct(sem_panel$name), "\n")
 
-# 여당 전환 경험 의원 수
-sem_panel %>%
+switchers <- sem_panel %>%
   group_by(name) %>%
   summarise(ever_gov = any(is_governing), ever_opp = any(!is_governing)) %>%
-  summarise(switchers = sum(ever_gov & ever_opp))
+  summarise(n = sum(ever_gov & ever_opp))
+
+cat("Switchers (experienced both):", switchers$n, "\n")
 ```
 
-### DiD 추정
-
-```{r did-estimate, exercise=TRUE}
-library(fixest)
-sem_panel <- seminars %>%
-  filter(n_seminars > 0, year >= 2016)
-
-m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
-                 name + year,
-               data = sem_panel)
-summary(m_did)
-```
-
-**해석**: `is_governing`의 계수가 음수이고 유의미하다면, 여당이 되었을 때 초당적 협력이 감소한다는 증거입니다.
-
-### 클러스터 표준오차
-
-패널 데이터에서는 개체 수준에서 오차가 상관될 수 있으므로, 클러스터 표준오차를 사용합니다.
-
-```{r cluster-se, exercise=TRUE}
-library(fixest)
-sem_panel <- seminars %>%
-  filter(n_seminars > 0, year >= 2016)
-
-m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
-                 name + year,
-               data = sem_panel)
-summary(m_did, cluster = "name")
-```
-
-## 7. 시각적 확인
+### DiD Visualization
 
 ```{r did-visual, exercise=TRUE, fig.height=4}
 sem_panel <- seminars %>%
@@ -229,72 +193,113 @@ sem_panel <- seminars %>%
 
 sem_panel %>%
   group_by(year, is_governing) %>%
-  summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE),
-            .groups = "drop") %>%
-  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
+  summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE), .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "Government", "Opposition")) %>%
   ggplot(aes(x = year, y = mean_cross, color = status)) +
   geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
-  labs(x = "연도", y = "초당적 세미나 비율",
-       color = NULL,
-       title = "여당 vs 야당의 초당적 협력 (패널 데이터)") +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("Government" = "tomato", "Opposition" = "dodgerblue")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Year", y = "Cross-party Seminar Ratio", color = NULL,
+       title = "Government vs Opposition Cross-party Cooperation") +
   theme_minimal()
 ```
 
-## 연습 문제
+### DiD Estimation
 
-### 문제 1
+```{r did-estimate, exercise=TRUE}
+library(fixest)
+sem_panel <- seminars %>%
+  filter(n_seminars > 0, year >= 2016)
 
-`wealth` 데이터에서 `stocks`(주식)를 종속변수로, `real_estate`를 독립변수로 하는 개체 고정효과 모형을 추정하시오. 부동산이 늘면 주식도 느는가?
+m_did <- feols(cross_party_ratio ~ is_governing + n_seminars | name + year,
+               data = sem_panel)
+summary(m_did)
+```
 
-```{r q1, exercise=TRUE}
+### Cluster Standard Errors
+
+Panel data errors may be correlated within units. Cluster SE accounts for this.
+
+```{r cluster-se, exercise=TRUE}
+library(fixest)
+sem_panel <- seminars %>%
+  filter(n_seminars > 0, year >= 2016)
+
+m_did <- feols(cross_party_ratio ~ is_governing + n_seminars | name + year,
+               data = sem_panel)
+summary(m_did, cluster = "name")
+```
+
+## 7. FE Limitations
+
+### Time-invariant variables cannot be estimated
+
+```{r time-invariant, exercise=TRUE}
+library(fixest)
+sem_panel <- seminars %>%
+  filter(n_seminars > 0, year >= 2016)
+
+m_gender <- feols(cross_party_ratio ~ is_governing + is_female | name + year,
+                  data = sem_panel)
+summary(m_gender)
+```
+
+`is_female` is absorbed by the individual FE because it never changes within a person.
+
+## Summary
+
+| Model | Controls For | Limitation |
+|-------|-------------|-----------|
+| Pooled OLS | Only included variables | OVB from unobservables |
+| Individual FE | All time-invariant traits | Can't estimate time-invariant effects |
+| Two-way FE | + Common time shocks | Can't estimate individual time trends |
+| DiD (FE-based) | + Treatment effect | Requires parallel trends assumption |
+
+## Exercises
+
+### Exercise 1: Stocks and Real Estate
+
+Estimate individual FE model: does real estate growth predict stock growth for the same legislator?
+
+```{r ex1, exercise=TRUE}
 
 ```
 
-```{r q1-solution}
+```{r ex1-solution}
 library(fixest)
 m <- feols(stocks ~ real_estate | member_id, data = wealth)
 summary(m)
 ```
 
-### 문제 2
+### Exercise 2: Time-Invariant Problem
 
-양방향 고정효과 모형(의원 + 연도)에서, `has_seoul_property`를 독립변수로 사용하면 추정이 가능한가? 왜 그런지 설명하시오. (힌트: 시간에 따라 변하는 변수인가?)
+What happens when you use `has_seoul_property` with individual FE? Explain why.
 
-```{r q2, exercise=TRUE}
+```{r ex2, exercise=TRUE}
 
 ```
 
-```{r q2-hint}
-# has_seoul_property가 시간에 따라 변하는지 확인해보세요
+```{r ex2-hint}
+# Check if has_seoul_property changes over time
 wealth %>%
   group_by(member_id) %>%
   summarise(changes = n_distinct(has_seoul_property)) %>%
   count(changes)
 ```
 
-```{r q2-solution}
-library(fixest)
-# 시도해보면:
-m <- feols(net_worth ~ has_seoul_property | member_id + year, data = wealth)
-summary(m)
-# has_seoul_property가 시간에 따라 변하지 않으면 개체 고정효과에 흡수됨
-```
+### Exercise 3: Three-Model Comparison
 
-### 문제 3
+Compare Pooled OLS, Individual FE, and Two-way FE using `etable()`. Which is most appropriate?
 
-합동 OLS, 개체 FE, 양방향 FE 세 모형의 결과를 `etable()`로 정리하고, 어떤 모형이 가장 적절한지 근거를 제시하시오.
-
-```{r q3, exercise=TRUE}
+```{r ex3, exercise=TRUE}
 
 ```
 
-```{r q3-solution}
+```{r ex3-solution}
 library(fixest)
 m1 <- lm(deposits ~ real_estate + stocks, data = wealth)
 m2 <- feols(deposits ~ real_estate + stocks | member_id, data = wealth)
 m3 <- feols(deposits ~ real_estate + stocks | member_id + year, data = wealth)
-etable(m1, m2, m3,
-       headers = c("Pooled", "Individual FE", "Two-way FE"))
+etable(m1, m2, m3, headers = c("Pooled", "Individual FE", "Two-way FE"))
 ```

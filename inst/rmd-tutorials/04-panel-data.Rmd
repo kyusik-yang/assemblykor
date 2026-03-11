@@ -1,139 +1,210 @@
 ---
 title: "튜토리얼 4: 패널 데이터와 고정효과"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-ggplot2::theme_set(ggplot2::theme_gray(base_family = ko_font))
-```
-
-## 학습 목표
-
-- 패널 데이터의 구조(개체 x 시간)를 이해한다
-- 합동 OLS, 개체 고정효과, 양방향 고정효과의 차이를 설명할 수 있다
-- `fixest::feols()`로 고정효과 모형을 추정할 수 있다
-
-## 1. 준비
-
-```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
 library(assemblykor)
 library(dplyr)
 library(ggplot2)
-
-# fixest가 없으면 설치
-if (!requireNamespace("fixest", quietly = TRUE)) {
-  install.packages("fixest")
-}
-library(fixest)
-
+set_ko_font()
 data(wealth)
 data(seminars)
 ```
 
-## 2. 패널 데이터란?
+## 이 튜토리얼에서 배울 것
 
-`wealth` 데이터는 **의원-연도** 패널입니다. 같은 의원이 여러 해에 걸쳐 관측됩니다.
+**연구 질문**: 여당이 되면 초당적 협력이 줄어드는가?
+
+튜토리얼 3에서 배운 회귀분석은 한 시점의 데이터를 분석했습니다.
+하지만 같은 의원을 여러 시점에 걸쳐 관찰하면, 개인 특성을 통제하면서
+**변화**의 효과를 추정할 수 있습니다. 이것이 **패널 데이터** 분석입니다.
+
+배울 내용:
+
+- 패널 데이터의 구조 (개체 x 시간)
+- 왜 합동 OLS로는 부족한가: 빠진 변수 편의 (omitted variable bias)
+- 고정효과(Fixed Effects) 모형: 관찰되지 않는 개인 특성 통제
+- 양방향 고정효과 (Two-Way FE): 시간 추세까지 통제
+- 이중차분법(DiD)의 기본 아이디어
+
+---
+
+## 1. 패널 데이터란?
+
+**패널 데이터**는 같은 대상(개체)을 여러 시점에 걸쳐 반복 관찰한 데이터입니다.
+횡단면 데이터(한 시점, 여러 개체)와 시계열 데이터(한 개체, 여러 시점)의
+장점을 결합한 것입니다.
+
+`wealth` 데이터는 전형적인 패널입니다:
 
 ```{r panel-structure}
-# 패널 구조 확인
-cat("관측치:", nrow(wealth), "\n")
+cat("총 관측치:", nrow(wealth), "\n")
 cat("의원 수:", n_distinct(wealth$member_id), "\n")
-cat("연도:", paste(sort(unique(wealth$year)), collapse = ", "), "\n")
-
-# 의원별 관측 횟수
-obs_per_member <- wealth %>% count(member_id) %>% pull(n)
-table(obs_per_member)
+cat("연도 범위:", paste(range(wealth$year), collapse = "-"), "\n")
+cat("연도 수:", n_distinct(wealth$year), "\n")
 ```
 
-## 3. Between vs Within 변동
+한 의원이 여러 해에 걸쳐 관측됩니다:
 
-고정효과 모형의 핵심: **개인 간 차이(between)**와 **개인 내 변화(within)**를 구분합니다.
+```{r panel-balance}
+# 의원별 관측 횟수 분포
+obs_per_member <- wealth %>%
+  count(member_id, name = "n_obs")
+
+table(obs_per_member$n_obs)
+```
+
+모든 의원이 같은 횟수만큼 관측되지는 않습니다.
+이렇게 관측 횟수가 다른 패널을 **불균형 패널(unbalanced panel)**이라 합니다.
+
+---
+
+## 2. Between vs Within: 패널 데이터의 핵심 구분
+
+패널 데이터의 변동(variation)은 두 가지로 나뉩니다:
+
+- **Between (개체 간)**: 부자 의원 vs 그렇지 않은 의원 - 수준의 차이
+- **Within (개체 내)**: 같은 의원의 재산이 시간에 따라 어떻게 변하는가 - 변화
+
+이 구분이 왜 중요한지, 그래프로 봅시다.
 
 ```{r between-within}
-# 예시: 5명의 의원 선택
+# 5명의 의원을 선택해서 시간에 따른 변화를 관찰
+set.seed(42)
 sample_ids <- wealth %>%
   count(member_id) %>%
-  filter(n >= 5) %>%
+  filter(n >= 6) %>%
   slice_sample(n = 5) %>%
   pull(member_id)
 
 wealth %>%
   filter(member_id %in% sample_ids) %>%
-  ggplot(aes(x = year, y = net_worth / 1e6, color = name, group = member_id)) +
+  ggplot(aes(x = year, y = net_worth / 1e6,
+             color = name, group = member_id)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
-  labs(x = "연도", y = "순자산 (10억 원)", color = "의원",
-       title = "개별 의원의 순자산 변화 (5명 표본)") +
+  labs(
+    x = "연도", y = "순자산 (10억 원)", color = "의원",
+    title = "같은 의원의 순자산 변화 추적 (5명 표본)"
+  ) +
   theme_minimal()
 ```
 
-- **Between**: 부자 의원 vs 가난한 의원 (수준 차이)
-- **Within**: 같은 의원의 재산이 시간에 따라 어떻게 변하는가 (변화)
+- 선의 **높이 차이** = between variation (부자/비부자)
+- 선의 **기울기** = within variation (시간에 따른 변화)
 
-## 4. 합동 OLS (Pooled OLS)
+**고정효과 모형**은 between을 무시하고 within 변동만 사용합니다.
+"같은 사람 안에서 무엇이 변했는가?"만 보는 것입니다.
 
-개체 간 차이를 무시하고 모든 관측치를 한꺼번에 분석합니다.
+---
+
+## 3. 왜 합동 OLS로는 부족한가?
+
+합동 OLS (Pooled OLS)는 개체 간 차이를 무시합니다.
 
 ```{r pooled}
-# 부동산 보유와 예금의 관계
 m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
 summary(m_pooled)
 ```
 
-**문제**: 관측되지 않는 개인 특성(능력, 가문 배경 등)이 편의를 발생시킬 수 있습니다.
+**문제**: 재산이 많은 의원은 예금도, 부동산도 모두 많을 수 있습니다.
+관찰되지 않는 개인 특성 (가문 배경, 사업 능력, 정치 경력 등)이
+두 변수 모두에 영향을 주면, OLS 계수에 **편의(bias)**가 생깁니다.
 
-## 5. 개체 고정효과 (Individual Fixed Effects)
+이것을 **빠진 변수 편의(omitted variable bias)**라 합니다.
+관찰할 수 없는 변수 때문에 인과 관계를 잘못 추정하는 것입니다.
 
-각 의원에 대한 더미변수를 추가하여 관측되지 않는 개인 특성을 통제합니다.
+---
 
-```{r fe-individual}
+## 4. 고정효과 모형
+
+고정효과(FE) 모형은 각 개체에 대한 더미 변수를 추가하여,
+**시간에 따라 변하지 않는 모든 개인 특성**을 자동으로 통제합니다.
+
+`fixest` 패키지의 `feols()`를 사용합니다.
+
+```{r fe}
+if (!requireNamespace("fixest", quietly = TRUE)) {
+  install.packages("fixest")
+}
+library(fixest)
+
 m_fe <- feols(deposits ~ real_estate + n_properties | member_id,
               data = wealth)
 summary(m_fe)
 ```
 
-`| member_id`가 고정효과를 지정하는 부분입니다. 이 모형은 **같은 의원 내에서** 부동산 보유가 예금에 미치는 영향만 추정합니다.
+`| member_id`가 고정효과를 지정하는 부분입니다.
+
+### 어떻게 작동하는가?
+
+고정효과 모형은 내부적으로 이렇게 작동합니다:
+
+1. 각 의원의 **개인 평균**을 계산
+2. 모든 관측값에서 개인 평균을 **빼기** (demeaning)
+3. 평균 차감된 데이터로 OLS 실행
+
+결과적으로, "같은 의원 내에서 부동산이 늘었을 때 예금이 어떻게 변했는가?"를
+추정합니다. 개인 간 차이는 완전히 제거됩니다.
 
 ### 합동 OLS vs 고정효과 비교
 
-```{r compare-pooled-fe}
+```{r compare}
 etable(m_pooled, m_fe,
-       headers = c("Pooled OLS", "Individual FE"))
+       headers = c("합동 OLS", "개체 FE"),
+       notes = "주: 괄호 안은 표준오차")
 ```
 
-계수가 어떻게 달라졌나요? 이유를 생각해봅시다.
+계수가 얼마나 달라졌나요? 차이가 크다면, 개인 특성이 교란 요인으로
+작용하고 있었다는 증거입니다.
 
-## 6. 양방향 고정효과 (Two-Way FE)
+---
 
-연도 고정효과를 추가하면, 모든 의원에게 공통으로 작용하는 시간 추세(예: 부동산 가격 상승)를 통제합니다.
+## 5. 양방향 고정효과 (Two-Way FE)
+
+개체 고정효과는 개인 특성을 통제하지만, **모든 의원에게 공통으로
+작용하는 시간 효과** (예: 부동산 가격 상승, 경기 변동)는 통제하지 않습니다.
+
+연도 고정효과를 추가하면 이 문제를 해결합니다.
 
 ```{r twfe}
 m_twfe <- feols(deposits ~ real_estate + n_properties | member_id + year,
                 data = wealth)
 summary(m_twfe)
-
-etable(m_pooled, m_fe, m_twfe,
-       headers = c("Pooled", "Individual FE", "Two-way FE"))
 ```
 
-## 7. 세미나 데이터로 DiD 연습
+`| member_id + year`는 의원 고정효과와 연도 고정효과를 동시에 적용합니다.
 
-**연구 질문**: 여당이 되면 초당적 세미나 협력이 줄어드는가?
+```{r compare-all}
+etable(m_pooled, m_fe, m_twfe,
+       headers = c("합동 OLS", "개체 FE", "양방향 FE"),
+       notes = "주: 괄호 안은 표준오차")
+```
 
-`seminars` 데이터에서 `is_governing`(여당 여부)이 자연스러운 처치 변수 역할을 합니다. 같은 의원이 여당에서 야당으로(또는 반대로) 전환되는 경우가 존재합니다.
+세 모형의 계수를 비교해보세요. 고정효과를 추가할수록 계수가 어떻게 변하는지,
+그리고 그 이유가 무엇인지 생각해봅시다.
+
+---
+
+## 6. 이중차분법 (Difference-in-Differences)
+
+### 기본 아이디어
+
+이중차분법(DiD)은 **처치(treatment)가 발생하기 전후**의 변화를
+**처치를 받은 그룹과 받지 않은 그룹** 사이에서 비교합니다.
+
+핵심 질문: "여당이 되면 초당적 협력이 줄어드는가?"
+
+`seminars` 데이터에서 `is_governing` (여당 여부)이 자연스러운 처치 변수입니다.
+같은 의원이 정권 교체에 따라 여당에서 야당으로, 또는 반대로 전환됩니다.
 
 ```{r did-prep}
 sem_panel <- seminars %>%
@@ -142,11 +213,41 @@ sem_panel <- seminars %>%
 cat("관측치:", nrow(sem_panel), "\n")
 cat("의원 수:", n_distinct(sem_panel$name), "\n")
 
-# 여당 전환 경험 의원 수
-sem_panel %>%
+# 여당-야당 전환 경험 의원 수 (switchers)
+switchers <- sem_panel %>%
   group_by(name) %>%
-  summarise(ever_gov = any(is_governing), ever_opp = any(!is_governing)) %>%
-  summarise(switchers = sum(ever_gov & ever_opp))
+  summarise(
+    ever_gov = any(is_governing),
+    ever_opp = any(!is_governing)
+  ) %>%
+  summarise(n_switchers = sum(ever_gov & ever_opp))
+
+cat("여당/야당 모두 경험한 의원:", switchers$n_switchers, "명\n")
+```
+
+이 "전환자(switchers)"들이 고정효과 모형에서 식별(identification)의
+핵심입니다. 항상 여당이었거나 항상 야당이었던 의원은 변화가 없으므로,
+고정효과 모형에서 기여하지 않습니다.
+
+### DiD 시각화
+
+```{r did-visual}
+sem_panel %>%
+  group_by(year, is_governing) %>%
+  summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
+  ggplot(aes(x = year, y = mean_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "연도", y = "초당적 세미나 비율",
+    color = NULL,
+    title = "여당 vs 야당의 초당적 협력 추이"
+  ) +
+  theme_minimal()
 ```
 
 ### DiD 추정
@@ -158,44 +259,164 @@ m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
 summary(m_did)
 ```
 
-**해석**: `is_governing`의 계수가 음수이고 유의미하다면, 여당이 되었을 때 초당적 협력이 감소한다는 증거입니다.
+- `is_governing`의 계수가 **음수이고 유의미**하면: 여당이 되었을 때 초당적 협력이 감소
+- `| name + year`: 의원 고정효과 + 연도 고정효과
 
 ### 클러스터 표준오차
 
-패널 데이터에서는 개체 수준에서 오차가 상관될 수 있으므로, 클러스터 표준오차를 사용합니다.
+패널 데이터에서는 같은 의원의 오차가 시간에 걸쳐 상관될 수 있습니다.
+이를 무시하면 표준오차가 과소추정되어, 유의하지 않은 결과가 유의하게
+보일 수 있습니다.
 
-```{r cluster-se}
-# fixest는 기본적으로 고정효과 수준에서 클러스터링
+```{r cluster}
+# 의원 수준 클러스터링 (fixest는 고정효과 수준에서 기본 클러스터링)
 summary(m_did, cluster = "name")
 ```
 
-## 8. 시각적 확인
+> **클러스터 표준오차**: 같은 그룹(여기서는 같은 의원) 내에서 오차가
+> 상관되는 것을 허용합니다. 보통 표준오차가 커져서, 유의성이 약해집니다.
+> 패널 데이터에서는 **항상** 클러스터 표준오차를 사용하는 것이 좋습니다.
 
-```{r did-visual}
-sem_panel %>%
-  group_by(year, is_governing) %>%
-  summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE)) %>%
-  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
-  ggplot(aes(x = year, y = mean_cross, color = status)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
-  labs(x = "연도", y = "초당적 세미나 비율",
-       color = NULL,
-       title = "여당 vs 야당의 초당적 협력 (패널 데이터)") +
-  theme_minimal()
+---
+
+## 7. 고정효과 모형의 주의점
+
+### 시간 불변 변수는 추정 불가
+
+고정효과 모형은 개인 평균을 제거하므로, 시간에 따라 변하지 않는
+변수의 효과를 추정할 수 없습니다.
+
+```{r time-invariant}
+# 성별은 시간에 따라 변하지 않으므로 FE에서 자동 제거됨
+m_gender <- feols(cross_party_ratio ~ is_governing + is_female |
+                    name + year,
+                  data = sem_panel)
+summary(m_gender)
 ```
+
+`is_female`이 결과에 나타나지 않습니다. 이미 `name` 고정효과에 흡수되었기
+때문입니다. 성별의 효과를 보려면 고정효과 없는 모형이 필요합니다.
+
+### 충분한 within 변동이 필요
+
+고정효과 모형이 작동하려면 같은 개체 내에서 독립변수가 충분히 변해야 합니다.
+모든 의원이 항상 여당이거나 항상 야당이었다면, `is_governing`의 효과를
+추정할 수 없습니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 모형 | 통제하는 것 | 한계 |
+|------|-----------|------|
+| 합동 OLS | 모형에 포함된 변수만 | 관측 불가 변수에 의한 편의 |
+| 개체 FE | 시간 불변 개인 특성 전체 | 시간 추세 미통제, 시간 불변 변수 추정 불가 |
+| 양방향 FE | 개인 특성 + 공통 시간 효과 | 개체별 시간 추세 미통제 |
+| DiD (FE 기반) | 위 + 처치 효과 추정 | 평행 추세 가정 필요 |
+
+**핵심 교훈**: 같은 데이터라도 분석 방법에 따라 결론이 달라질 수 있습니다.
+어떤 가정 하에서 어떤 변동(variation)을 사용하는지 이해하는 것이 중요합니다.
+
+다음 튜토리얼에서는 **텍스트 분석**을 다룹니다. 법안 제안이유와
+국회 발언을 텍스트 데이터로 분석하는 방법을 배웁니다.
 
 ---
 
 ## 연습 문제
 
-1. `wealth` 데이터에서 `stocks`(주식)를 종속변수로, `real_estate`를 독립변수로 하는 개체 고정효과 모형을 추정하시오. 부동산이 늘면 주식도 느는가?
+### 문제 1 (기초)
 
-2. 양방향 고정효과 모형(의원 + 연도)에서, `has_seoul_property`를 독립변수로 사용하면 추정이 가능한가? 왜 그런지 설명하시오. (힌트: 시간에 따라 변하는 변수인가?)
+`wealth` 데이터에서 `stocks`(주식)를 종속변수로, `real_estate`를 독립변수로 하는
+개체 고정효과 모형을 추정하시오. 같은 의원의 부동산이 늘면 주식도 느는가?
 
-3. `seminars` 데이터에서 비례대표(`is_proportional`) 의원의 초당적 협력이 지역구 의원과 다른지 고정효과 모형으로 분석하시오. 이 변수에 고정효과를 적용할 때 주의할 점은?
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
 
-4. `feols()`에서 `| member_id^year` 구문을 사용하면 의원-연도 상호작용 고정효과를 적용할 수 있습니다. 이것이 언제 유용한지, 그리고 자유도에 미치는 영향을 논의하시오.
+```
 
-5. 합동 OLS, 개체 FE, 양방향 FE 세 모형의 결과를 `etable()`로 정리하고, 어떤 모형이 가장 적절한지 근거를 제시하시오.
+<details>
+<summary>정답 보기</summary>
+```{r}
+m_stocks <- feols(stocks ~ real_estate | member_id, data = wealth)
+summary(m_stocks)
+```
+음의 계수라면 부동산에 투자할수록 주식을 줄이는 경향 (자산 대체 효과),
+양의 계수라면 부의 증가 효과 (전반적으로 부유해지는 것)를 의미합니다.
+</details>
+
+### 문제 2 (응용)
+
+`has_seoul_property`를 독립변수로 사용하여 개체 고정효과 모형을 추정하면
+어떤 일이 발생하는가? 이유를 설명하시오.
+(힌트: 이 변수가 시간에 따라 변하는지 확인해보세요.)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+# 서울 부동산 보유 여부가 시간에 따라 변하는 의원이 있는지 확인
+wealth %>%
+  group_by(member_id) %>%
+  summarise(
+    n_changes = n_distinct(has_seoul_property)
+  ) %>%
+  count(n_changes)
+```
+`n_changes == 1`인 의원이 대부분이라면, 이 변수는 거의 시간 불변이므로
+고정효과 모형에서 추정이 어렵거나 불안정합니다.
+</details>
+
+### 문제 3 (응용)
+
+합동 OLS, 개체 FE, 양방향 FE 세 모형으로 재산(`net_worth`)이 예금(`deposits`)에
+미치는 영향을 추정하고, `etable()`로 결과를 비교하시오.
+모형에 따라 계수가 어떻게 달라지며, 어떤 모형이 가장 적절한지 근거를 제시하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+m1 <- lm(deposits ~ net_worth, data = wealth)
+m2 <- feols(deposits ~ net_worth | member_id, data = wealth)
+m3 <- feols(deposits ~ net_worth | member_id + year, data = wealth)
+etable(m1, m2, m3, headers = c("Pooled", "FE", "TWFE"))
+```
+개인 간 부의 차이를 통제한 후(FE)에도 순자산이 예금에 미치는 효과가
+유의한지 확인합니다. 연도 FE까지 추가하면 부동산 가격 상승 같은
+공통 시간 효과도 제거됩니다.
+</details>
+
+### 문제 4 (도전)
+
+`seminars` 데이터에서 비례대표 의원(`is_proportional`)이 지역구 의원보다
+초당적 협력을 더 많이 하는지 분석하시오. 개체 고정효과를 적용할 때
+`is_proportional` 변수에 어떤 문제가 생기는지 설명하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+# 합동 OLS에서는 추정 가능
+m_pr_ols <- lm(cross_party_ratio ~ is_proportional + is_governing +
+                 seniority, data = sem_panel)
+summary(m_pr_ols)
+
+# 고정효과에서는 is_proportional이 시간 불변이므로 제거됨
+# (같은 의원이 지역구에서 비례로 바뀌는 경우가 극히 드물기 때문)
+```
+`is_proportional`은 거의 시간 불변 변수이므로, 개체 고정효과에서는
+추정이 불가능합니다. 이 변수의 효과를 보려면 합동 OLS나 랜덤 효과
+모형을 사용해야 합니다.
+</details>

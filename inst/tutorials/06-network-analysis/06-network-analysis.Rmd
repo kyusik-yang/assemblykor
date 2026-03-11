@@ -1,6 +1,6 @@
 ---
-title: "튜토리얼 6: 공동발의 네트워크 분석"
-subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+title: "Tutorial 6: Co-sponsorship Network Analysis"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
@@ -11,21 +11,9 @@ library(assemblykor)
 library(dplyr)
 library(ggplot2)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 6)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-theme_set(theme_gray(base_family = ko_font))
-
 data(legislators)
 data(bills)
+set_ko_font()
 tutorial_options(exercise.eval = FALSE)
 ```
 
@@ -35,13 +23,47 @@ htmltools::includeCSS(
 )
 ```
 
-## 학습 목표
+## Learning Objectives
 
-- 공동발의 데이터로 네트워크(그래프)를 구축할 수 있다
-- 중심성(centrality) 지표를 계산하고 해석할 수 있다
-- 네트워크 시각화와 커뮤니티 탐지를 수행할 수 있다
+**Research Question**: Who co-sponsors bills with whom?
 
-## 1. 공동발의 데이터 다운로드
+Legislators do not propose bills alone. Beyond the lead sponsor, multiple legislators participate as co-sponsors. By constructing a **network (graph)** from these co-sponsorship ties, we can uncover cooperation structures, inter-party relationships, and key figures.
+
+You will learn:
+
+- What is a network: nodes and edges
+- Building a network from co-sponsorship data
+- Centrality measures: who is at the center?
+- Community detection: finding tightly connected groups
+- Network visualization and cross-party analysis
+
+## 1. Network Basics
+
+A network (graph) consists of two elements:
+
+- **Node (vertex)**: unit of analysis. Here, **legislators**
+- **Edge (link)**: relationship between nodes. Here, **co-sponsorship ties**
+
+```{r concept, echo=FALSE, fig.height=3.5}
+library(igraph)
+g_ex <- graph_from_data_frame(
+  data.frame(from = c("A", "A", "B", "C", "D"),
+             to   = c("B", "C", "C", "D", "E")),
+  directed = FALSE
+)
+set.seed(1)
+plot(g_ex, vertex.size = 30, vertex.color = "lightblue",
+     vertex.label.cex = 1.2, edge.width = 2,
+     main = "Basic Network Structure")
+```
+
+In this figure:
+
+- A, B, C, D, E are **nodes** (5)
+- The lines are **edges** (5)
+- C has 3 edges, giving it the highest **degree centrality**
+
+## 2. Downloading Co-sponsorship Data
 
 ```{r download, exercise=TRUE, exercise.eval=FALSE}
 proposers <- get_proposers()
@@ -49,45 +71,49 @@ dim(proposers)
 head(proposers)
 ```
 
-## 2. 엣지리스트 만들기
+## 3. Building an Edge List
 
-대표발의자와 공동발의자를 연결합니다.
+To create a network, we need an **edge list**: "who is connected to whom."
+
+For each bill, we link the lead sponsor to each co-sponsor.
 
 ```{r edgelist, exercise=TRUE, exercise.eval=FALSE}
 proposers <- get_proposers()
 
-# 22대 법안으로 한정
+# Restrict to 22nd Assembly bills
 props_22 <- proposers %>%
   filter(propose_date >= as.Date("2024-05-30"))
 
-# 대표발의자 - 공동발의자 쌍
+# Separate lead sponsors and co-sponsors
 leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
 cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
 
+# Create lead-cosponsor pairs
 edges <- inner_join(leads, cosponsors, by = "bill_id") %>%
   filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor)
 
-# 엣지 가중치: 같이 발의한 횟수
+# Edge weight: number of co-sponsored bills
 edge_weights <- edges %>%
   count(lead, cosponsor, name = "weight")
 
-cat("노드(의원):", n_distinct(c(edge_weights$lead, edge_weights$cosponsor)), "\n")
-cat("엣지(연결):", nrow(edge_weights), "\n")
+cat("Nodes (legislators):", n_distinct(c(edge_weights$lead, edge_weights$cosponsor)), "\n")
+cat("Edges (connections):", nrow(edge_weights), "\n")
+cat("Mean weight:", round(mean(edge_weights$weight), 1), "\n")
 ```
 
 ```{r quiz-network}
 quiz(
-  question("공동발의 네트워크에서 '엣지(edge)'는 무엇을 의미하나요?",
-    answer("의원 개인"),
-    answer("두 의원이 같은 법안을 발의한 관계", correct = TRUE),
-    answer("법안 하나"),
-    answer("위원회 소속"),
-    correct = "맞습니다! 엣지는 두 의원 간의 공동발의 연결을 나타냅니다."
+  question("What does an 'edge' represent in a co-sponsorship network?",
+    answer("An individual legislator"),
+    answer("A co-sponsorship tie between two legislators", correct = TRUE),
+    answer("A single bill"),
+    answer("Committee membership"),
+    correct = "Correct! An edge represents the co-sponsorship connection between two legislators."
   )
 )
 ```
 
-## 3. igraph 네트워크 생성
+## 4. Creating an igraph Network
 
 ```{r create-graph, exercise=TRUE, exercise.eval=FALSE}
 library(igraph)
@@ -105,188 +131,278 @@ edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
 
 g <- graph_from_data_frame(edge_weights, directed = FALSE)
 
-# 의원 메타데이터 추가
+# Add legislator metadata
 leg_22 <- legislators %>%
   filter(assembly == 22) %>%
   distinct(member_id, .keep_all = TRUE)
 
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+V(g)$party  <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$gender <- leg_22$gender[match(V(g)$name, leg_22$member_id)]
+V(g)$label  <- leg_22$name[match(V(g)$name, leg_22$member_id)]
 
-cat("노드:", vcount(g), "\n")
-cat("엣지:", ecount(g), "\n")
-cat("밀도:", round(graph.density(g), 4), "\n")
+cat("Nodes:", vcount(g), "\n")
+cat("Edges:", ecount(g), "\n")
+cat("Density:", round(graph.density(g), 4), "\n")
 ```
 
-## 4. 중심성 지표
+> **Network density**: the proportion of all possible connections that actually exist. Density = 1 means all nodes are connected; 0 means no connections. Co-sponsorship networks typically have quite high density.
 
-```{r centrality, exercise=TRUE, exercise.eval=FALSE}
+## 5. Centrality Measures: Who Is at the Center?
+
+There are multiple ways to define "important nodes" in a network. Each measure captures a different aspect of "importance."
+
+### Degree Centrality
+
+The simplest: **how many other legislators are you connected to?**
+
+```{r degree, exercise=TRUE, exercise.eval=FALSE}
 library(igraph)
 proposers <- get_proposers()
 
-props_22 <- proposers %>%
-  filter(propose_date >= as.Date("2024-05-30"))
-
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
 leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
 cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-
 edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
   filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
   count(lead, cosponsor, name = "weight")
 
 g <- graph_from_data_frame(edge_weights, directed = FALSE)
-
-leg_22 <- legislators %>%
-  filter(assembly == 22) %>%
-  distinct(member_id, .keep_all = TRUE)
-
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
 V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
 V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
 
-# 중심성 계산
-centrality_df <- data.frame(
-  member_id   = V(g)$name,
-  name        = V(g)$label,
-  party       = V(g)$party,
-  degree      = degree(g),
-  betweenness = round(betweenness(g, normalized = TRUE), 6),
-  closeness   = round(closeness(g, normalized = TRUE), 6),
+degree_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = degree(g),
   stringsAsFactors = FALSE
-) %>%
-  filter(!is.na(name))
+) %>% filter(!is.na(name))
 
-# 연결 중심성 상위 10명
-centrality_df %>%
-  arrange(desc(degree)) %>%
-  head(10)
+degree_df %>% arrange(desc(degree)) %>% head(10)
 ```
+
+### Betweenness Centrality
+
+**Who serves as a "bridge" connecting different groups?** Betweenness measures the proportion of shortest paths passing through a node.
+
+```{r betweenness, exercise=TRUE, exercise.eval=FALSE}
+library(igraph)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+
+between_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  betweenness = round(betweenness(g, normalized = TRUE), 6),
+  stringsAsFactors = FALSE
+) %>% filter(!is.na(name))
+
+between_df %>% arrange(desc(betweenness)) %>% head(10)
+```
+
+Those with high degree and high betweenness may differ. High-betweenness legislators are not "people who know many people" but "people who connect different groups."
 
 ```{r quiz-centrality}
 quiz(
-  question("매개 중심성(betweenness centrality)이 높은 의원의 역할은?",
-    answer("가장 많은 법안을 발의한 의원"),
-    answer("서로 다른 그룹을 연결하는 '다리' 역할을 하는 의원", correct = TRUE),
-    answer("한 정당 내에서만 활동하는 의원"),
-    answer("가장 최근에 당선된 의원"),
-    correct = "맞습니다! 매개 중심성이 높은 의원은 네트워크 내 다양한 그룹 사이를 연결합니다."
+  question("What role does a legislator with high betweenness centrality play?",
+    answer("The legislator who proposed the most bills"),
+    answer("A 'bridge' connecting different groups in the network", correct = TRUE),
+    answer("A legislator active only within their own party"),
+    answer("The most recently elected legislator"),
+    correct = "Correct! High betweenness means connecting diverse groups within the network."
   )
 )
 ```
 
-### 매개 중심성 상위 의원
+### Centrality Comparison Scatter Plot
 
-```{r betweenness-top, exercise=TRUE, exercise.eval=FALSE}
-# (위 코드 실행 후) centrality_df가 있다고 가정
-centrality_df %>%
-  arrange(desc(betweenness)) %>%
-  head(10)
+```{r centrality-scatter, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+library(igraph)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+
+centrality_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = degree(g),
+  betweenness = betweenness(g, normalized = TRUE),
+  stringsAsFactors = FALSE
+) %>% filter(!is.na(name), !is.na(party))
+
+ggplot(centrality_df, aes(x = degree, y = betweenness)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  labs(x = "Degree Centrality", y = "Betweenness Centrality",
+       title = "Comparing Two Centrality Measures") +
+  theme_minimal()
 ```
 
-## 5. 정당별 네트워크 구조
+## 6. Party Network Structure
 
 ```{r party-stats, exercise=TRUE, exercise.eval=FALSE}
-# (위 코드 실행 후) centrality_df가 있다고 가정
+library(igraph)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+
+centrality_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = degree(g),
+  betweenness = round(betweenness(g, normalized = TRUE), 6),
+  stringsAsFactors = FALSE
+) %>% filter(!is.na(name))
+
 centrality_df %>%
-  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
   group_by(party) %>%
   summarise(
     n = n(),
     avg_degree = round(mean(degree), 1),
-    avg_betweenness = round(mean(betweenness), 6),
-    max_degree = max(degree)
+    max_degree = max(degree),
+    avg_betweenness = round(mean(betweenness), 6)
   )
 ```
 
+### Party Degree Distribution
+
 ```{r party-boxplot, exercise=TRUE, exercise.eval=FALSE, fig.height=4}
-# (위 코드 실행 후) centrality_df가 있다고 가정
+library(igraph)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+
+centrality_df <- data.frame(
+  party = V(g)$party,
+  degree = degree(g),
+  stringsAsFactors = FALSE
+) %>% filter(!is.na(party))
+
 centrality_df %>%
-  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  filter(party %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
   ggplot(aes(x = party, y = degree, fill = party)) +
-  geom_boxplot(show.legend = FALSE) +
-  labs(x = NULL, y = "연결 중심성 (degree)",
-       title = "정당별 공동발의 네트워크 연결 중심성") +
+  geom_boxplot(show.legend = FALSE, alpha = 0.7) +
+  scale_fill_manual(values = c(
+    "\uad6d\ubbfc\uc758\ud798" = "#E61E2B",
+    "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9" = "#004EA2",
+    "\uc870\uad6d\ud601\uc2e0\ub2f9" = "#00B0F0"
+  )) +
+  labs(x = NULL, y = "Degree Centrality",
+       title = "Co-sponsorship Network Degree by Party") +
   theme_minimal()
 ```
 
-## 6. 커뮤니티 탐지
+## 7. Community Detection
 
-네트워크에서 밀접하게 연결된 하위 그룹(커뮤니티)을 찾습니다.
+Tightly connected subgroups within a network are called **communities**. Algorithms automatically find them.
+
+### Louvain Algorithm
 
 ```{r community, exercise=TRUE, exercise.eval=FALSE}
 library(igraph)
-# (위 코드에서 g가 구축되었다고 가정)
-# Louvain 알고리즘
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+
 comm <- cluster_louvain(g)
-V(g)$community <- membership(comm)
 
-cat("커뮤니티 수:", max(membership(comm)), "\n")
-cat("모듈성(modularity):", round(modularity(comm), 3), "\n")
+cat("Communities found:", max(membership(comm)), "\n")
+cat("Modularity:", round(modularity(comm), 3), "\n")
 
-# 커뮤니티와 정당의 관계
+# Community-party correspondence
 comm_party <- data.frame(
-  community = V(g)$community,
+  community = membership(comm),
   party = V(g)$party
-) %>%
-  filter(!is.na(party))
+) %>% filter(!is.na(party))
 
 table(comm_party$community, comm_party$party) %>%
   as.data.frame() %>%
-  filter(Freq > 5) %>%
+  filter(Freq > 3) %>%
   arrange(Var1, desc(Freq))
 ```
 
+> **Modularity**: measures how clearly communities are separated. Close to 0 means no different from random; close to 1 means very distinct communities. Values above 0.3 typically indicate meaningful structure.
+
 ```{r quiz-community}
 quiz(
-  question("모듈성(modularity) 값이 0.5라면 어떤 의미인가?",
-    answer("네트워크가 5개의 커뮤니티로 나뉜다"),
-    answer("커뮤니티 내 연결이 랜덤 네트워크보다 훨씬 밀접하다", correct = TRUE),
-    answer("전체 의원의 50%가 하나의 커뮤니티에 속한다"),
-    answer("초당적 연결이 50%이다"),
-    correct = "맞습니다! 모듈성이 높을수록 커뮤니티 구조가 뚜렷합니다 (0에 가까우면 랜덤)."
+  question("If the modularity value is 0.5, what does it mean?",
+    answer("The network is divided into 5 communities"),
+    answer("Within-community connections are much denser than in a random network", correct = TRUE),
+    answer("50% of all legislators belong to one community"),
+    answer("Cross-party connections are 50%"),
+    correct = "Correct! Higher modularity means clearer community structure (close to 0 = random)."
   )
 )
 ```
 
-## 7. 네트워크 시각화
+## 8. Cross-Party Connections
 
-```{r network-viz, exercise=TRUE, exercise.eval=FALSE, fig.height=6}
-library(igraph)
-# (위 코드에서 g가 구축되었다고 가정)
-# 주요 2당 의원만 시각화
-main_parties <- c("국민의힘", "더불어민주당")
-keep <- V(g)$party %in% main_parties & !is.na(V(g)$party)
-g_sub <- induced_subgraph(g, which(keep))
-
-party_colors <- ifelse(V(g_sub)$party == "국민의힘", "tomato", "dodgerblue")
-
-set.seed(42)
-layout <- layout_with_fr(g_sub)
-
-# 약한 연결 제거 (가중치 10 미만)
-g_viz <- delete_edges(g_sub, which(E(g_sub)$weight < 10))
-
-plot(g_viz,
-     vertex.color = party_colors,
-     vertex.size = sqrt(degree(g_viz)) * 0.8,
-     vertex.label = NA,
-     edge.width = E(g_viz)$weight / 50,
-     edge.color = rgb(0, 0, 0, 0.1),
-     layout = layout,
-     main = "22대 국회 공동발의 네트워크 (국민의힘 vs 더불어민주당)")
-
-legend("bottomleft",
-       legend = main_parties,
-       col = c("tomato", "dodgerblue"),
-       pch = 19, pt.cex = 1.5, bty = "n")
-```
-
-## 8. 초당적 연결
-
-정당 간 공동발의(cross-party edges)의 비율을 계산합니다.
+How much co-sponsorship happens across party lines?
 
 ```{r cross-party, exercise=TRUE, exercise.eval=FALSE}
 library(igraph)
-# (위 코드에서 g가 구축되었다고 가정)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+
 edge_df <- as_data_frame(g, what = "edges") %>%
   mutate(
     party_from = V(g)$party[match(from, V(g)$name)],
@@ -295,60 +411,243 @@ edge_df <- as_data_frame(g, what = "edges") %>%
   ) %>%
   filter(!is.na(party_from), !is.na(party_to))
 
-cat("전체 엣지:", nrow(edge_df), "\n")
-cat("초당적 엣지:", sum(edge_df$cross_party), "\n")
-cat("초당적 비율:", round(mean(edge_df$cross_party) * 100, 1), "%\n")
+cat("Total edges:", nrow(edge_df), "\n")
+cat("Cross-party edges:", sum(edge_df$cross_party), "\n")
+cat("Cross-party ratio:", round(mean(edge_df$cross_party) * 100, 1), "%\n")
 ```
 
-## 연습 문제
+### Cross-Party Heatmap
 
-### 문제 1
+Which party pairs co-sponsor the most?
 
-여성 의원의 매개 중심성 평균과 남성 의원의 매개 중심성 평균을 비교하시오.
+```{r cross-heatmap, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+library(igraph)
+proposers <- get_proposers()
 
-```{r q1, exercise=TRUE, exercise.eval=FALSE}
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+
+edge_df <- as_data_frame(g, what = "edges") %>%
+  mutate(
+    party_from = V(g)$party[match(from, V(g)$name)],
+    party_to   = V(g)$party[match(to, V(g)$name)]
+  ) %>%
+  filter(!is.na(party_from), !is.na(party_to))
+
+party_pair <- edge_df %>%
+  filter(party_from %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9"),
+         party_to %in% c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9", "\uc870\uad6d\ud601\uc2e0\ub2f9")) %>%
+  count(party_from, party_to) %>%
+  mutate(n_log = log10(n + 1))
+
+ggplot(party_pair, aes(x = party_from, y = party_to, fill = n_log)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = scales::comma(n)), size = 4) +
+  scale_fill_gradient(low = "lightyellow", high = "tomato", guide = "none") +
+  labs(x = NULL, y = NULL,
+       title = "Cross-Party Co-sponsorship Counts") +
+  theme_minimal(base_size = 13)
+```
+
+If the diagonal (within-party) is much larger than off-diagonal (cross-party), co-sponsorship mainly occurs within party boundaries.
+
+## 9. Network Visualization
+
+```{r network-viz, exercise=TRUE, exercise.eval=FALSE, fig.height=6}
+library(igraph)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+
+# Visualize two main parties only (full network is too complex)
+main_parties <- c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9")
+keep <- V(g)$party %in% main_parties & !is.na(V(g)$party)
+g_sub <- induced_subgraph(g, which(keep))
+
+party_colors <- ifelse(V(g_sub)$party == "\uad6d\ubbfc\uc758\ud798", "#E61E2B", "#004EA2")
+
+set.seed(42)
+layout <- layout_with_fr(g_sub)
+
+# Remove weak edges for visual clarity
+g_viz <- delete_edges(g_sub, which(E(g_sub)$weight < 10))
+
+plot(g_viz,
+     vertex.color = party_colors,
+     vertex.size = sqrt(degree(g_viz)) * 0.8,
+     vertex.label = NA,
+     edge.width = E(g_viz)$weight / 50,
+     edge.color = rgb(0, 0, 0, 0.08),
+     layout = layout,
+     main = "22nd Assembly Co-sponsorship Network (PPP vs DPK)")
+
+legend("bottomleft",
+       legend = main_parties,
+       col = c("#E61E2B", "#004EA2"),
+       pch = 19, pt.cex = 1.5, bty = "n")
+```
+
+Are the two parties separated or mixed in the network? This visualization provides an intuitive grasp of cross-party co-sponsorship structure.
+
+## Summary
+
+| Concept | Meaning | Function |
+|---------|---------|----------|
+| Node / Edge | Unit of analysis / Relationship | `graph_from_data_frame()` |
+| Degree centrality | Nodes with many connections | `degree()` |
+| Betweenness centrality | Bridge nodes between groups | `betweenness()` |
+| Community detection | Tightly connected subgroups | `cluster_louvain()` |
+| Modularity | Clarity of community separation | `modularity()` |
+| Cross-party ratio | Inter-party co-sponsorship | Edge attribute comparison |
+
+## Exercises
+
+### Exercise 1: Gender and Network Position
+
+Compare mean betweenness centrality between female and male legislators. Is there a gender difference in network position?
+
+```{r ex1, exercise=TRUE, exercise.eval=FALSE}
 
 ```
 
-```{r q1-solution}
-# centrality_df 구축 후:
-leg_22 <- legislators %>%
-  filter(assembly == 22) %>%
-  distinct(member_id, .keep_all = TRUE)
+```{r ex1-hint}
+# Build the network and centrality_df first, then
+# add gender from leg_22 and group_by(gender)
+```
 
-centrality_df %>%
-  left_join(leg_22 %>% select(member_id, gender), by = "member_id") %>%
+```{r ex1-solution}
+library(igraph)
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
+V(g)$gender <- leg_22$gender[match(V(g)$name, leg_22$member_id)]
+V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+
+data.frame(
+  name = V(g)$label,
+  gender = V(g)$gender,
+  betweenness = betweenness(g, normalized = TRUE)
+) %>%
+  filter(!is.na(gender)) %>%
   group_by(gender) %>%
   summarise(
     n = n(),
-    avg_betweenness = round(mean(betweenness, na.rm = TRUE), 6)
+    avg_betweenness = round(mean(betweenness), 6),
+    median_betweenness = round(median(betweenness), 6)
   )
 ```
 
-### 문제 2
+### Exercise 2: Alternative Community Detection
 
-Louvain 대신 `cluster_walktrap()` 알고리즘을 사용하여 커뮤니티를 탐지하고, 결과를 비교하시오.
+Use `cluster_walktrap()` instead of Louvain and compare the results. How do modularity and the number of communities differ?
 
-```{r q2, exercise=TRUE, exercise.eval=FALSE}
+```{r ex2, exercise=TRUE, exercise.eval=FALSE}
 
 ```
 
-```{r q2-solution}
+```{r ex2-hint}
+# Build the graph g, then run both algorithms:
+# comm_louvain <- cluster_louvain(g)
+# comm_walktrap <- cluster_walktrap(g)
+# Compare max(membership(...)) and modularity(...)
+```
+
+```{r ex2-solution}
 library(igraph)
-# g가 있다고 가정
+proposers <- get_proposers()
+
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+
 comm_louvain <- cluster_louvain(g)
 comm_walktrap <- cluster_walktrap(g)
 
-cat("Louvain 커뮤니티 수:", max(membership(comm_louvain)), "\n")
-cat("Walktrap 커뮤니티 수:", max(membership(comm_walktrap)), "\n")
-cat("Louvain 모듈성:", round(modularity(comm_louvain), 3), "\n")
-cat("Walktrap 모듈성:", round(modularity(comm_walktrap), 3), "\n")
+data.frame(
+  Algorithm = c("Louvain", "Walktrap"),
+  Communities = c(max(membership(comm_louvain)), max(membership(comm_walktrap))),
+  Modularity = c(round(modularity(comm_louvain), 3), round(modularity(comm_walktrap), 3))
+)
 ```
 
-### 문제 3
+### Exercise 3: 21st vs 22nd Assembly Comparison
 
-자유 주제: 공동발의 네트워크에서 흥미로운 패턴을 찾아보세요.
+Build the 21st Assembly co-sponsorship network and compare with the 22nd. Report at least one of: density, average degree, or cross-party ratio.
 
-```{r q3, exercise=TRUE, exercise.eval=FALSE, fig.height=6}
+```{r ex3, exercise=TRUE, exercise.eval=FALSE}
 
+```
+
+```{r ex3-hint}
+# Filter proposers by propose_date for 21st Assembly:
+# propose_date >= "2020-05-30" & propose_date < "2024-05-30"
+# Build network same way as 22nd, then compare metrics
+```
+
+```{r ex3-solution}
+library(igraph)
+proposers <- get_proposers()
+
+# 21st Assembly
+props_21 <- proposers %>%
+  filter(propose_date >= as.Date("2020-05-30"),
+         propose_date < as.Date("2024-05-30"))
+
+leads_21 <- props_21 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cos_21 <- props_21 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+
+ew_21 <- inner_join(leads_21, cos_21, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g_21 <- graph_from_data_frame(ew_21, directed = FALSE)
+
+# 22nd Assembly
+props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
+leads_22 <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cos_22 <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+
+ew_22 <- inner_join(leads_22, cos_22, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g_22 <- graph_from_data_frame(ew_22, directed = FALSE)
+
+data.frame(
+  Assembly = c("21st", "22nd"),
+  Nodes = c(vcount(g_21), vcount(g_22)),
+  Edges = c(ecount(g_21), ecount(g_22)),
+  Density = c(round(graph.density(g_21), 4), round(graph.density(g_22), 4)),
+  Avg_Degree = c(round(mean(degree(g_21)), 1), round(mean(degree(g_22)), 1))
+)
 ```

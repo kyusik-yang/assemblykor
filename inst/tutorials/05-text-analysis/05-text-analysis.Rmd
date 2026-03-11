@@ -1,6 +1,6 @@
 ---
-title: "튜토리얼 5: 텍스트 분석 입문"
-subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+title: "Tutorial 5: Introduction to Text Analysis"
+subtitle: "assemblykor - Korean National Assembly Data for Political Science Education"
 output: learnr::tutorial
 runtime: shiny_prerendered
 ---
@@ -11,22 +11,11 @@ library(assemblykor)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(stringr)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-theme_set(theme_gray(base_family = ko_font))
-
 data(bills)
-data(legislators)
+data(speeches)
+set_ko_font()
 tutorial_options(exercise.eval = FALSE)
 ```
 
@@ -36,15 +25,33 @@ htmltools::includeCSS(
 )
 ```
 
-## 학습 목표
+## Learning Objectives
 
-- 법안 제안이유 텍스트를 다운로드하고 전처리할 수 있다
-- 단어 빈도와 TF-IDF를 계산할 수 있다
-- 위원회별, 시기별 텍스트 차이를 분석할 수 있다
+**Research Question**: How has the National Assembly's agenda changed over time?
 
-## 1. 텍스트 데이터 다운로드
+So far we have worked with numeric data (bill counts, wealth, votes). But one of the most important data types in political science is **text**: bill rationales, floor speeches, press releases. Discovering patterns in text is what text analysis does.
 
-`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다 (첫 실행 시 ~40MB).
+You will learn:
+
+- Text preprocessing (tokenization, stopword removal)
+- Word frequency analysis and visualization
+- TF-IDF: finding distinctive words for each group
+- Keyword tracking: agenda change over time
+- Analyzing committee discourse with `speeches` data
+
+## 1. Turning Text into Data
+
+To a computer, text is just a string. To analyze it, we need to convert text into **structured data**. The most basic approach is the **bag of words** model: treat text as a set of words and count each word's frequency.
+
+### Preprocessing Flow
+
+```
+Raw text -> Tokenization (split words) -> Stopword removal -> Frequency count -> Analysis
+```
+
+## 2. Downloading Bill Texts
+
+`get_bill_texts()` downloads rationale text for 60,925 bills (~40MB on first run).
 
 ```{r download, exercise=TRUE, exercise.eval=FALSE}
 texts <- get_bill_texts()
@@ -52,9 +59,7 @@ dim(texts)
 head(texts$propose_reason, 2)
 ```
 
-## 2. 법안 데이터와 결합
-
-텍스트를 법안 메타데이터와 합칩니다.
+### Merging with Bill Metadata
 
 ```{r merge, exercise=TRUE, exercise.eval=FALSE}
 texts <- get_bill_texts()
@@ -64,10 +69,13 @@ bill_text <- bills %>%
   filter(scrape_status == "ok") %>%
   mutate(text_length = nchar(propose_reason))
 
+cat("Bills with text:", nrow(bill_text), "\n")
 summary(bill_text$text_length)
 ```
 
-### 텍스트 길이 분포
+### Text Length Distribution
+
+The length of the rationale text itself is a meaningful variable.
 
 ```{r length-dist, exercise=TRUE, exercise.eval=FALSE}
 texts <- get_bill_texts()
@@ -78,38 +86,37 @@ bill_text <- bills %>%
   mutate(text_length = nchar(propose_reason))
 
 ggplot(bill_text, aes(x = text_length)) +
-  geom_histogram(bins = 100, fill = "steelblue") +
-  scale_x_log10() +
-  labs(x = "제안이유 길이 (문자 수, 로그 스케일)", y = "빈도",
-       title = "법안 제안이유 텍스트 길이 분포") +
+  geom_histogram(bins = 80, fill = "steelblue", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(x = "Rationale Length (characters, log scale)", y = "Count",
+       title = "Bill Rationale Text Length Distribution") +
   theme_minimal()
 ```
 
 ```{r quiz-text}
 quiz(
-  question("법안 제안이유 텍스트 길이 분포의 특징은?",
-    answer("정규분포에 가깝다"),
-    answer("오른쪽으로 꼬리가 긴(right-skewed) 분포", correct = TRUE),
-    answer("균등분포에 가깝다"),
-    answer("이봉(bimodal) 분포"),
-    correct = "맞습니다! 대부분 짧은 텍스트이지만, 매우 긴 텍스트도 일부 있습니다."
+  question("What is the typical shape of bill rationale text length distribution?",
+    answer("Close to normal distribution"),
+    answer("Right-skewed (long right tail)", correct = TRUE),
+    answer("Close to uniform distribution"),
+    answer("Bimodal distribution"),
+    correct = "Correct! Most texts are short, but some are very long."
   )
 )
 ```
 
-## 3. 키워드 빈도 분석
+## 3. Keyword Tracking: Agenda Change Over Time
 
-특정 키워드가 시간에 따라 얼마나 등장하는지 살펴봅시다.
+The simplest yet powerful text analysis is tracking **how often specific keywords are mentioned** over time.
 
 ```{r keyword-trend, exercise=TRUE, exercise.eval=FALSE}
-library(stringr)
 texts <- get_bill_texts()
 
 bill_text <- bills %>%
   inner_join(texts, by = "bill_id") %>%
   filter(scrape_status == "ok")
 
-keywords <- c("인공지능", "디지털", "플랫폼", "데이터", "기후", "탄소")
+keywords <- c("\uc778\uacf5\uc9c0\ub2a5", "\ub514\uc9c0\ud138", "\ud50c\ub7ab\ud3fc", "\uae30\ud6c4", "\ud0c4\uc18c", "\ubc18\ub3c4\uccb4")
 
 keyword_df <- do.call(rbind, lapply(keywords, function(kw) {
   bill_text %>%
@@ -126,14 +133,20 @@ keyword_df <- do.call(rbind, lapply(keywords, function(kw) {
 ggplot(keyword_df, aes(x = year, y = pct, color = keyword)) +
   geom_line(linewidth = 1) +
   geom_point(size = 1.5) +
-  labs(x = "연도", y = "언급 비율 (%)", color = "키워드",
-       title = "법안 제안이유 속 키워드 추이") +
+  labs(x = "Year", y = "Mention Rate (%)", color = "Keyword",
+       title = "Keyword Trends in Bill Rationales (20th-22nd)") +
   theme_minimal()
 ```
 
-## 4. 한국어 토큰화 (간단한 방법)
+Which keywords surged? Think about what social issues were happening at that time.
 
-한국어는 형태소 분석이 필요하지만, 간단한 분석에서는 공백 기반 토큰화도 유용합니다.
+> **Caution**: Keyword frequency reflects policy attention, but the same word can mean different things in different contexts. Keyword analysis is an exploratory tool, not a conclusion by itself.
+
+## 4. Tokenization and Stopword Removal
+
+Splitting text into individual words is called **tokenization**.
+
+Korean specificity: Korean attaches particles to words ("law-object", "law-subject", "law-at"), so the same word appears in different forms. Perfect processing requires a morphological analyzer, but for simple analysis, **whitespace-based tokenization** is still useful.
 
 ```{r tokenize, exercise=TRUE, exercise.eval=FALSE}
 library(tidytext)
@@ -143,7 +156,7 @@ bill_text <- bills %>%
   inner_join(texts, by = "bill_id") %>%
   filter(scrape_status == "ok", assembly == 22)
 
-# 공백 기반 토큰화 (5,000건 표본)
+# Whitespace tokenization (sample up to 5,000 bills)
 sample_bills <- bill_text %>%
   slice_sample(n = min(5000, n()))
 
@@ -151,12 +164,13 @@ tokens <- sample_bills %>%
   select(bill_id, committee, propose_reason) %>%
   unnest_tokens(word, propose_reason, token = "words")
 
-tokens %>%
-  count(word, sort = TRUE) %>%
-  head(20)
+cat("Token count:", nrow(tokens), "\n")
+tokens %>% count(word, sort = TRUE) %>% head(20)
 ```
 
-### 불용어 제거
+### Stopword Removal
+
+The top words after tokenization are particles and function words like "of", "at", "to". These are called **stopwords** and should be removed for analysis.
 
 ```{r stopwords, exercise=TRUE, exercise.eval=FALSE}
 library(tidytext)
@@ -172,10 +186,12 @@ tokens <- bill_text %>%
   unnest_tokens(word, propose_reason, token = "words")
 
 ko_stopwords <- c(
-  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
-  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
-  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
-  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
+  "\uc758", "\uc5d0", "\ub97c", "\uc744", "\uc774", "\uac00", "\uc740", "\ub294", "\ubc0f", "\ub4f1",
+  "\ud55c", "\ud558\ub294", "\uc5d0\uc11c", "\uc73c\ub85c", "\ub85c", "\uc704\ud55c", "\ub300\ud55c", "\ub530\ub978",
+  "\uadf8", "\uc218", "\uac83", "\uc788\ub294", "\ud558\uc5ec", "\ub610\ub294", "\uad00\ud55c", "\uc704\ud558\uc5ec",
+  "\uacbd\uc6b0", "\uc788\ub2e4", "\ud574\ub2f9", "\ud544\uc694", "\ud604\ud589", "\ub300\ud558\uc5ec", "\ub54c\ubb38\uc5d0",
+  "\ud558\uace0", "\ub300\ud574", "\uc774\ub97c", "\ub530\ub77c", "\ud558\uae30", "\ud558\uba70", "\uc788\uc73c\uba70",
+  "\uaddc\uc815", "\uad00\ub828", "\uc815\ud558\uace0", "\ub9c8\ub828", "\uc788\ub3c4\ub85d", "\uc704\ud574"
 )
 
 tokens_clean <- tokens %>%
@@ -187,15 +203,22 @@ tokens_clean %>%
   ggplot(aes(x = reorder(word, n), y = n)) +
   geom_col(fill = "coral") +
   coord_flip() +
-  labs(x = NULL, y = "빈도", title = "가장 많이 등장하는 단어 (22대 법안)") +
+  labs(x = NULL, y = "Frequency",
+       title = "Most Frequent Words (22nd Assembly Bills)") +
   theme_minimal()
 ```
 
-## 5. TF-IDF: 위원회별 특징 단어
+## 5. TF-IDF: Distinctive Words by Committee
 
-TF-IDF(Term Frequency - Inverse Document Frequency)는 특정 그룹에서 특히 많이 나타나는 단어를 찾아줍니다.
+Simple frequency alone cannot distinguish "common words used in all bills" from "words used specifically in one committee."
 
-```{r tfidf, exercise=TRUE, exercise.eval=FALSE, fig.height=6}
+**TF-IDF (Term Frequency - Inverse Document Frequency)** solves this:
+
+- **TF**: How often does this word appear in a specific group (committee)?
+- **IDF**: How **rare** is this word across all groups?
+- **TF-IDF = TF x IDF**: Words that are frequent in one group but rare overall = **distinctive words**
+
+```{r tfidf, exercise=TRUE, exercise.eval=FALSE, fig.height=7}
 library(tidytext)
 texts <- get_bill_texts()
 
@@ -205,10 +228,12 @@ bill_text <- bills %>%
   slice_sample(n = min(5000, n()))
 
 ko_stopwords <- c(
-  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
-  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
-  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
-  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
+  "\uc758", "\uc5d0", "\ub97c", "\uc744", "\uc774", "\uac00", "\uc740", "\ub294", "\ubc0f", "\ub4f1",
+  "\ud55c", "\ud558\ub294", "\uc5d0\uc11c", "\uc73c\ub85c", "\ub85c", "\uc704\ud55c", "\ub300\ud55c", "\ub530\ub978",
+  "\uadf8", "\uc218", "\uac83", "\uc788\ub294", "\ud558\uc5ec", "\ub610\ub294", "\uad00\ud55c", "\uc704\ud558\uc5ec",
+  "\uacbd\uc6b0", "\uc788\ub2e4", "\ud574\ub2f9", "\ud544\uc694", "\ud604\ud589", "\ub300\ud558\uc5ec", "\ub54c\ubb38\uc5d0",
+  "\ud558\uace0", "\ub300\ud574", "\uc774\ub97c", "\ub530\ub77c", "\ud558\uae30", "\ud558\uba70", "\uc788\uc73c\uba70",
+  "\uaddc\uc815", "\uad00\ub828", "\uc815\ud558\uace0", "\ub9c8\ub828", "\uc788\ub3c4\ub85d", "\uc704\ud574"
 )
 
 tokens_clean <- bill_text %>%
@@ -216,12 +241,12 @@ tokens_clean <- bill_text %>%
   unnest_tokens(word, propose_reason, token = "words") %>%
   filter(!word %in% ko_stopwords, nchar(word) >= 2)
 
-# TF-IDF
 committee_tfidf <- tokens_clean %>%
   count(committee, word, sort = TRUE) %>%
   bind_tf_idf(word, committee, n)
 
-top_committees <- c("보건복지위원회", "국토교통위원회", "과학기술정보방송통신위원회")
+top_committees <- c("\ubcf4\uac74\ubcf5\uc9c0\uc704\uc6d0\ud68c", "\uad6d\ud1a0\uad50\ud1b5\uc704\uc6d0\ud68c",
+                    "\uacfc\ud559\uae30\uc220\uc815\ubcf4\ubc29\uc1a1\ud1b5\uc2e0\uc704\uc6d0\ud68c", "\ud658\uacbd\ub178\ub3d9\uc704\uc6d0\ud68c")
 
 committee_tfidf %>%
   filter(committee %in% top_committees) %>%
@@ -229,39 +254,182 @@ committee_tfidf %>%
   slice_max(tf_idf, n = 8) %>%
   ggplot(aes(x = reorder_within(word, tf_idf, committee), y = tf_idf)) +
   geom_col(fill = "steelblue") +
-  facet_wrap(~ committee, scales = "free_y") +
+  facet_wrap(~ committee, scales = "free_y", ncol = 2) +
   coord_flip() +
   scale_x_reordered() +
   labs(x = NULL, y = "TF-IDF",
-       title = "위원회별 특징 단어") +
+       title = "Distinctive Words by Committee") +
   theme_minimal() +
-  theme(strip.text = element_text(size = 9))
+  theme(strip.text = element_text(size = 10))
 ```
+
+Check whether each committee's distinctive words reflect its policy jurisdiction.
 
 ```{r quiz-tfidf}
 quiz(
-  question("TF-IDF가 높은 단어의 특징은?",
-    answer("전체 문서에서 가장 자주 등장하는 단어"),
-    answer("특정 그룹에서 상대적으로 많이 나타나는 단어", correct = TRUE),
-    answer("문서 길이가 긴 문서에서만 나타나는 단어"),
-    answer("불용어를 제거한 후 남는 단어"),
-    correct = "맞습니다! TF-IDF는 특정 위원회에서 '특별히' 많이 쓰이는 단어를 찾아줍니다."
+  question("What characterizes a word with a high TF-IDF score?",
+    answer("It is the most frequent word across all documents"),
+    answer("It appears frequently in a specific group but rarely overall", correct = TRUE),
+    answer("It only appears in long documents"),
+    answer("It is a word remaining after stopword removal"),
+    correct = "Correct! TF-IDF finds words that are 'distinctively' frequent in a specific committee."
   )
 )
 ```
 
-## 연습 문제
+## 6. Discourse Analysis with Speeches Data
 
-### 문제 1
+The `speeches` data contains full transcripts from the 22nd Assembly's Science & ICT Committee. This enables a different kind of analysis from bill text.
 
-"부동산", "주택", "임대"가 포함된 법안의 비율을 대수별로 계산하시오.
+```{r speeches-overview, exercise=TRUE}
+cat("Speeches:", nrow(speeches), "\n")
+cat("Speaker roles:\n")
+table(speeches$role) %>% sort(decreasing = TRUE) %>% head(8)
+```
 
-```{r q1, exercise=TRUE, exercise.eval=FALSE}
+### Legislator vs Bureaucrat Speech Comparison
+
+```{r role-compare, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+library(tidytext)
+
+ko_stopwords <- c(
+  "\uc758", "\uc5d0", "\ub97c", "\uc744", "\uc774", "\uac00", "\uc740", "\ub294", "\ubc0f", "\ub4f1",
+  "\ud55c", "\ud558\ub294", "\uc5d0\uc11c", "\uc73c\ub85c", "\ub85c", "\uc704\ud55c", "\ub300\ud55c", "\ub530\ub978",
+  "\uadf8", "\uc218", "\uac83", "\uc788\ub294", "\ud558\uc5ec", "\ub610\ub294", "\uad00\ud55c", "\uc704\ud558\uc5ec",
+  "\uacbd\uc6b0", "\uc788\ub2e4", "\ud574\ub2f9", "\ud544\uc694", "\ud604\ud589", "\ub300\ud558\uc5ec", "\ub54c\ubb38\uc5d0",
+  "\ud558\uace0", "\ub300\ud574", "\uc774\ub97c", "\ub530\ub77c", "\ud558\uae30", "\ud558\uba70", "\uc788\uc73c\uba70",
+  "\uaddc\uc815", "\uad00\ub828", "\uc815\ud558\uace0", "\ub9c8\ub828", "\uc788\ub3c4\ub85d", "\uc704\ud574"
+)
+
+role_tokens <- speeches %>%
+  filter(role %in% c("legislator", "minister", "vice_minister")) %>%
+  mutate(role_label = case_match(role,
+    "legislator" ~ "Legislator",
+    "minister" ~ "Minister",
+    "vice_minister" ~ "Vice Minister"
+  )) %>%
+  select(role_label, speech) %>%
+  unnest_tokens(word, speech, token = "words") %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+role_tfidf <- role_tokens %>%
+  count(role_label, word) %>%
+  bind_tf_idf(word, role_label, n)
+
+role_tfidf %>%
+  group_by(role_label) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, role_label), y = tf_idf)) +
+  geom_col(fill = "steelblue") +
+  facet_wrap(~ role_label, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(x = NULL, y = "TF-IDF",
+       title = "Distinctive Words by Speaker Role (22nd Sci & ICT Committee)") +
+  theme_minimal()
+```
+
+Compare what different language legislators and bureaucrats use in the same committee.
+
+### AI Keyword Speech Patterns
+
+How have AI-related speeches changed over time?
+
+```{r ai-speeches, exercise=TRUE, fig.height=4}
+ai_speeches <- speeches %>%
+  filter(str_detect(speech, "\uc778\uacf5\uc9c0\ub2a5|AI|\uc5d0\uc774\uc544\uc774")) %>%
+  mutate(month = format(date, "%Y-%m"))
+
+ai_trend <- ai_speeches %>%
+  count(month) %>%
+  mutate(month = as.Date(paste0(month, "-01")))
+
+ggplot(ai_trend, aes(x = month, y = n)) +
+  geom_col(fill = "coral") +
+  labs(x = NULL, y = "AI-related Speeches",
+       title = "AI Discourse Trend in Sci & ICT Committee (22nd)") +
+  theme_minimal()
+```
+
+## 7. Temporal Comparison: Text Changes Across Assemblies
+
+```{r temporal, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+library(tidytext)
+texts <- get_bill_texts()
+
+bill_text <- bills %>%
+  inner_join(texts, by = "bill_id") %>%
+  filter(scrape_status == "ok", assembly %in% c(20, 22))
+
+ko_stopwords <- c(
+  "\uc758", "\uc5d0", "\ub97c", "\uc744", "\uc774", "\uac00", "\uc740", "\ub294", "\ubc0f", "\ub4f1",
+  "\ud55c", "\ud558\ub294", "\uc5d0\uc11c", "\uc73c\ub85c", "\ub85c", "\uc704\ud55c", "\ub300\ud55c", "\ub530\ub978",
+  "\uadf8", "\uc218", "\uac83", "\uc788\ub294", "\ud558\uc5ec", "\ub610\ub294", "\uad00\ud55c", "\uc704\ud558\uc5ec",
+  "\uacbd\uc6b0", "\uc788\ub2e4", "\ud574\ub2f9", "\ud544\uc694", "\ud604\ud589", "\ub300\ud558\uc5ec", "\ub54c\ubb38\uc5d0",
+  "\ud558\uace0", "\ub300\ud574", "\uc774\ub97c", "\ub530\ub77c", "\ud558\uae30", "\ud558\uba70", "\uc788\uc73c\uba70",
+  "\uaddc\uc815", "\uad00\ub828", "\uc815\ud558\uace0", "\ub9c8\ub828", "\uc788\ub3c4\ub85d", "\uc704\ud574"
+)
+
+# Sample from each assembly
+sample_both <- bill_text %>%
+  group_by(assembly) %>%
+  slice_sample(n = min(3000, n())) %>%
+  ungroup()
+
+era_tokens <- sample_both %>%
+  select(bill_id, assembly, propose_reason) %>%
+  unnest_tokens(word, propose_reason, token = "words") %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2) %>%
+  mutate(era = paste0(assembly, "th"))
+
+era_tfidf <- era_tokens %>%
+  count(era, word, sort = TRUE) %>%
+  bind_tf_idf(word, era, n)
+
+era_tfidf %>%
+  group_by(era) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, era), y = tf_idf, fill = era)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ era, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  scale_fill_manual(values = c("20th" = "steelblue", "22th" = "coral")) +
+  labs(x = NULL, y = "TF-IDF",
+       title = "20th vs 22nd Assembly: Distinctive Words Comparison") +
+  theme_minimal()
+```
+
+You can see how the Assembly's priorities have changed at the word level over six years.
+
+## Summary
+
+| Technique | Purpose | Key Function |
+|-----------|---------|-------------|
+| Keyword tracking | Temporal trend of specific words | `str_detect()` |
+| Tokenization | Break text into word units | `unnest_tokens()` |
+| Stopword removal | Filter out function words | `filter(!word %in% ...)` |
+| Word frequency | Most frequently used words | `count(word)` |
+| TF-IDF | Find distinctive words per group | `bind_tf_idf()` |
+
+> **Limitation**: Whitespace-based tokenization ignores Korean's agglutinative nature. Words like "citizens-object", "citizens-of", "citizens-to" are treated as different words. More accurate analysis requires morphological analyzers (KoNLPy, MeCab, etc.).
+
+## Exercises
+
+### Exercise 1: Housing Keywords
+
+Calculate the proportion of bills mentioning "housing" keywords by assembly.
+
+```{r ex1, exercise=TRUE, exercise.eval=FALSE}
 
 ```
 
-```{r q1-solution}
-library(stringr)
+```{r ex1-hint}
+# Use str_detect() with keywords joined by |
+# Group by assembly and calculate proportions
+```
+
+```{r ex1-solution}
 texts <- get_bill_texts()
 
 bill_text <- bills %>%
@@ -269,55 +437,65 @@ bill_text <- bills %>%
   filter(scrape_status == "ok")
 
 bill_text %>%
-  mutate(housing = str_detect(propose_reason, "부동산|주택|임대")) %>%
+  mutate(housing = str_detect(propose_reason, "\ubd80\ub3d9\uc0b0|\uc8fc\ud0dd|\uc784\ub300")) %>%
   group_by(assembly) %>%
   summarise(
     total = n(),
-    housing_n = sum(housing, na.rm = TRUE),
-    pct = round(housing_n / total * 100, 1)
+    n_housing = sum(housing, na.rm = TRUE),
+    pct = round(n_housing / total * 100, 1)
   )
 ```
 
-### 문제 2
+### Exercise 2: Top Speakers
 
-특정 위원회(예: 환경노동위원회)의 법안 제안이유에서 가장 자주 등장하는 단어 상위 15개를 막대그래프로 그리시오.
+Find the top 10 most frequent speakers among legislators in the `speeches` data, and create a bar chart.
 
-```{r q2, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+```{r ex2, exercise=TRUE, fig.height=4}
 
 ```
 
-```{r q2-solution}
-library(tidytext)
-texts <- get_bill_texts()
+```{r ex2-hint}
+# Filter role == "legislator", count by speaker_name, take top 10
+```
 
-bill_text <- bills %>%
-  inner_join(texts, by = "bill_id") %>%
-  filter(scrape_status == "ok", committee == "환경노동위원회")
-
-ko_stopwords <- c(
-  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
-  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
-  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
-  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
-)
-
-bill_text %>%
-  select(bill_id, propose_reason) %>%
-  unnest_tokens(word, propose_reason, token = "words") %>%
-  filter(!word %in% ko_stopwords, nchar(word) >= 2) %>%
-  count(word, sort = TRUE) %>%
-  head(15) %>%
-  ggplot(aes(x = reorder(word, n), y = n)) +
-  geom_col(fill = "darkgreen") +
+```{r ex2-solution}
+speeches %>%
+  filter(role == "legislator") %>%
+  count(speaker_name, sort = TRUE) %>%
+  head(10) %>%
+  ggplot(aes(x = reorder(speaker_name, n), y = n)) +
+  geom_col(fill = "steelblue") +
   coord_flip() +
-  labs(x = NULL, y = "빈도", title = "환경노동위원회 법안 주요 단어") +
+  labs(x = NULL, y = "Speech Count",
+       title = "Top 10 Most Active Legislators (22nd Sci & ICT Committee)") +
   theme_minimal()
 ```
 
-### 문제 3
+### Exercise 3: Speech Length by Role
 
-자유 주제: 관심 있는 키워드를 선택하여 시간에 따른 추세를 분석하시오.
+Compare average speech length between legislators and government officials. Why do they differ?
 
-```{r q3, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+```{r ex3, exercise=TRUE}
 
+```
+
+```{r ex3-solution}
+speeches %>%
+  filter(role %in% c("legislator", "minister", "vice_minister")) %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_label = case_match(role,
+      "legislator" ~ "Legislator",
+      "minister" ~ "Minister",
+      "vice_minister" ~ "Vice Minister"
+    )
+  ) %>%
+  group_by(role_label) %>%
+  summarise(
+    n = n(),
+    mean_length = round(mean(speech_length)),
+    median_length = median(speech_length)
+  )
+# Legislators ask short questions; officials give long answers.
+# This reflects the committee Q&A structure.
 ```

@@ -1,59 +1,80 @@
 ---
 title: "튜토리얼 5: 텍스트 분석 입문"
 subtitle: "assemblykor 패키지로 배우는 데이터 분석"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
-
-# Korean font for ggplot2
-ko_font <- if (any(grepl("Apple SD Gothic Neo", systemfonts::system_fonts()$family))) {
-  "Apple SD Gothic Neo"
-} else if (any(grepl("NanumGothic", systemfonts::system_fonts()$family))) {
-  "NanumGothic"
-} else if (any(grepl("Malgun Gothic", systemfonts::system_fonts()$family))) {
-  "Malgun Gothic"
-} else {
-  ""
-}
-ggplot2::theme_set(ggplot2::theme_gray(base_family = ko_font))
-```
-
-## 학습 목표
-
-- 법안 제안이유 텍스트를 다운로드하고 전처리할 수 있다
-- 단어 빈도와 TF-IDF를 계산할 수 있다
-- 위원회별, 시기별 텍스트 차이를 분석할 수 있다
-
-## 1. 준비
-
-```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
 library(assemblykor)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(stringr)
+set_ko_font()
+data(bills)
+data(speeches)
+```
 
-# tidytext가 없으면 설치
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 국회의 관심사는 어떻게 변해왔는가?
+
+지금까지 다룬 데이터는 숫자(발의 건수, 재산, 투표 등)였습니다.
+하지만 정치학에서 매우 중요한 데이터 유형이 하나 더 있습니다: **텍스트**.
+법안 제안이유, 국회 발언, 보도자료 등 텍스트에서 패턴을 발견하는 것이
+텍스트 분석입니다.
+
+배울 내용:
+
+- 텍스트 데이터의 전처리 (토큰화, 불용어 제거)
+- 단어 빈도 분석과 시각화
+- TF-IDF: 특정 그룹의 특징 단어 찾기
+- 키워드 추적: 시간에 따른 의제 변화
+- 발언 데이터(`speeches`)로 위원회 담론 분석
+
+---
+
+## 1. 텍스트를 데이터로 바꾸기
+
+컴퓨터에게 텍스트는 그냥 문자열입니다. 분석하려면 텍스트를 **구조화된 데이터**로
+바꿔야 합니다. 가장 기본적인 접근은 **단어 주머니(bag of words)** 모형입니다:
+텍스트를 단어들의 집합으로 보고, 각 단어의 빈도를 세는 것입니다.
+
+### 전처리의 흐름
+
+```
+원본 텍스트 → 토큰화(단어 쪼개기) → 불용어 제거 → 빈도 계산 → 분석
+```
+
+### tidytext 패키지
+
+```{r}
 if (!requireNamespace("tidytext", quietly = TRUE)) {
   install.packages("tidytext")
 }
 library(tidytext)
-
-data(bills)
 ```
 
-## 2. 텍스트 데이터 다운로드
+`tidytext`는 텍스트를 tidy data 형식으로 다룹니다.
+한 행에 하나의 토큰(단어)이 오는 **긴 형식** 데이터프레임을 만듭니다.
 
-`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다 (첫 실행 시 ~40MB).
+---
+
+## 2. 법안 텍스트 다운로드
+
+`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다.
 
 ```{r download, eval=FALSE}
 texts <- get_bill_texts()
 ```
 
 ```{r load-fallback, include=FALSE}
-# 이미 다운로드된 경우 캐시에서 로드
 texts <- tryCatch(
   get_bill_texts(),
   error = function(e) {
@@ -67,41 +88,41 @@ texts <- tryCatch(
 )
 ```
 
-```{r}
-dim(texts)
-head(texts$propose_reason, 2)
-```
-
-## 3. 법안 데이터와 결합
-
 ```{r merge}
 bill_text <- bills %>%
   inner_join(texts, by = "bill_id") %>%
   filter(scrape_status == "ok") %>%
   mutate(text_length = nchar(propose_reason))
 
-summary(bill_text$text_length)
+cat("분석 대상 법안:", nrow(bill_text), "건\n")
 ```
 
 ### 텍스트 길이 분포
 
+제안이유의 길이 자체도 의미 있는 변수입니다.
+
 ```{r length-dist}
 ggplot(bill_text, aes(x = text_length)) +
-  geom_histogram(bins = 100, fill = "steelblue") +
-  scale_x_log10() +
-  labs(x = "제안이유 길이 (문자 수, 로그 스케일)", y = "빈도",
-       title = "법안 제안이유 텍스트 길이 분포") +
+  geom_histogram(bins = 80, fill = "steelblue", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    x = "제안이유 길이 (문자 수, 로그 스케일)",
+    y = "빈도",
+    title = "법안 제안이유 텍스트 길이 분포"
+  ) +
   theme_minimal()
 ```
 
-## 4. 키워드 빈도 분석
+---
 
-특정 키워드가 시간에 따라 얼마나 등장하는지 살펴봅시다.
+## 3. 키워드 추적: 시간에 따른 의제 변화
+
+가장 간단하면서도 강력한 텍스트 분석은 **특정 키워드가 얼마나 자주 언급되는지**
+추적하는 것입니다.
 
 ```{r keyword-trend}
-keywords <- c("인공지능", "디지털", "플랫폼", "데이터", "기후", "탄소")
+keywords <- c("인공지능", "디지털", "플랫폼", "기후", "탄소", "반도체")
 
-# 키워드별 연도별 등장 비율
 keyword_df <- do.call(rbind, lapply(keywords, function(kw) {
   bill_text %>%
     mutate(year = as.integer(format(propose_date, "%Y"))) %>%
@@ -117,17 +138,32 @@ keyword_df <- do.call(rbind, lapply(keywords, function(kw) {
 ggplot(keyword_df, aes(x = year, y = pct, color = keyword)) +
   geom_line(linewidth = 1) +
   geom_point(size = 1.5) +
-  labs(x = "연도", y = "언급 비율 (%)", color = "키워드",
-       title = "법안 제안이유 속 키워드 추이") +
+  labs(
+    x = "연도", y = "언급 비율 (%)", color = "키워드",
+    title = "법안 제안이유 속 키워드 추이 (20-22대)"
+  ) +
   theme_minimal()
 ```
 
-## 5. 한국어 토큰화 (간단한 방법)
+어떤 키워드가 급등했나요? 그 시기에 어떤 사회적 이슈가 있었는지
+떠올려보세요.
 
-한국어는 형태소 분석이 필요하지만, 간단한 분석에서는 공백 기반 토큰화도 유용합니다.
+> **주의**: 키워드 빈도는 실제 정책 관심을 반영하지만,
+> 같은 단어라도 맥락에 따라 다른 의미로 쓰일 수 있습니다.
+> 키워드 분석은 탐색적 도구이지, 그 자체로 결론을 내리기는 어렵습니다.
+
+---
+
+## 4. 토큰화와 불용어 제거
+
+텍스트를 단어 단위로 쪼개는 것을 **토큰화(tokenization)**라 합니다.
+
+한국어의 특수성: 한국어는 조사가 단어에 붙어 있어서 ("법률을", "법률이", "법률에")
+같은 단어가 다른 형태로 나타납니다. 완벽한 처리를 위해서는 형태소 분석기가
+필요하지만, 간단한 분석에서는 **공백 기반 토큰화**도 유용합니다.
 
 ```{r tokenize}
-# 22대 법안 표본 (5,000건)
+# 22대 법안 중 최대 5,000건 표본
 sample_bills <- bill_text %>%
   filter(assembly == 22) %>%
   slice_sample(n = min(5000, n()))
@@ -137,53 +173,71 @@ tokens <- sample_bills %>%
   select(bill_id, committee, propose_reason) %>%
   unnest_tokens(word, propose_reason, token = "words")
 
-# 상위 단어
-tokens %>%
-  count(word, sort = TRUE) %>%
-  head(20)
+cat("토큰 수:", nrow(tokens), "\n")
 ```
-
-한국어에서는 조사가 붙어 있어 같은 단어가 다른 형태로 나타납니다.
 
 ### 불용어 제거
 
+토큰화 결과를 보면, "의", "에", "를" 같은 조사와 기능어가 상위를 차지합니다.
+이런 단어를 **불용어(stopwords)**라 하고, 분석에서 제거합니다.
+
 ```{r stopwords}
-# 한국어 기본 불용어 (빈도 기반)
 ko_stopwords <- c(
   "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
   "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
   "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
-  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에"
+  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에",
+  "하고", "대해", "이를", "따라", "하기", "하며", "있으며",
+  "규정", "관련", "정하고", "마련", "있도록", "위해"
 )
 
 tokens_clean <- tokens %>%
   filter(!word %in% ko_stopwords, nchar(word) >= 2)
+```
 
-tokens_clean %>%
+### 가장 자주 등장하는 단어
+
+```{r top-words}
+top20 <- tokens_clean %>%
   count(word, sort = TRUE) %>%
-  head(20) %>%
-  ggplot(aes(x = reorder(word, n), y = n)) +
+  head(20)
+
+ggplot(top20, aes(x = reorder(word, n), y = n)) +
   geom_col(fill = "coral") +
   coord_flip() +
-  labs(x = NULL, y = "빈도", title = "가장 많이 등장하는 단어 (22대 법안)") +
+  labs(
+    x = NULL, y = "빈도",
+    title = "가장 많이 등장하는 단어 (22대 법안)"
+  ) +
   theme_minimal()
 ```
 
-## 6. TF-IDF: 위원회별 특징 단어
+---
 
-TF-IDF(Term Frequency - Inverse Document Frequency)는 특정 그룹에서 특히 많이 나타나는 단어를 찾아줍니다.
+## 5. TF-IDF: 위원회별 특징 단어
+
+단순 빈도만으로는 "모든 법안에서 자주 쓰이는 일반적 단어"와
+"특정 위원회에서만 자주 쓰이는 특징적 단어"를 구분하기 어렵습니다.
+
+**TF-IDF (Term Frequency - Inverse Document Frequency)**는 이 문제를 해결합니다.
+
+- **TF**: 특정 문서(여기서는 위원회)에서 해당 단어가 얼마나 자주 나타나는가
+- **IDF**: 해당 단어가 전체 문서 중 얼마나 **드물게** 나타나는가
+- **TF-IDF = TF x IDF**: 특정 문서에서 자주 나타나면서, 전체적으로는 드문 단어 = **특징 단어**
 
 ```{r tfidf}
-# 위원회별 단어 빈도
 committee_words <- tokens_clean %>%
   count(committee, word, sort = TRUE)
 
-# TF-IDF 계산
 committee_tfidf <- committee_words %>%
   bind_tf_idf(word, committee, n)
+```
 
-# 주요 3개 위원회의 특징 단어
-top_committees <- c("보건복지위원회", "국토교통위원회", "과학기술정보방송통신위원회")
+### 위원회별 특징 단어 비교
+
+```{r tfidf-plot, fig.height=7}
+top_committees <- c("보건복지위원회", "국토교통위원회",
+                    "과학기술정보방송통신위원회", "환경노동위원회")
 
 committee_tfidf %>%
   filter(committee %in% top_committees) %>%
@@ -191,27 +245,104 @@ committee_tfidf %>%
   slice_max(tf_idf, n = 8) %>%
   ggplot(aes(x = reorder_within(word, tf_idf, committee), y = tf_idf)) +
   geom_col(fill = "steelblue") +
-  facet_wrap(~ committee, scales = "free_y") +
+  facet_wrap(~ committee, scales = "free_y", ncol = 2) +
   coord_flip() +
   scale_x_reordered() +
-  labs(x = NULL, y = "TF-IDF",
-       title = "위원회별 특징 단어") +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "위원회별 특징 단어"
+  ) +
   theme_minimal() +
-  theme(strip.text = element_text(size = 9))
+  theme(strip.text = element_text(size = 10))
 ```
 
-## 7. 시기별 비교: 텍스트가 달라졌는가?
+각 위원회의 특징 단어가 그 위원회의 관할 영역을 잘 반영하는지 확인해보세요.
+
+---
+
+## 6. 발언 데이터로 담론 분석
+
+`speeches` 데이터는 22대 과학기술정보방송통신위원회의 발언 전문입니다.
+법안 텍스트와는 다른 종류의 분석이 가능합니다.
+
+```{r speeches-overview}
+cat("발언 수:", nrow(speeches), "\n")
+cat("발언자 역할:\n")
+table(speeches$role) %>% sort(decreasing = TRUE) %>% head(8)
+```
+
+### 의원 vs 관료의 발언 비교
+
+```{r role-compare}
+role_tokens <- speeches %>%
+  filter(role %in% c("legislator", "minister", "vice_minister")) %>%
+  mutate(role_kr = case_match(role,
+    "legislator" ~ "의원",
+    "minister" ~ "장관",
+    "vice_minister" ~ "차관"
+  )) %>%
+  select(role_kr, speech) %>%
+  unnest_tokens(word, speech, token = "words") %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+role_tfidf <- role_tokens %>%
+  count(role_kr, word) %>%
+  bind_tf_idf(word, role_kr, n)
+
+role_tfidf %>%
+  group_by(role_kr) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, role_kr), y = tf_idf)) +
+  geom_col(fill = "steelblue") +
+  facet_wrap(~ role_kr, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "발언자 유형별 특징 단어 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+의원과 관료가 같은 위원회에서 어떤 다른 언어를 사용하는지 비교해보세요.
+
+### 특정 키워드 발언 패턴
+
+AI 관련 발언이 시간에 따라 어떻게 변하는지 살펴봅시다.
+
+```{r ai-speeches}
+ai_speeches <- speeches %>%
+  filter(str_detect(speech, "인공지능|AI|에이아이")) %>%
+  mutate(month = format(date, "%Y-%m"))
+
+ai_trend <- ai_speeches %>%
+  count(month) %>%
+  mutate(month = as.Date(paste0(month, "-01")))
+
+ggplot(ai_trend, aes(x = month, y = n)) +
+  geom_col(fill = "coral") +
+  labs(
+    x = NULL, y = "AI 관련 발언 수",
+    title = "과학기술정보방송통신위원회 AI 관련 발언 추이 (22대)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. 시기별 비교: 대수 간 텍스트 변화
 
 ```{r temporal}
-# 20대 vs 22대 비교
-era_words <- tokens_clean %>%
+era_tokens <- tokens_clean %>%
   inner_join(sample_bills %>% select(bill_id, assembly), by = "bill_id") %>%
   filter(assembly %in% c(20, 22)) %>%
-  mutate(era = paste0(assembly, "대")) %>%
+  mutate(era = paste0(assembly, "대"))
+
+era_tfidf <- era_tokens %>%
   count(era, word, sort = TRUE) %>%
   bind_tf_idf(word, era, n)
 
-era_words %>%
+era_tfidf %>%
   group_by(era) %>%
   slice_max(tf_idf, n = 10) %>%
   ggplot(aes(x = reorder_within(word, tf_idf, era), y = tf_idf, fill = era)) +
@@ -219,21 +350,164 @@ era_words %>%
   facet_wrap(~ era, scales = "free") +
   coord_flip() +
   scale_x_reordered() +
-  labs(x = NULL, y = "TF-IDF",
-       title = "20대 vs 22대 국회: 특징 단어 비교") +
+  scale_fill_manual(values = c("20대" = "steelblue", "22대" = "coral")) +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "20대 vs 22대 국회: 특징 단어 비교"
+  ) +
   theme_minimal()
 ```
+
+6년 사이에 국회의 관심사가 어떻게 바뀌었는지 단어 수준에서 확인할 수 있습니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 기법 | 용도 | 핵심 함수 |
+|------|------|----------|
+| 키워드 추적 | 특정 단어의 시간적 추이 | `str_detect()` |
+| 토큰화 | 텍스트를 단어 단위로 분해 | `unnest_tokens()` |
+| 불용어 제거 | 의미 없는 기능어 필터링 | `filter(!word %in% ...)` |
+| 단어 빈도 | 가장 많이 쓰이는 단어 | `count(word)` |
+| TF-IDF | 그룹별 특징 단어 발견 | `bind_tf_idf()` |
+
+> **한계**: 공백 기반 토큰화는 한국어의 교착어 특성을 무시합니다.
+> "국민들이", "국민의", "국민을"이 다른 단어로 취급됩니다.
+> 더 정확한 분석을 위해서는 형태소 분석기(KoNLPy, MeCab 등)가 필요합니다.
+
+다음 튜토리얼에서는 **공동발의 네트워크**를 분석합니다.
+누가 누구와 함께 법안을 만드는지, 그 관계의 구조를 탐색합니다.
 
 ---
 
 ## 연습 문제
 
-1. "부동산", "주택", "임대"가 포함된 법안의 비율을 대수별로 계산하시오.
+### 문제 1 (기초)
 
-2. 특정 위원회(예: 환경노동위원회)의 법안 제안이유에서 가장 자주 등장하는 단어 상위 15개를 막대그래프로 그리시오.
+"부동산", "주택", "임대"가 포함된 법안의 비율을 대수별로 계산하시오.
 
-3. 두 정당(예: 국민의힘 vs 더불어민주당)의 법안 텍스트를 비교하시오. `proposer_id`를 `legislators` 데이터와 연결하여 정당 정보를 가져오시오.
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
 
-4. 연도별 평균 텍스트 길이(`text_length`)를 계산하고, 시간에 따른 추세를 그래프로 나타내시오. 텍스트가 길어지고 있는가?
+```
 
-5. (심화) KoNLPy나 tidytext의 한국어 형태소 분석기를 사용하여 명사만 추출한 후, 위원회별 TF-IDF를 다시 계산하시오. 공백 토큰화와 결과가 어떻게 다른가?
+<details>
+<summary>정답 보기</summary>
+```{r}
+bill_text %>%
+  mutate(housing = str_detect(propose_reason, "부동산|주택|임대")) %>%
+  group_by(assembly) %>%
+  summarise(
+    total = n(),
+    n_housing = sum(housing, na.rm = TRUE),
+    pct = round(n_housing / total * 100, 1)
+  )
+```
+</details>
+
+### 문제 2 (기초)
+
+`speeches` 데이터에서 가장 많이 발언한 의원 상위 10명을 찾고,
+발언 횟수를 막대그래프로 그리시오.
+(힌트: `role == "legislator"`로 필터링)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+speeches %>%
+  filter(role == "legislator") %>%
+  count(speaker_name, sort = TRUE) %>%
+  head(10) %>%
+  ggplot(aes(x = reorder(speaker_name, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "발언 횟수",
+       title = "22대 과방위에서 가장 많이 발언한 의원 (상위 10명)") +
+  theme_minimal()
+```
+</details>
+
+### 문제 3 (응용)
+
+두 정당(국민의힘 vs 더불어민주당) 의원의 법안 텍스트를 비교하시오.
+`proposer_id`를 `legislators`와 연결하여 정당 정보를 가져온 뒤,
+정당별 TF-IDF 상위 단어를 비교하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+data(legislators)
+
+party_bills <- sample_bills %>%
+  inner_join(
+    legislators %>% filter(assembly == 22) %>% select(member_id, party),
+    by = c("proposer_id" = "member_id")
+  ) %>%
+  filter(party %in% c("국민의힘", "더불어민주당"))
+
+party_tokens <- party_bills %>%
+  select(bill_id, party, propose_reason) %>%
+  unnest_tokens(word, propose_reason) %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+party_tfidf <- party_tokens %>%
+  count(party, word) %>%
+  bind_tf_idf(word, party, n)
+
+party_tfidf %>%
+  group_by(party) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, party), y = tf_idf, fill = party)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ party, scales = "free") +
+  coord_flip() + scale_x_reordered() +
+  scale_fill_manual(values = c("국민의힘" = "#E61E2B", "더불어민주당" = "#004EA2")) +
+  labs(x = NULL, y = "TF-IDF", title = "정당별 법안 특징 단어") +
+  theme_minimal()
+```
+</details>
+
+### 문제 4 (도전)
+
+`speeches` 데이터에서 의원(`legislator`)과 관료(`minister`, `vice_minister`)의
+**평균 발언 길이**를 비교하시오. 발언 길이가 역할에 따라 다른 이유는 무엇일까?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+speeches %>%
+  filter(role %in% c("legislator", "minister", "vice_minister")) %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_kr = case_match(role,
+      "legislator" ~ "의원",
+      "minister" ~ "장관",
+      "vice_minister" ~ "차관"
+    )
+  ) %>%
+  group_by(role_kr) %>%
+  summarise(
+    n = n(),
+    mean_length = round(mean(speech_length)),
+    median_length = median(speech_length)
+  )
+```
+의원은 주로 짧은 질문을 하고, 관료는 긴 답변을 하기 때문에
+발언 길이 차이가 나타납니다. 위원회 질의-응답 구조를 반영합니다.
+</details>
