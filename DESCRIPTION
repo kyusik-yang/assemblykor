@@ -19,12 +19,19 @@ Imports:
     utils
 Suggests:
     arrow,
+    broom,
     dplyr,
+    fixest,
     ggplot2,
+    htmltools,
+    igraph,
     knitr,
     learnr,
     rmarkdown,
-    tidyr
+    scales,
+    stringr,
+    tidyr,
+    tidytext
 Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz

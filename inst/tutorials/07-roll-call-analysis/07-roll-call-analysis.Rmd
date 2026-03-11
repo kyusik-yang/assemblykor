@@ -515,9 +515,12 @@ Compare Rice Index for contentious bills (yes rate 50-85%) vs non-contentious bi
 ```
 
 ```{r ex2-hint}
-# Join rice_by_bill with bill-level yes_rate, then compare
-# Contentious bills naturally have lower Rice Index
-# because parties split on controversial issues
+# First, build rice_by_bill from scratch in this exercise:
+# 1. Filter roll_calls for vote %in% c("yes","no","abstain")
+# 2. Count yes/no/abstain per bill_id + party
+# 3. Calculate Rice Index = |yes - no| / (yes + no)
+# Then join with bill-level yes_rate from votes and compare
+# Contentious bills (50-85% yes rate) naturally have lower Rice Index
 ```
 
 ### Exercise 3: Committee Cohesion
@@ -530,6 +533,8 @@ Compare party cohesion across different committees. Do some policy areas show mo
 ```
 
 ```{r ex3-hint}
-# Join rice_by_bill with votes to get committee info
+# First, build rice_by_bill from scratch (see Section 4)
+# Then join with votes to get committee info:
+# left_join(votes %>% select(bill_id, committee), by = "bill_id")
 # Group by party and committee, then compare mean Rice Index
 ```

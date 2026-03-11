@@ -361,7 +361,7 @@ legislators %>%
 
 ### Exercise 3: Bill Results
 
-Calculate the number of bills and the rate of original passage (`result == "original passage"`) by assembly.
+Calculate the number of bills and the rate of original passage by assembly. Note: the result values are in Korean. Use `result == "\uc6d0\uc548\uac00\uacb0"` (original passage).
 
 ```{r ex3, exercise=TRUE}
 

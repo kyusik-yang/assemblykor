@@ -10,6 +10,7 @@ library(learnr)
 library(assemblykor)
 library(dplyr)
 library(ggplot2)
+library(igraph)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 6)
 data(legislators)
 data(bills)
@@ -45,7 +46,6 @@ A network (graph) consists of two elements:
 - **Edge (link)**: relationship between nodes. Here, **co-sponsorship ties**
 
 ```{r concept, echo=FALSE, fig.height=3.5}
-library(igraph)
 g_ex <- graph_from_data_frame(
   data.frame(from = c("A", "A", "B", "C", "D"),
              to   = c("B", "C", "C", "D", "E")),
@@ -116,7 +116,6 @@ quiz(
 ## 4. Creating an igraph Network
 
 ```{r create-graph, exercise=TRUE, exercise.eval=FALSE}
-library(igraph)
 proposers <- get_proposers()
 
 props_22 <- proposers %>%
@@ -142,10 +141,35 @@ V(g)$label  <- leg_22$name[match(V(g)$name, leg_22$member_id)]
 
 cat("Nodes:", vcount(g), "\n")
 cat("Edges:", ecount(g), "\n")
-cat("Density:", round(graph.density(g), 4), "\n")
+cat("Density:", round(edge_density(g), 4), "\n")
 ```
 
 > **Network density**: the proportion of all possible connections that actually exist. Density = 1 means all nodes are connected; 0 means no connections. Co-sponsorship networks typically have quite high density.
+
+```{r build-network, include=FALSE}
+# Shared setup chunk for exercises in Sections 5-9
+proposers <- get_proposers()
+
+props_22 <- proposers %>%
+  filter(propose_date >= as.Date("2024-05-30"))
+
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+
+edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+
+leg_22 <- legislators %>%
+  filter(assembly == 22) %>%
+  distinct(member_id, .keep_all = TRUE)
+
+V(g)$party  <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$gender <- leg_22$gender[match(V(g)$name, leg_22$member_id)]
+V(g)$label  <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+```
 
 ## 5. Centrality Measures: Who Is at the Center?
 
@@ -155,22 +179,7 @@ There are multiple ways to define "important nodes" in a network. Each measure c
 
 The simplest: **how many other legislators are you connected to?**
 
-```{r degree, exercise=TRUE, exercise.eval=FALSE}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
-
+```{r degree, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 degree_df <- data.frame(
   name = V(g)$label,
   party = V(g)$party,
@@ -185,22 +194,7 @@ degree_df %>% arrange(desc(degree)) %>% head(10)
 
 **Who serves as a "bridge" connecting different groups?** Betweenness measures the proportion of shortest paths passing through a node.
 
-```{r betweenness, exercise=TRUE, exercise.eval=FALSE}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
-
+```{r betweenness, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 between_df <- data.frame(
   name = V(g)$label,
   party = V(g)$party,
@@ -227,22 +221,7 @@ quiz(
 
 ### Centrality Comparison Scatter Plot
 
-```{r centrality-scatter, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
-
+```{r centrality-scatter, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network", fig.height=5}
 centrality_df <- data.frame(
   name = V(g)$label,
   party = V(g)$party,
@@ -260,22 +239,7 @@ ggplot(centrality_df, aes(x = degree, y = betweenness)) +
 
 ## 6. Party Network Structure
 
-```{r party-stats, exercise=TRUE, exercise.eval=FALSE}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
-
+```{r party-stats, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 centrality_df <- data.frame(
   name = V(g)$label,
   party = V(g)$party,
@@ -297,21 +261,7 @@ centrality_df %>%
 
 ### Party Degree Distribution
 
-```{r party-boxplot, exercise=TRUE, exercise.eval=FALSE, fig.height=4}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-
+```{r party-boxplot, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network", fig.height=4}
 centrality_df <- data.frame(
   party = V(g)$party,
   degree = degree(g),
@@ -338,21 +288,7 @@ Tightly connected subgroups within a network are called **communities**. Algorit
 
 ### Louvain Algorithm
 
-```{r community, exercise=TRUE, exercise.eval=FALSE}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-
+```{r community, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 comm <- cluster_louvain(g)
 
 cat("Communities found:", max(membership(comm)), "\n")
@@ -388,21 +324,7 @@ quiz(
 
 How much co-sponsorship happens across party lines?
 
-```{r cross-party, exercise=TRUE, exercise.eval=FALSE}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-
+```{r cross-party, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 edge_df <- as_data_frame(g, what = "edges") %>%
   mutate(
     party_from = V(g)$party[match(from, V(g)$name)],
@@ -420,21 +342,7 @@ cat("Cross-party ratio:", round(mean(edge_df$cross_party) * 100, 1), "%\n")
 
 Which party pairs co-sponsor the most?
 
-```{r cross-heatmap, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-
+```{r cross-heatmap, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network", fig.height=5}
 edge_df <- as_data_frame(g, what = "edges") %>%
   mutate(
     party_from = V(g)$party[match(from, V(g)$name)],
@@ -461,21 +369,7 @@ If the diagonal (within-party) is much larger than off-diagonal (cross-party), c
 
 ## 9. Network Visualization
 
-```{r network-viz, exercise=TRUE, exercise.eval=FALSE, fig.height=6}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$party <- leg_22$party[match(V(g)$name, leg_22$member_id)]
-
+```{r network-viz, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network", fig.height=6}
 # Visualize two main parties only (full network is too complex)
 main_parties <- c("\uad6d\ubbfc\uc758\ud798", "\ub354\ubd88\uc5b4\ubbfc\uc8fc\ub2f9")
 keep <- V(g)$party %in% main_parties & !is.na(V(g)$party)
@@ -523,31 +417,17 @@ Are the two parties separated or mixed in the network? This visualization provid
 
 Compare mean betweenness centrality between female and male legislators. Is there a gender difference in network position?
 
-```{r ex1, exercise=TRUE, exercise.eval=FALSE}
+```{r ex1, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 
 ```
 
 ```{r ex1-hint}
-# Build the network and centrality_df first, then
-# add gender from leg_22 and group_by(gender)
+# g, leg_22, and vertex attributes are already available
+# Use V(g)$gender and betweenness(g, normalized = TRUE)
+# Create a data.frame and group_by(gender)
 ```
 
 ```{r ex1-solution}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-leg_22 <- legislators %>% filter(assembly == 22) %>% distinct(member_id, .keep_all = TRUE)
-V(g)$gender <- leg_22$gender[match(V(g)$name, leg_22$member_id)]
-V(g)$label <- leg_22$name[match(V(g)$name, leg_22$member_id)]
-
 data.frame(
   name = V(g)$label,
   gender = V(g)$gender,
@@ -566,30 +446,18 @@ data.frame(
 
 Use `cluster_walktrap()` instead of Louvain and compare the results. How do modularity and the number of communities differ?
 
-```{r ex2, exercise=TRUE, exercise.eval=FALSE}
+```{r ex2, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 
 ```
 
 ```{r ex2-hint}
-# Build the graph g, then run both algorithms:
+# g is already available from the setup
 # comm_louvain <- cluster_louvain(g)
 # comm_walktrap <- cluster_walktrap(g)
 # Compare max(membership(...)) and modularity(...)
 ```
 
 ```{r ex2-solution}
-library(igraph)
-proposers <- get_proposers()
-
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-edge_weights <- inner_join(leads, cosponsors, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g <- graph_from_data_frame(edge_weights, directed = FALSE)
-
 comm_louvain <- cluster_louvain(g)
 comm_walktrap <- cluster_walktrap(g)
 
@@ -604,21 +472,19 @@ data.frame(
 
 Build the 21st Assembly co-sponsorship network and compare with the 22nd. Report at least one of: density, average degree, or cross-party ratio.
 
-```{r ex3, exercise=TRUE, exercise.eval=FALSE}
+```{r ex3, exercise=TRUE, exercise.eval=FALSE, exercise.setup="build-network"}
 
 ```
 
 ```{r ex3-hint}
-# Filter proposers by propose_date for 21st Assembly:
+# proposers is already available from the setup
+# Filter for 21st Assembly:
 # propose_date >= "2020-05-30" & propose_date < "2024-05-30"
-# Build network same way as 22nd, then compare metrics
+# Build a 21st assembly network g_21, then compare with g (22nd)
 ```
 
 ```{r ex3-solution}
-library(igraph)
-proposers <- get_proposers()
-
-# 21st Assembly
+# 21st Assembly (proposers is available from setup)
 props_21 <- proposers %>%
   filter(propose_date >= as.Date("2020-05-30"),
          propose_date < as.Date("2024-05-30"))
@@ -632,22 +498,11 @@ ew_21 <- inner_join(leads_21, cos_21, by = "bill_id") %>%
 
 g_21 <- graph_from_data_frame(ew_21, directed = FALSE)
 
-# 22nd Assembly
-props_22 <- proposers %>% filter(propose_date >= as.Date("2024-05-30"))
-leads_22 <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-cos_22 <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-
-ew_22 <- inner_join(leads_22, cos_22, by = "bill_id") %>%
-  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
-  count(lead, cosponsor, name = "weight")
-
-g_22 <- graph_from_data_frame(ew_22, directed = FALSE)
-
 data.frame(
   Assembly = c("21st", "22nd"),
-  Nodes = c(vcount(g_21), vcount(g_22)),
-  Edges = c(ecount(g_21), ecount(g_22)),
-  Density = c(round(graph.density(g_21), 4), round(graph.density(g_22), 4)),
-  Avg_Degree = c(round(mean(degree(g_21)), 1), round(mean(degree(g_22)), 1))
+  Nodes = c(vcount(g_21), vcount(g)),
+  Edges = c(ecount(g_21), ecount(g)),
+  Density = c(round(edge_density(g_21), 4), round(edge_density(g), 4)),
+  Avg_Degree = c(round(mean(degree(g_21)), 1), round(mean(degree(g)), 1))
 )
 ```

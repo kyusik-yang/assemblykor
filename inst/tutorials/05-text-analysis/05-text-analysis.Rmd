@@ -380,7 +380,7 @@ era_tokens <- sample_both %>%
   select(bill_id, assembly, propose_reason) %>%
   unnest_tokens(word, propose_reason, token = "words") %>%
   filter(!word %in% ko_stopwords, nchar(word) >= 2) %>%
-  mutate(era = paste0(assembly, "th"))
+  mutate(era = ifelse(assembly == 22, "22nd", paste0(assembly, "th")))
 
 era_tfidf <- era_tokens %>%
   count(era, word, sort = TRUE) %>%
@@ -394,7 +394,7 @@ era_tfidf %>%
   facet_wrap(~ era, scales = "free") +
   coord_flip() +
   scale_x_reordered() +
-  scale_fill_manual(values = c("20th" = "steelblue", "22th" = "coral")) +
+  scale_fill_manual(values = c("20th" = "steelblue", "22nd" = "coral")) +
   labs(x = NULL, y = "TF-IDF",
        title = "20th vs 22nd Assembly: Distinctive Words Comparison") +
   theme_minimal()

@@ -294,6 +294,16 @@ Compare real estate assets by Seoul property ownership using a boxplot.
 # x = has_seoul_property, y = real_estate / 1e6
 ```
 
+```{r ex2-solution, fig.height=4}
+wealth %>%
+  filter(year == 2024) %>%
+  ggplot(aes(x = has_seoul_property, y = real_estate / 1e6)) +
+  geom_boxplot(fill = "steelblue", alpha = 0.5) +
+  labs(x = "Owns Seoul Property", y = "Real Estate (billion KRW)",
+       title = "Real Estate Assets by Seoul Property Ownership") +
+  theme_minimal()
+```
+
 ### Exercise 3: Seminar Scatter
 
 Plot seniority vs seminar count with a trend line.

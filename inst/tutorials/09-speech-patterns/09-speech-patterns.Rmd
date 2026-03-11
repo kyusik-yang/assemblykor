@@ -165,7 +165,8 @@ speeches %>%
     role_group = case_match(role,
       "legislator" ~ "Legislator",
       "chair" ~ "Chair",
-      c("minister", "vice_minister", "senior_bureaucrat") ~ "Government",
+      c("minister", "vice_minister", "senior_bureaucrat",
+        "agency_head") ~ "Government",
       "committee_staff" ~ "Staff",
       .default = "Other"
     )
@@ -251,7 +252,7 @@ ggplot(turns, aes(x = speech_order, y = speech_length, fill = role_group)) +
   labs(
     x = "Speech Order", y = "Speech Length (characters)",
     fill = "Role",
-    title = paste("Meeting Turn Structure (", sample_date, ")")
+    title = paste0("Meeting Turn Structure (", sample_date, ")")
   ) +
   theme_minimal()
 ```
