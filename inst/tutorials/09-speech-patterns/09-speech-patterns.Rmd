@@ -76,10 +76,10 @@ ggplot(role_summary, aes(x = reorder(role, n), y = n)) +
 ```{r quiz-roles}
 quiz(
   question("The data shows legislators give far more speeches than ministers. Does this mean legislators contribute more substantive content?",
-    answer("Yes, more speeches means more substance"),
-    answer("Not necessarily, because many legislator speeches are brief procedural remarks or short questions", correct = TRUE),
-    answer("Yes, because legislators are elected representatives"),
-    answer("No, because ministers are always more substantive"),
+    answer("Yes, higher speech count directly indicates more substance"),
+    answer("Not necessarily, because many of those are brief questions", correct = TRUE),
+    answer("Yes, because elected officials have greater policy authority"),
+    answer("No, because government officials always provide more depth"),
     correct = "Correct! Speech count alone doesn't capture substance. Legislators often give many short turns (questions, procedural remarks), while ministers give fewer but longer policy responses."
   )
 )
@@ -208,10 +208,10 @@ speeches %>%
 ```{r quiz-role}
 quiz(
   question("The density plot shows government officials' speeches are much longer than legislators'. If you only used mean speech length to measure 'engagement', what would be misleading?",
-    answer("Nothing, longer speeches always mean more engagement"),
-    answer("It would overcount government officials' engagement while undercounting legislators who ask many short but pointed questions", correct = TRUE),
-    answer("It would be biased toward female legislators"),
-    answer("Mean length is always the best measure of engagement"),
+    answer("Nothing, because speech length directly measures effort"),
+    answer("Officials would look more engaged, ignoring legislators' many brief questions", correct = TRUE),
+    answer("It would systematically favor junior legislators over seniors"),
+    answer("The density plot cannot be used for any kind of comparison"),
     correct = "Correct! The Q&A structure means legislators ask brief questions and officials give long answers. Using only length would mistake institutional roles for engagement levels."
   )
 )

@@ -65,10 +65,10 @@ votes %>%
 ```{r quiz-votes}
 quiz(
   question("A bill has voted = 260, yes = 135, no = 120, abstain = 5. What can you infer?",
-    answer("The bill clearly passed"),
-    answer("This was a highly contentious vote with the assembly nearly split in half", correct = TRUE),
-    answer("Most legislators abstained"),
-    answer("The data has an error because yes + no should equal voted"),
+    answer("The bill clearly passed with a comfortable margin"),
+    answer("This was a contentious vote, nearly split in half", correct = TRUE),
+    answer("Most legislators chose to abstain from the vote"),
+    answer("The data contains an error in the vote counts"),
     correct = "Correct! A near-even yes/no split signals a controversial bill. Note that yes + no + abstain = voted."
   )
 )

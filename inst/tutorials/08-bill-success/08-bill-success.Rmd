@@ -68,9 +68,9 @@ cat("Pass rate:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
 quiz(
   question("A researcher codes 'alternative-reflected disposal' as failure (0). Another codes it as success (1). Who is more defensible?",
     answer("Failure, because the original bill was officially discarded"),
-    answer("Success, because the bill's content was incorporated into a passed alternative", correct = TRUE),
-    answer("Neither, because it depends on the research question"),
-    answer("Both are equally valid regardless of context"),
+    answer("Success, because the bill's substance was adopted elsewhere", correct = TRUE),
+    answer("Neither, because it depends entirely on the research question"),
+    answer("Both are equally valid regardless of the research context"),
     correct = "Correct! The bill's substance succeeded. Coding it as failure would undercount policy impact, since the content lives on in the alternative bill."
   )
 )
@@ -205,10 +205,10 @@ $$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots$
 ```{r quiz-logistic}
 quiz(
   question("Your OLS model predicts a bill's passage probability as -0.12. What does this reveal?",
-    answer("The bill is very unlikely to pass"),
-    answer("The linear model produced an impossible probability, which is why logistic regression is preferred", correct = TRUE),
-    answer("There is a data entry error"),
-    answer("The coefficient should be exponentiated"),
+    answer("The bill is very unlikely to pass based on its features"),
+    answer("OLS can produce impossible probabilities outside 0-1", correct = TRUE),
+    answer("There is a data entry error in the bill's variables"),
+    answer("The coefficient needs to be exponentiated to interpret"),
     correct = "Correct! Probabilities must be between 0 and 1. A negative prediction shows the fundamental limitation of OLS for binary outcomes."
   )
 )

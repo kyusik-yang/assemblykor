@@ -121,10 +121,10 @@ Result: between-person differences are completely eliminated.
 ```{r quiz-fe}
 quiz(
   question("A legislator from a wealthy family always has higher deposits. With individual FE, this family background effect is:",
-    answer("Estimated as a separate coefficient"),
-    answer("Absorbed into the individual intercept and removed from the estimate", correct = TRUE),
-    answer("Included as a control variable"),
-    answer("Causing bias in the real estate coefficient"),
+    answer("Estimated as a separate coefficient in the output"),
+    answer("Absorbed into the individual intercept automatically", correct = TRUE),
+    answer("Included as an additional observable control variable"),
+    answer("Still causing bias in the real estate coefficient"),
     correct = "Correct! FE absorbs ALL time-invariant traits (family background, innate ability, etc.) into each person's intercept."
   )
 )

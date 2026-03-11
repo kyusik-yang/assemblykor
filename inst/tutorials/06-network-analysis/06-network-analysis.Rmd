@@ -104,10 +104,10 @@ cat("Mean weight:", round(mean(edge_weights$weight), 1), "\n")
 ```{r quiz-network}
 quiz(
   question("Legislators A and B co-sponsored 15 bills together, while A and C co-sponsored 3. In a weighted network, what does this tell us?",
-    answer("A is more important than B and C"),
-    answer("The A-B edge has a higher weight, indicating a stronger collaborative relationship", correct = TRUE),
-    answer("A, B, and C are all in the same community"),
-    answer("B proposed more bills than C"),
+    answer("A is more central than both B and C in the network"),
+    answer("The A-B edge weight is higher, reflecting stronger collaboration", correct = TRUE),
+    answer("A, B, and C must belong to the same party community"),
+    answer("B has proposed more bills overall than C has"),
     correct = "Correct! Edge weight captures the strength of the relationship: more co-sponsored bills = stronger tie."
   )
 )
@@ -216,10 +216,10 @@ Do those with high degree always have high betweenness? The scatter plot below r
 ```{r quiz-centrality}
 quiz(
   question("Legislator X has low degree (few connections) but very high betweenness. What does this suggest?",
-    answer("X is not active in legislation"),
-    answer("X connects groups that would otherwise be disconnected, despite having few ties", correct = TRUE),
-    answer("X is a freshman with no experience"),
-    answer("There is a data error"),
+    answer("X is not very active in the legislative process overall"),
+    answer("X serves as a rare bridge between otherwise separate groups", correct = TRUE),
+    answer("X is a freshman who has not built connections yet"),
+    answer("The data likely contains an error in X's records"),
     correct = "Correct! A low-degree but high-betweenness node is a rare but critical bridge, like a cross-party mediator with selective but strategic connections."
   )
 )
@@ -373,10 +373,10 @@ table(comm_party$community, comm_party$party) %>%
 ```{r quiz-community}
 quiz(
   question("The algorithm finds 3 communities that map almost perfectly to 3 parties. What does this imply about co-sponsorship behavior?",
-    answer("The algorithm is biased toward finding party structures"),
-    answer("Co-sponsorship occurs primarily within parties, not across party lines", correct = TRUE),
-    answer("There are exactly 3 parties in the assembly"),
-    answer("Network analysis cannot capture political dynamics"),
+    answer("The algorithm is biased toward detecting party-based clusters"),
+    answer("Most co-sponsorship happens within parties, not across them", correct = TRUE),
+    answer("The assembly has exactly 3 parties with equal-sized caucuses"),
+    answer("Community detection is unreliable for political networks"),
     correct = "Correct! When detected communities align with parties, it means most collaboration happens within party boundaries, a sign of partisan co-sponsorship."
   )
 )

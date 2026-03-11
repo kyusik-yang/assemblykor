@@ -99,10 +99,10 @@ summary(m1)
 ```{r quiz-interpret}
 quiz(
   question("Why is the net_worth coefficient extremely small?",
-    answer("Small sample size"),
-    answer("The variable is measured in thousands of KRW, so numbers are very large", correct = TRUE),
-    answer("Too many missing values"),
-    answer("The dependent variable is not continuous"),
+    answer("The sample size is too small for reliable estimation"),
+    answer("The variable is in thousands of KRW, making the numbers huge", correct = TRUE),
+    answer("Too many missing values are biasing the coefficient"),
+    answer("The dependent variable is a count, not truly continuous"),
     correct = "Correct! Converting to billions makes interpretation easier."
   )
 )
@@ -151,10 +151,10 @@ If the coefficient shrinks after adding controls, part of the original effect wa
 ```{r quiz-controls}
 quiz(
   question("The wealth coefficient shrinks after adding seniority as a control. What does this suggest?",
-    answer("Seniority causes wealth"),
-    answer("Part of the wealth-bills relationship was actually driven by seniority differences", correct = TRUE),
-    answer("The model has too many variables"),
-    answer("Wealth no longer matters for legislative activity"),
+    answer("Seniority is the direct cause of higher wealth levels"),
+    answer("Seniority was confounding the wealth-bills relationship", correct = TRUE),
+    answer("The model is now overfitting with too many variables"),
+    answer("Wealth has no real effect on legislative activity"),
     correct = "Correct! Seniority is correlated with both wealth and bills, so omitting it inflated the wealth coefficient (omitted variable bias)."
   )
 )

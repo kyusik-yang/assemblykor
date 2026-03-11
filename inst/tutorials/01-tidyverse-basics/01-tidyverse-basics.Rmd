@@ -82,10 +82,10 @@ summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
 ```{r quiz-nrow}
 quiz(
   question("There are 661 unique legislators but 947 rows. Why?",
-    answer("Some rows contain missing data"),
-    answer("Some legislators served in multiple assemblies, creating one row per assembly", correct = TRUE),
-    answer("The dataset includes staff members as well"),
-    answer("There are duplicate entries that need cleaning"),
+    answer("Some rows have missing data that got split into separate entries"),
+    answer("Some legislators served in multiple assemblies, appearing once per term", correct = TRUE),
+    answer("The dataset includes both legislators and their staff members"),
+    answer("There are duplicates from merging multiple source databases"),
     correct = "Correct! A legislator serving in both the 20th and 21st assemblies appears as two separate rows."
   )
 )
