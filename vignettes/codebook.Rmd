@@ -1,0 +1,207 @@
+---
+title: "Data Codebook"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data Codebook}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(assemblykor)
+
+# Helper: summarise a single variable
+var_summary <- function(x, varname) {
+  n_total <- length(x)
+  n_miss  <- sum(is.na(x))
+  pct_miss <- sprintf("%.1f%%", 100 * n_miss / n_total)
+
+  if (is.logical(x)) {
+    type_str <- "logical"
+    vals <- paste0("TRUE: ", sum(x, na.rm = TRUE),
+                   ", FALSE: ", sum(!x, na.rm = TRUE))
+  } else if (is.numeric(x)) {
+    type_str <- "numeric"
+    q <- quantile(x, c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+    vals <- sprintf("min=%.0f, Q1=%.0f, median=%.0f, Q3=%.0f, max=%.0f",
+                    q[1], q[2], q[3], q[4], q[5])
+  } else if (inherits(x, "Date")) {
+    type_str <- "Date"
+    vals <- paste(range(x, na.rm = TRUE), collapse = " to ")
+  } else {
+    type_str <- "character"
+    u <- length(unique(x[!is.na(x)]))
+    top <- names(sort(table(x), decreasing = TRUE))[1:min(3, u)]
+    vals <- paste0(u, " unique; top: ", paste(top, collapse = ", "))
+  }
+
+  data.frame(
+    Variable = varname,
+    Type = type_str,
+    Missing = pct_miss,
+    Distribution = vals,
+    stringsAsFactors = FALSE
+  )
+}
+
+# Helper: build a summary table for a dataset
+codebook_table <- function(df) {
+  rows <- lapply(names(df), function(v) var_summary(df[[v]], v))
+  do.call(rbind, rows)
+}
+```
+
+This codebook documents all seven built-in datasets in `assemblykor`.
+For each dataset, we list every variable with its type, missing rate,
+and value distribution. All datasets can be joined via `member_id`
+and/or `assembly`.
+
+---
+
+## legislators
+
+**947 rows, 15 variables.** MP metadata for the 20th-22nd Korean
+National Assembly.
+
+- **Unit of observation**: legislator-assembly
+- **Key**: `member_id` + `assembly` (unique)
+- **Source**: Open National Assembly API
+
+```{r legislators-codebook, echo = FALSE}
+data(legislators)
+knitr::kable(codebook_table(legislators), row.names = FALSE)
+```
+
+---
+
+## bills
+
+**60,925 rows, 9 variables.** Legislative bill metadata (20th-22nd
+assembly).
+
+- **Unit of observation**: bill
+- **Key**: `bill_id` (unique)
+- **Join**: `proposer_id` links to `legislators$member_id`
+- **Source**: Open National Assembly API
+
+```{r bills-codebook, echo = FALSE}
+data(bills)
+knitr::kable(codebook_table(bills), row.names = FALSE)
+```
+
+---
+
+## wealth
+
+**2,928 rows, 14 variables.** Legislator asset declaration panel
+(2015-2025, 13 disclosure periods).
+
+- **Unit of observation**: legislator-year
+- **Key**: `member_id` + `year` (unique)
+- **Units**: all monetary values in thousands of KRW (1 unit = 1,000 won)
+- **Source**: OpenWatch (CC BY-SA 4.0)
+
+```{r wealth-codebook, echo = FALSE}
+data(wealth)
+knitr::kable(codebook_table(wealth), row.names = FALSE)
+```
+
+---
+
+## seminars
+
+**5,962 rows, 18 variables.** Legislator-year policy seminar activity
+(17th-22nd assembly, 2000-2025).
+
+- **Unit of observation**: legislator-year
+- **Key**: `member_id` + `year` (note: ~5% of `member_id` are `NA`)
+- **Source**: National Assembly Seminar Database
+
+```{r seminars-codebook, echo = FALSE}
+data(seminars)
+knitr::kable(codebook_table(seminars), row.names = FALSE)
+```
+
+---
+
+## speeches
+
+**15,843 rows, 9 variables.** Committee speech records from the
+Science and ICT Committee (22nd assembly, 2024).
+
+- **Unit of observation**: speech turn
+- **Key**: `date` + `speech_order` (unique within a meeting)
+- **Source**: National Assembly committee minutes
+
+```{r speeches-codebook, echo = FALSE}
+data(speeches)
+knitr::kable(codebook_table(speeches), row.names = FALSE)
+```
+
+---
+
+## votes
+
+**7,997 rows, 13 variables.** Plenary vote tallies (20th-22nd
+assembly).
+
+- **Unit of observation**: bill vote
+- **Key**: `bill_id` (unique)
+- **Join**: `bill_id` links to `bills$bill_id` (~40% match rate; `votes`
+  includes committee alternatives and budget bills not in `bills`)
+- **Source**: Open National Assembly API
+
+```{r votes-codebook, echo = FALSE}
+data(votes)
+knitr::kable(codebook_table(votes), row.names = FALSE)
+```
+
+---
+
+## roll_calls
+
+**368,210 rows, 8 variables.** Member-level roll call votes (22nd
+assembly, 1,233 bills).
+
+- **Unit of observation**: legislator-bill vote
+- **Key**: `member_id` + `bill_id` (unique)
+- **Join**: `member_id` links to `legislators$member_id`;
+  `bill_id` links to `votes$bill_id`
+- **Source**: Open National Assembly API
+
+```{r roll-calls-codebook, echo = FALSE}
+data(roll_calls)
+knitr::kable(codebook_table(roll_calls), row.names = FALSE)
+```
+
+---
+
+## Dataset relationship diagram
+
+```
+                    legislators
+                   (member_id + assembly)
+                   /       |        \
+                  /        |         \
+               wealth   seminars   bills
+            (member_id) (member_id) (proposer_id)
+                                      |
+                                    votes
+                                  (bill_id)
+                                      |
+                                  roll_calls
+                               (bill_id + member_id)
+                                      |
+                                  legislators
+                                  (member_id)
+
+    speeches --- legislators (member_id, 22nd assembly only)
+```
+
+All datasets share `member_id` as the primary join key. Use
+`assembly` as a secondary key when joining datasets that span
+multiple assembly terms.

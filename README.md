@@ -1,6 +1,12 @@
 # assemblykor <img src="man/figures/logo.png" align="right" height="138" />
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/kyusik-yang/assemblykor/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/kyusik-yang/assemblykor/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 Korean National Assembly data for political science education.
+
+**Documentation**: <https://kyusik-yang.github.io/assemblykor/>
 
 ## Overview
 
@@ -180,17 +186,17 @@ proposers <- get_proposers()
 The package includes nine Korean-language tutorials designed for classroom
 use in political science methods courses:
 
-| # | Tutorial | Topic |
-|---|----------|-------|
-| 1 | R 기초와 tidyverse | `dplyr` 핵심 함수, 파이프, 데이터 결합 |
-| 2 | ggplot2 시각화 | 막대, 히스토그램, 산점도, 박스플롯, facet |
-| 3 | 회귀분석 | OLS, 다중회귀, 로그 변환, 상호작용, 계수 시각화 |
-| 4 | 패널 데이터와 고정효과 | 합동 OLS vs FE, 양방향 FE, DiD, 군집 표준오차 |
-| 5 | 텍스트 분석 입문 | 키워드 빈도, TF-IDF, 발언 분석, 위원회별 비교 |
-| 6 | 네트워크 분석 | 공동발의 네트워크, 중심성, 커뮤니티 탐지, 초당적 분석 |
-| 7 | 기명투표 분석 | Rice Index, 이탈투표, 투표 히트맵, 정당 응집력 |
-| 8 | 법안 가결 요인 | 이항 변수, 로지스틱 회귀, 승산비, 예측 확률 |
-| 9 | 발언 패턴 분석 | 발언 빈도/길이, 발언 순서, 의제 키워드, 다양성 |
+| # | Tutorial | Topic | Level |
+|---|----------|-------|-------|
+| 1 | R 기초와 tidyverse | `dplyr` 핵심 함수, 파이프, 데이터 결합 | Beginner |
+| 2 | ggplot2 시각화 | 막대, 히스토그램, 산점도, 박스플롯, facet | Beginner |
+| 3 | 회귀분석 | OLS, 다중회귀, 로그 변환, 상호작용, 계수 시각화 | Intermediate |
+| 4 | 패널 데이터와 고정효과 | 합동 OLS vs FE, 양방향 FE, DiD, 군집 표준오차 | Intermediate |
+| 5 | 텍스트 분석 입문 | 키워드 빈도, TF-IDF, 발언 분석, 위원회별 비교 | Intermediate |
+| 6 | 네트워크 분석 | 공동발의 네트워크, 중심성, 커뮤니티 탐지, 초당적 분석 | Advanced |
+| 7 | 기명투표 분석 | Rice Index, 이탈투표, 투표 히트맵, 정당 응집력 | Advanced |
+| 8 | 법안 가결 요인 | 이항 변수, 로지스틱 회귀, 승산비, 예측 확률 | Intermediate |
+| 9 | 발언 패턴 분석 | 발언 빈도/길이, 발언 순서, 의제 키워드, 다양성 | Advanced |
 
 Each tutorial is available in two formats:
 

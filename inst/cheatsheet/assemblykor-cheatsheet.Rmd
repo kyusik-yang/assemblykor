@@ -1,0 +1,173 @@
+---
+title: "assemblykor Cheat Sheet"
+output:
+  html_document:
+    theme: cosmo
+    css: !expr NULL
+    self_contained: true
+    toc: false
+geometry: landscape, margin=1cm
+---
+
+```{css, echo = FALSE}
+body {
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  font-size: 11px;
+  line-height: 1.3;
+  max-width: 1100px;
+  margin: auto;
+}
+h1 { font-size: 20px; margin-bottom: 4px; border-bottom: 2px solid #2c3e50; }
+h2 { font-size: 14px; color: #2c3e50; margin: 8px 0 4px 0; border-bottom: 1px solid #ddd; }
+h3 { font-size: 12px; color: #555; margin: 6px 0 2px 0; }
+pre { font-size: 10px; padding: 4px 6px; margin: 2px 0; background: #f8f9fa; }
+code { font-size: 10px; }
+table { font-size: 10px; width: 100%; margin: 2px 0; }
+td, th { padding: 2px 4px; }
+.row { display: flex; gap: 12px; margin-bottom: 8px; }
+.col { flex: 1; }
+.col-wide { flex: 2; }
+p { margin: 2px 0; }
+```
+
+# assemblykor - Korean National Assembly Data for Political Science Education
+
+<div class="row">
+<div class="col">
+
+## Setup
+
+```r
+# Install
+remotes::install_github("kyusik-yang/assemblykor")
+
+# Load
+library(assemblykor)
+
+# Korean font for ggplot2
+set_ko_font()
+```
+
+## 7 Built-in Datasets
+
+| Dataset | Rows | Unit | Key |
+|---------|------|------|-----|
+| `legislators` | 947 | MP-assembly | `member_id` + `assembly` |
+| `bills` | 60,925 | bill | `bill_id` |
+| `wealth` | 2,928 | MP-year | `member_id` + `year` |
+| `seminars` | 5,962 | MP-year | `member_id` + `year` |
+| `speeches` | 15,843 | speech turn | `date` + `speech_order` |
+| `votes` | 7,997 | bill vote | `bill_id` |
+| `roll_calls` | 368,210 | MP-bill vote | `member_id` + `bill_id` |
+
+## Dataset Relationships
+
+```
+legislators (member_id)
+ ├── wealth      (member_id)
+ ├── seminars    (member_id)
+ ├── speeches    (member_id, 22nd only)
+ ├── bills       (proposer_id)
+ └── roll_calls  (member_id)
+         └── votes (bill_id)
+              └── bills (bill_id, ~40% match)
+```
+
+</div>
+<div class="col">
+
+## Key Variables
+
+### legislators
+`member_id` `assembly` `name` `party` `district` `district_type`
+`gender` `seniority` `n_bills` `n_bills_lead`
+
+### bills
+`bill_id` `assembly` `bill_name` `committee` `propose_date`
+`result` `proposer` `proposer_id`
+
+### wealth
+`member_id` `year` `total_assets` `net_worth` `real_estate`
+`deposits` `stocks` `has_seoul_property` `has_gangnam_property`
+*All monetary values in thousands of KRW*
+
+### seminars
+`member_id` `year` `assembly` `camp` `n_seminars`
+`cross_party_ratio` `is_governing` `is_female`
+
+### speeches
+`speaker_name` `role` `member_id` `speech_order` `speech`
+*Roles: legislator, chair, minister, witness, ...*
+
+### votes
+`bill_id` `assembly` `vote_date` `result` `voted` `yes` `no` `abstain`
+
+### roll_calls
+`bill_id` `member_id` `party` `vote` `vote_date`
+*22nd assembly only (1,233 bills)*
+
+</div>
+<div class="col">
+
+## Common Operations
+
+### Load and explore
+```r
+data(legislators)
+str(legislators)
+summary(legislators$n_bills_lead)
+```
+
+### Join datasets
+```r
+library(dplyr)
+
+# Legislators + wealth
+leg_w <- legislators %>%
+  inner_join(wealth, by = "member_id",
+             relationship = "many-to-many")
+
+# Roll calls + legislator metadata
+rc_leg <- roll_calls %>%
+  left_join(
+    legislators %>% filter(assembly == 22),
+    by = "member_id")
+```
+
+### Download extra data
+```r
+# Bill proposal texts (~40 MB)
+texts <- get_bill_texts()
+
+# Co-sponsorship records (~25 MB)
+props <- get_proposers()
+```
+
+### File I/O teaching
+```r
+path_to_file()                    # List CSVs
+path_to_file("legislators.csv")  # Get path
+read.csv(path_to_file("legislators.csv"),
+         fileEncoding = "UTF-8")
+```
+
+## 9 Tutorials (Korean)
+
+```r
+list_tutorials()     # See all
+run_tutorial(1)      # Interactive (browser)
+open_tutorial(1)     # Copy Rmd file
+```
+
+| # | Topic | Level |
+|---|-------|-------|
+| 1-2 | tidyverse, ggplot2 | Beginner |
+| 3-5 | Regression, Panel, Text | Intermediate |
+| 6-9 | Network, Roll call, Logit, Speech | Advanced |
+
+</div>
+</div>
+
+<div style="text-align:center; font-size:9px; color:#999; margin-top:4px;">
+assemblykor v0.1.0 | Kyusik Yang | https://github.com/kyusik-yang/assemblykor
+</div>

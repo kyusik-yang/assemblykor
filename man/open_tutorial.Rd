@@ -8,7 +8,7 @@ open_tutorial(name, dest_dir = getwd())
 }
 \arguments{
 \item{name}{Tutorial name (with or without .Rmd extension), or a number
-corresponding to the tutorial order (1-6).}
+corresponding to the tutorial order (1-9).}
 
 \item{dest_dir}{Directory to copy the file to. Defaults to the current
 working directory.}

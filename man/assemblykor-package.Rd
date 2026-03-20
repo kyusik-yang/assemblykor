@@ -34,13 +34,16 @@ declarations, policy seminars, and committee speeches.
 
 \section{Tutorials}{
 
-Use \code{\link{list_tutorials}} to see available Korean-language tutorials,
+Nine Korean-language tutorials covering tidyverse, visualization, regression,
+panel data, text analysis, network analysis, roll call analysis, bill success,
+and speech patterns. Use \code{\link{list_tutorials}} to see all tutorials,
 and \code{\link{open_tutorial}} to copy them to your working directory.
 }
 
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://kyusik-yang.github.io/assemblykor/}
   \item \url{https://github.com/kyusik-yang/assemblykor}
   \item Report bugs at \url{https://github.com/kyusik-yang/assemblykor/issues}
 }

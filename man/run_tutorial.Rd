@@ -7,7 +7,7 @@
 run_tutorial(name)
 }
 \arguments{
-\item{name}{Tutorial name or number (1-6). Use \code{\link{list_tutorials}}
+\item{name}{Tutorial name or number (1-9). Use \code{\link{list_tutorials}}
 to see available tutorials.}
 }
 \description{

@@ -18,13 +18,16 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-`assemblykor` provides four built-in datasets from the Korean National Assembly
+`assemblykor` provides seven built-in datasets from the Korean National Assembly
 for teaching quantitative methods in political science:
 
 - **`legislators`**: 947 MP records (20th-22nd assemblies)
 - **`bills`**: 60,925 legislative bills
 - **`wealth`**: 2,928 legislator-year asset declarations
 - **`seminars`**: 5,962 legislator-year seminar activity records
+- **`speeches`**: 15,843 committee speech records (22nd, Science & ICT)
+- **`votes`**: 7,997 plenary vote tallies (20th-22nd)
+- **`roll_calls`**: 368,210 member-level roll call votes (22nd)
 
 ```{r load}
 library(assemblykor)
@@ -149,6 +152,56 @@ leg_wealth %>%
   )
 ```
 
+## 6. Plenary votes
+
+```{r votes}
+data(votes)
+
+# Yes-vote share distribution
+votes$yes_rate <- votes$yes / votes$voted
+hist(votes$yes_rate, breaks = 40, col = "lightgreen",
+     main = "Distribution of Yes-Vote Share",
+     xlab = "Proportion yes")
+```
+
+Most bills pass with near-unanimous support. The left tail reveals
+contested legislation where party discipline breaks down.
+
+## 7. Roll call analysis
+
+```{r roll-calls, message = FALSE}
+data(roll_calls)
+library(dplyr)
+
+# Party discipline: how often do members vote with their party majority?
+party_votes <- roll_calls %>%
+  group_by(bill_id, party) %>%
+  mutate(party_majority = names(which.max(table(vote)))) %>%
+  ungroup() %>%
+  mutate(with_party = vote == party_majority)
+
+party_votes %>%
+  group_by(party) %>%
+  summarise(
+    n_members = n_distinct(member_id),
+    discipline = mean(with_party, na.rm = TRUE)
+  ) %>%
+  filter(n_members >= 5) %>%
+  arrange(desc(discipline))
+```
+
+## 8. Speech patterns
+
+```{r speeches}
+data(speeches)
+
+# Who speaks most in committee?
+leg_speeches <- speeches[speeches$role == "legislator", ]
+speaker_counts <- sort(table(leg_speeches$speaker_name), decreasing = TRUE)
+barplot(speaker_counts[1:10], las = 2, col = "plum",
+        main = "Top 10 Most Active Speakers (Sci & ICT Committee)")
+```
+
 ## Next steps
 
 For text analysis, download the bill propose-reason texts:
@@ -163,4 +216,5 @@ For network analysis, download the full co-sponsorship records:
 proposers <- get_proposers()
 ```
 
-See `?get_bill_texts` and `?get_proposers` for details.
+See `vignette("codebook")` for the full data dictionary, or
+`?get_bill_texts` and `?get_proposers` for download function details.

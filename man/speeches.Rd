@@ -5,25 +5,30 @@
 \alias{speeches}
 \title{Committee Speeches from the Science and ICT Committee (22nd Assembly)}
 \format{
-A data frame with 15,843 rows and 8 variables:
+A data frame with 15,843 rows and 9 variables:
 \describe{
 \item{assembly}{Assembly number (22)}
 \item{date}{Date of the committee meeting}
 \item{committee}{Committee name in Korean}
 \item{speaker}{Speaker label as it appears in the minutes (may include
 titles)}
-\item{speaker_name}{Cleaned speaker name with titles removed.}
+\item{role}{Speaker role: "legislator", "chair", "minister",
+"vice_minister", "senior_bureaucrat", "agency_head", "witness",
+"expert_witness", "nominee", "minister_nominee", "testifier",
+"public_corp_head", "broadcasting", "committee_staff"}
+\item{speaker_name}{Cleaned speaker name with titles removed}
 \item{member_id}{Legislator identifier (MONA_CD, links to
-\code{legislators$member_id}). Available for ~76\\% of rows.
-\code{NA} for non-legislator speakers such as government officials,
-agency heads, and expert witnesses who testify before the committee.}
+\code{legislators$member_id}). Available for all rows; however,
+non-legislator speakers (ministers, witnesses, etc.) will not match
+entries in \code{legislators}.}
 \item{speech_order}{Order of the speech turn within the meeting}
 \item{speech}{Full text of the speech in Korean}
 }
 }
 \source{
-National Assembly committee minutes,
-published by the National Assembly of the Republic of Korea.
+National Assembly committee minutes, derived from the
+\href{https://github.com/kyusik-yang/speech-assembly-korea}{speech-assembly-korea}
+project (all_speeches_16_22.parquet).
 }
 \usage{
 speeches
@@ -35,17 +40,17 @@ Korean National Assembly (2024). Standing committee meetings only.
 }
 \details{
 This dataset contains the complete standing committee speech records
-(no sampling) for the Science and ICT Committee of the 22nd assembly.
-Speeches shorter than 50 characters were excluded.
+(no sampling) for the Science and ICT Committee of the 22nd assembly
+(June-December 2024). Speeches shorter than 50 characters were excluded.
+
+The \code{role} variable distinguishes legislators from government
+officials, witnesses, and other participants. Filter to
+\code{role == "legislator"} for MP speeches only, or compare how
+legislators and ministers discuss the same agenda items.
 
 This committee covers AI, telecommunications, broadcasting, space
 policy, and R&D governance, making it suitable for keyword analysis,
 topic modeling, and other text analysis exercises.
-
-\strong{Linking to other datasets}: Use \code{member_id} to join with
-\code{legislators}, \code{wealth}, \code{bills}, or \code{seminars}.
-Where \code{member_id} is \code{NA}, \code{speaker_name} can be used
-as a fallback for name-based joins.
 }
 \examples{
 data(speeches)
@@ -54,8 +59,12 @@ data(speeches)
 hist(nchar(speeches$speech), breaks = 100,
      main = "Speech Length Distribution", xlab = "Characters")
 
-# Most frequent speakers
-head(sort(table(speeches$speaker_name), decreasing = TRUE), 10)
+# Speaker roles
+table(speeches$role)
+
+# Most frequent legislator speakers
+leg <- speeches[speeches$role == "legislator", ]
+head(sort(table(leg$speaker_name), decreasing = TRUE), 10)
 
 # Simple keyword search
 ai <- speeches[grepl("AI|인공지능", speeches$speech), ]

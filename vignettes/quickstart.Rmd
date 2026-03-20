@@ -1,0 +1,110 @@
+---
+title: "5-Minute Quickstart"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{5-Minute Quickstart}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+## Install and load
+
+```r
+# install.packages("remotes")
+remotes::install_github("kyusik-yang/assemblykor")
+```
+
+```{r load}
+library(assemblykor)
+```
+
+## Seven datasets, one line each
+
+```{r overview}
+# All datasets load lazily - just call their name
+head(legislators, 3)
+head(bills, 3)
+head(wealth, 3)
+```
+
+## Quick analysis: gender and legislative productivity
+
+```{r gender, message = FALSE}
+library(dplyr)
+
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(gender) %>%
+  summarise(
+    n = n(),
+    median_bills_led = median(n_bills_lead, na.rm = TRUE)
+  )
+```
+
+## Quick analysis: bill survival rates
+
+```{r bills-survival}
+bills %>%
+  count(result, sort = TRUE) %>%
+  head(5)
+```
+
+Only about 5% of bills pass in their original form.
+
+## Quick analysis: wealth inequality
+
+```{r wealth-ineq}
+# Net worth in billion KRW
+hist(wealth$net_worth / 1e6, breaks = 50, col = "steelblue",
+     main = "Legislator Net Worth", xlab = "Billion KRW")
+```
+
+## Quick analysis: voting consensus
+
+```{r votes-consensus}
+votes$yes_rate <- votes$yes / votes$voted
+hist(votes$yes_rate, breaks = 40, col = "coral",
+     main = "Distribution of Yes-Vote Share", xlab = "Proportion yes")
+```
+
+Most bills pass near-unanimously; a handful are fiercely contested.
+
+## Joining datasets
+
+All datasets share `member_id` for easy merging:
+
+```{r join, message = FALSE}
+# Do wealthier legislators propose more bills?
+leg_wealth <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024),
+             by = "member_id")
+
+cor(leg_wealth$n_bills_lead, leg_wealth$net_worth,
+    use = "complete.obs")
+```
+
+## Tutorials
+
+Nine Korean-language tutorials cover the full methods sequence:
+
+```{r tutorials, eval = FALSE}
+list_tutorials()           # See all 9
+run_tutorial(1)            # Interactive in browser
+open_tutorial(1)           # Copy Rmd to your directory
+```
+
+## Next steps
+
+- `vignette("introduction")` for deeper examples
+- `vignette("codebook")` for the full data dictionary
+- `?legislators`, `?bills`, etc. for variable-level documentation

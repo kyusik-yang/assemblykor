@@ -1,0 +1,77 @@
+url: https://kyusik-yang.github.io/assemblykor/
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+  bslib:
+    base_font: {google: "Noto Sans KR"}
+    heading_font: {google: "Noto Sans KR"}
+    code_font: {google: "Fira Code"}
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, tutorials, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: Getting Started
+          href: articles/quickstart.html
+        - text: Introduction
+          href: articles/introduction.html
+        - text: Data Codebook
+          href: articles/codebook.html
+
+home:
+  title: "assemblykor: Korean National Assembly Data"
+  description: >
+    An R package providing curated Korean National Assembly datasets
+    for teaching quantitative methods in political science.
+
+reference:
+  - title: Datasets
+    desc: >
+      Seven built-in datasets covering legislators, bills, asset
+      declarations, policy seminars, committee speeches, plenary votes,
+      and individual roll call records.
+    contents:
+      - legislators
+      - bills
+      - wealth
+      - seminars
+      - speeches
+      - votes
+      - roll_calls
+
+  - title: Download Functions
+    desc: >
+      Download larger datasets not included in the package binary.
+      Results are cached locally after the first download.
+    contents:
+      - get_bill_texts
+      - get_proposers
+
+  - title: Tutorials
+    desc: >
+      Nine Korean-language tutorials for classroom use, available
+      in both interactive (learnr) and plain R Markdown formats.
+    contents:
+      - list_tutorials
+      - open_tutorial
+      - run_tutorial
+
+  - title: Utilities
+    contents:
+      - path_to_file
+      - set_ko_font
+
+articles:
+  - title: Get Started
+    navbar: ~
+    contents:
+      - quickstart
+  - title: Articles
+    contents:
+      - introduction
+      - codebook
