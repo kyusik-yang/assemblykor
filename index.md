@@ -19,7 +19,7 @@ National Assembly (2000-2026).
 ## Why tidyverse?
 
 This package and all its tutorials follow
-[tidyverse](https://www.tidyverse.org/) conventions. We use `dplyr`,
+[tidyverse](https://tidyverse.org/) conventions. We use `dplyr`,
 `ggplot2`, `tidyr`, and the pipe operator (`%>%`) throughout.
 
 Why tidyverse-first for teaching?
@@ -203,9 +203,9 @@ All data in this package are derived from publicly available sources.
 
 | Dataset                                          | Source                                                                        | License                                     |
 |--------------------------------------------------|-------------------------------------------------------------------------------|---------------------------------------------|
-| Legislators, bills, proposers, votes, roll calls | [Open National Assembly API](https://open.assembly.go.kr)                     | Public domain (Korean government open data) |
+| Legislators, bills, proposers, votes, roll calls | Open National Assembly API (<https://open.assembly.go.kr>)                    | Public domain (Korean government open data) |
 | Speeches (committee minutes)                     | [speech-assembly-korea](https://github.com/kyusik-yang/speech-assembly-korea) | Public domain                               |
-| Asset declarations                               | [OpenWatch](https://openwatchdata.com)                                        | CC BY-SA 4.0                                |
+| Asset declarations                               | OpenWatch (openwatchdata.com, now defunct)                                    | CC BY-SA 4.0                                |
 | Policy seminars                                  | National Assembly Seminar Database                                            | Public data                                 |
 
 **Inspired by**:

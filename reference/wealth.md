@@ -72,7 +72,8 @@ A data frame with 2,928 rows and 14 variables:
 
 ## Source
 
-OpenWatch (<https://openwatchdata.com>), CC BY-SA 4.0 license.
+OpenWatch (OpenWatch project (openwatchdata.com, now defunct)), CC BY-SA
+4.0 license.
 
 ## Details
 
