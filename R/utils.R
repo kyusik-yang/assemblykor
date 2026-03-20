@@ -179,6 +179,9 @@ set_ko_font <- function(font = NULL) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required. Install with: install.packages('ggplot2')")
   }
+  if (!requireNamespace("systemfonts", quietly = TRUE)) {
+    stop("Package 'systemfonts' is required. Install with: install.packages('systemfonts')")
+  }
 
   if (is.null(font)) {
     available <- systemfonts::system_fonts()$family
