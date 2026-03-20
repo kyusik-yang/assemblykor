@@ -172,7 +172,7 @@ code {
   border-radius: var(--ak-radius) !important;
   box-shadow: var(--ak-shadow) !important;
   margin: 1.5rem 0 !important;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .tutorial-exercise .ace_editor {
@@ -180,7 +180,7 @@ code {
   font-size: 13.5px !important;
   line-height: 1.6 !important;
   font-variant-ligatures: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--ak-radius) var(--ak-radius) 0 0 !important;
 }
 
 /* Exercise toolbar */
@@ -565,7 +565,10 @@ h2.subtitle em {
   border: 1px solid var(--ak-border) !important;
   border-radius: var(--ak-radius) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
-  max-width: 600px !important;
+  max-width: 700px !important;
+  min-width: 400px !important;
+  z-index: 1060 !important;
+  pointer-events: auto !important;
 }
 
 .popover-title {
@@ -580,6 +583,8 @@ h2.subtitle em {
 .popover-content {
   background: var(--ak-surface) !important;
   color: var(--ak-text) !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
 }
 
 .popover-content pre {
@@ -595,6 +600,7 @@ h2.subtitle em {
 
 .popover > .arrow::after {
   border-bottom-color: var(--ak-surface) !important;
+  border-top-color: var(--ak-surface) !important;
 }
 
 /* Tutorial exercise solution/hint clip panel */

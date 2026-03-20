@@ -22,6 +22,13 @@
   to provide meaningful real-world datasets for classroom exercises
   spanning regression, panel data, text analysis, and network analysis.
 
+## URL notes
+
+https://open.assembly.go.kr (Korean National Assembly Open Data API)
+returns HTTP 400 to automated URL checkers but is accessible in a
+browser. This is the official data source for five of the seven
+datasets in this package.
+
 ## Test environments
 
 * macOS (latest, R release) - GitHub Actions

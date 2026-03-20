@@ -164,7 +164,7 @@
 #' Not all legislators appear in every year, as the panel is unbalanced
 #' (entries correspond to active service periods).
 #'
-#' @source OpenWatch (\url{https://openwatchdata.com}), CC BY-SA 4.0 license.
+#' @source OpenWatch (OpenWatch project (openwatchdata.com, now defunct)), CC BY-SA 4.0 license.
 #'
 #' @examples
 #' data(wealth)
