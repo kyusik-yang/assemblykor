@@ -30,6 +30,10 @@ home:
     for teaching quantitative methods in political science.
 
 reference:
+  - title: Package
+    contents:
+      - assemblykor-package
+
   - title: Datasets
     desc: >
       Seven built-in datasets covering legislators, bills, asset
