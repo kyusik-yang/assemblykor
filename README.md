@@ -253,7 +253,7 @@ All data in this package are derived from publicly available sources.
 |---------|--------|---------|
 | Legislators, bills, proposers, votes, roll calls | Open National Assembly API (<https://open.assembly.go.kr>) | Public domain (Korean government open data) |
 | Speeches (committee minutes) | [speech-assembly-korea](https://github.com/kyusik-yang/speech-assembly-korea) | Public domain |
-| Asset declarations | OpenWatch (openwatchdata.com, now defunct) | CC BY-SA 4.0 |
+| Asset declarations | [OpenWatch](https://docs.openwatch.kr/data/national-assembly) | CC BY-SA 4.0 |
 | Policy seminars | National Assembly Seminar Database | Public data |
 
 **Inspired by**: [palmerpenguins](https://allisonhorst.github.io/palmerpenguins/)

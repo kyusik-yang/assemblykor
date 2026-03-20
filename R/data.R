@@ -164,7 +164,7 @@
 #' Not all legislators appear in every year, as the panel is unbalanced
 #' (entries correspond to active service periods).
 #'
-#' @source OpenWatch (OpenWatch project (openwatchdata.com, now defunct)), CC BY-SA 4.0 license.
+#' @source OpenWatch (OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly})), CC BY-SA 4.0 license.
 #'
 #' @examples
 #' data(wealth)

@@ -24,7 +24,7 @@ A data frame with 2,928 rows and 14 variables:
 }
 }
 \source{
-OpenWatch (OpenWatch project (openwatchdata.com, now defunct)), CC BY-SA 4.0 license.
+OpenWatch (OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly})), CC BY-SA 4.0 license.
 }
 \usage{
 wealth
