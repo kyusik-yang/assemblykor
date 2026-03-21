@@ -105,8 +105,8 @@ head(sort(table(leg$speaker_name), decreasing = TRUE), 10)
 #>   김현 노종면 최형두 이훈기 이정헌 한민수 황정아 김우영 조인철 이준석 
 #>   1105    826    717    630    576    527    512    503    491    384 
 
-# Simple keyword search
-ai <- speeches[grepl("AI|인공지능", speeches$speech), ]
+# Simple keyword search (example: AI-related speeches)
+ai <- speeches[grepl("AI", speeches$speech), ]
 nrow(ai)
-#> [1] 341
+#> [1] 294
 ```

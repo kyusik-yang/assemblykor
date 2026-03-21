@@ -69,7 +69,7 @@ A data frame with 7,997 rows and 13 variables:
 
 ## Source
 
-Open National Assembly API (<https://open.assembly.go.kr>), endpoint
+Open National Assembly Information API (Republic of Korea), endpoint
 `ncocpgfiaoituanbr`.
 
 ## Details

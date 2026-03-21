@@ -39,9 +39,9 @@ A data frame with 60,925 rows and 9 variables:
 
 - result:
 
-  Legislative outcome (e.g., "원안가결" = passed as-is, "임기만료폐기" =
-  expired at term end, "대안반영폐기" = incorporated into alternative
-  bill)
+  Legislative outcome in Korean. Common values include passed as-is,
+  expired at term end, and incorporated into alternative bill. See
+  `table(bills$result)` for all values.
 
 - proposer:
 
@@ -53,14 +53,14 @@ A data frame with 60,925 rows and 9 variables:
 
 ## Source
 
-Open National Assembly API (<https://open.assembly.go.kr>).
+Open National Assembly Information API (Republic of Korea).
 
 ## Details
 
 The Korean National Assembly has seen a dramatic increase in bill
 proposals: the 21st Assembly produced 23,655 bills versus 21,594 in the
-20th. Most bills expire at the end of the assembly term
-("임기만료폐기"); only about 5\\
+20th. Most bills expire at the end of the assembly term (term expiry);
+only about 5\\
 
 Use
 [`get_bill_texts()`](https://kyusik-yang.github.io/assemblykor/reference/get_bill_texts.md)
@@ -93,8 +93,11 @@ sort(table(bills$committee), decreasing = TRUE)[1:10]
 #> 산업통상자원중소벤처기업위원회                     교육위원회 
 #>                           3295                           2728 
 
-# Pass rate by assembly
-tapply(bills$result == "원안가결", bills$assembly, mean, na.rm = TRUE)
-#>         20         21         22 
-#> 0.02634991 0.01517650 0.03423680 
+# Distribution of legislative outcomes
+head(sort(table(bills$result), decreasing = TRUE))
+#> 
+#>   임기만료폐기   대안반영폐기       수정가결       원안가결           철회 
+#>          30678          13692           2222           1048            578 
+#> 수정안반영폐기 
+#>            299 
 ```

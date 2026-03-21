@@ -33,6 +33,6 @@ set_ko_font()
 # Now Korean text renders correctly
 ggplot(data.frame(x = 1), aes(x, x)) +
   geom_point() +
-  labs(title = "한글 제목 테스트")
+  labs(title = "Korean Title Test")
 } # }
 ```

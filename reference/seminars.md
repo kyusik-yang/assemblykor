@@ -1,9 +1,10 @@
 # Policy Seminar Activity by Legislator-Year (2000-2025)
 
 Annual panel of policy seminar hosting activity for legislators in the
-16th through 22nd Korean National Assembly. Policy seminars (정책세미나)
-are informal legislative events where MPs invite experts, stakeholders,
-and colleagues from other parties to discuss policy issues.
+16th through 22nd Korean National Assembly. Policy seminars (jeongchaek
+semina) are informal legislative events where MPs invite experts,
+stakeholders, and colleagues from other parties to discuss policy
+issues.
 
 ## Usage
 
@@ -38,8 +39,8 @@ A data frame with 5,962 rows and 18 variables:
 
 - camp:
 
-  Political camp: "민주계" (liberal), "보수계" (conservative), "진보계"
-  (progressive), "기타" (other)
+  Political camp: "liberal", "conservative", "progressive", or "other"
+  (values are in Korean)
 
 - seniority:
 

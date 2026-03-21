@@ -78,7 +78,7 @@ A data frame with 947 rows and 15 variables:
 
 ## Source
 
-Open National Assembly API (<https://open.assembly.go.kr>). License:
+Open National Assembly Information API (Republic of Korea). License:
 public domain (Korean government open data).
 
 ## Details
