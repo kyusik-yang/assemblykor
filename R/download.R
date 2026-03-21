@@ -1,6 +1,6 @@
 #' Download bill propose-reason texts
 #'
-#' Downloads the full propose-reason texts (제안이유) for all 60,925 bills.
+#' Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
 #' The file is approximately 40 MB and is cached locally after the first
 #' download. Requires the \pkg{arrow} package to read parquet files.
 #'

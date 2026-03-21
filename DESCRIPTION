@@ -4,7 +4,7 @@ Version: 0.1.0
 Authors@R:
     person("Kyusik", "Yang", , "kyusik.yang@nyu.edu", role = c("aut", "cre"))
 Description: Provides ready-to-use datasets from the Korean National Assembly
-    (20th-22nd, 2016-2026) for teaching quantitative methods in political
+    (assemblies 20 through 22, 2016-2026) for teaching quantitative methods in political
     science. Includes legislator metadata, bill proposals, asset declarations,
     and policy seminar records. Designed as a Korean politics counterpart to
     packages like 'palmerpenguins', enabling students to practice regression,

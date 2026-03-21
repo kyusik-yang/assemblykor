@@ -13,15 +13,15 @@ A data frame with 60,925 rows and 9 variables:
 \item{bill_name}{Full bill title in Korean}
 \item{committee}{Standing committee to which the bill was referred}
 \item{propose_date}{Date the bill was formally proposed}
-\item{result}{Legislative outcome (e.g., "원안가결" = passed as-is,
-"임기만료폐기" = expired at term end, "대안반영폐기" = incorporated
-into alternative bill)}
+\item{result}{Legislative outcome in Korean. Common values include
+passed as-is, expired at term end, and incorporated into
+alternative bill. See \code{table(bills$result)} for all values.}
 \item{proposer}{Name of the lead (primary) proposer}
 \item{proposer_id}{MONA_CD of the lead proposer (links to \code{legislators$member_id})}
 }
 }
 \source{
-Open National Assembly API (\url{https://open.assembly.go.kr}).
+Open National Assembly Information API (Republic of Korea).
 }
 \usage{
 bills
@@ -34,7 +34,7 @@ Metadata for 60,925 legislative bills proposed during the 20th through
 The Korean National Assembly has seen a dramatic increase in bill
 proposals: the 21st Assembly produced 23,655 bills versus 21,594 in the
 20th. Most bills expire at the end of the assembly term
-("임기만료폐기"); only about 5\\% pass in their original form.
+(term expiry); only about 5\\% pass in their original form.
 
 Use \code{get_bill_texts()} to download the full propose-reason texts
 for text analysis, and \code{get_proposers()} for the complete
@@ -49,7 +49,7 @@ table(bills$assembly)
 # Top 10 committees
 sort(table(bills$committee), decreasing = TRUE)[1:10]
 
-# Pass rate by assembly
-tapply(bills$result == "원안가결", bills$assembly, mean, na.rm = TRUE)
+# Distribution of legislative outcomes
+head(sort(table(bills$result), decreasing = TRUE))
 }
 \keyword{datasets}

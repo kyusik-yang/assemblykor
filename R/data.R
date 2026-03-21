@@ -66,7 +66,7 @@
 #' (election day) due to party mergers and name changes, which are common
 #' in Korean politics.
 #'
-#' @source Open National Assembly API (\url{https://open.assembly.go.kr}).
+#' @source Open National Assembly Information API (Republic of Korea).
 #'   License: public domain (Korean government open data).
 #'
 #' @examples
@@ -97,9 +97,9 @@
 #'   \item{bill_name}{Full bill title in Korean}
 #'   \item{committee}{Standing committee to which the bill was referred}
 #'   \item{propose_date}{Date the bill was formally proposed}
-#'   \item{result}{Legislative outcome (e.g., "원안가결" = passed as-is,
-#'     "임기만료폐기" = expired at term end, "대안반영폐기" = incorporated
-#'     into alternative bill)}
+#'   \item{result}{Legislative outcome in Korean. Common values include
+#'     passed as-is, expired at term end, and incorporated into
+#'     alternative bill. See \code{table(bills$result)} for all values.}
 #'   \item{proposer}{Name of the lead (primary) proposer}
 #'   \item{proposer_id}{MONA_CD of the lead proposer (links to \code{legislators$member_id})}
 #' }
@@ -108,13 +108,13 @@
 #' The Korean National Assembly has seen a dramatic increase in bill
 #' proposals: the 21st Assembly produced 23,655 bills versus 21,594 in the
 #' 20th. Most bills expire at the end of the assembly term
-#' ("임기만료폐기"); only about 5\% pass in their original form.
+#' (term expiry); only about 5\% pass in their original form.
 #'
 #' Use \code{get_bill_texts()} to download the full propose-reason texts
 #' for text analysis, and \code{get_proposers()} for the complete
 #' co-sponsorship records (769,773 rows).
 #'
-#' @source Open National Assembly API (\url{https://open.assembly.go.kr}).
+#' @source Open National Assembly Information API (Republic of Korea).
 #'
 #' @examples
 #' data(bills)
@@ -125,8 +125,8 @@
 #' # Top 10 committees
 #' sort(table(bills$committee), decreasing = TRUE)[1:10]
 #'
-#' # Pass rate by assembly
-#' tapply(bills$result == "원안가결", bills$assembly, mean, na.rm = TRUE)
+#' # Distribution of legislative outcomes
+#' head(sort(table(bills$result), decreasing = TRUE))
 "bills"
 
 
@@ -185,7 +185,7 @@
 #' Policy Seminar Activity by Legislator-Year (2000-2025)
 #'
 #' Annual panel of policy seminar hosting activity for legislators in the
-#' 16th through 22nd Korean National Assembly. Policy seminars (정책세미나)
+#' 16th through 22nd Korean National Assembly. Policy seminars (jeongchaek semina)
 #' are informal legislative events where MPs invite experts, stakeholders,
 #' and colleagues from other parties to discuss policy issues.
 #'
@@ -198,8 +198,8 @@
 #'   \item{year}{Calendar year}
 #'   \item{assembly}{Assembly number (17-22)}
 #'   \item{party}{Party affiliation}
-#'   \item{camp}{Political camp: "민주계" (liberal), "보수계" (conservative),
-#'     "진보계" (progressive), "기타" (other)}
+#'   \item{camp}{Political camp: "liberal", "conservative",
+#'     "progressive", or "other" (values are in Korean)}
 #'   \item{seniority}{Number of terms served}
 #'   \item{n_seminars}{Number of policy seminars hosted that year}
 #'   \item{n_cross_party}{Number of seminars co-hosted with other-party legislators}
@@ -300,8 +300,8 @@
 #' leg <- speeches[speeches$role == "legislator", ]
 #' head(sort(table(leg$speaker_name), decreasing = TRUE), 10)
 #'
-#' # Simple keyword search
-#' ai <- speeches[grepl("AI|인공지능", speeches$speech), ]
+#' # Simple keyword search (example: AI-related speeches)
+#' ai <- speeches[grepl("AI", speeches$speech), ]
 #' nrow(ai)
 "speeches"
 
@@ -345,7 +345,7 @@
 #' (22nd assembly), useful for ideal point estimation or party
 #' discipline analysis.
 #'
-#' @source Open National Assembly API (\url{https://open.assembly.go.kr}),
+#' @source Open National Assembly Information API (Republic of Korea),
 #'   endpoint \code{ncocpgfiaoituanbr}.
 #'
 #' @examples
@@ -398,7 +398,7 @@
 #' \code{member_id} to link with \code{legislators} for biographical
 #' metadata.
 #'
-#' @source Open National Assembly API (\url{https://open.assembly.go.kr}),
+#' @source Open National Assembly Information API (Republic of Korea),
 #'   endpoint \code{nojepdqqaweusdfbi}.
 #'
 #' @seealso \code{\link{votes}}

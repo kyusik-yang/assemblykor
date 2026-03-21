@@ -21,7 +21,7 @@ yes, no, abstain, or absent}
 }
 }
 \source{
-Open National Assembly API (\url{https://open.assembly.go.kr}),
+Open National Assembly Information API (Republic of Korea),
 endpoint \code{nojepdqqaweusdfbi}.
 }
 \usage{

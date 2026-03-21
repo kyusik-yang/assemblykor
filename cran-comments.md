@@ -1,3 +1,14 @@
+## Resubmission
+
+This is a resubmission. In this version I have:
+
+* Removed all Korean (hangul) Unicode characters from Rd files to fix
+  the LaTeX PDF manual generation error.
+* Replaced ordinals in DESCRIPTION ("20th-22nd") with
+  "assemblies 20 through 22" to avoid the misspelled-word NOTE.
+* Removed `\url{https://open.assembly.go.kr}` from `@source` fields
+  (the API root returns HTTP 400 to automated checkers).
+
 ## R CMD check results
 
 0 errors | 0 warnings | 2 notes
@@ -21,13 +32,6 @@
   quantitative methods in political science. The data size is necessary
   to provide meaningful real-world datasets for classroom exercises
   spanning regression, panel data, text analysis, and network analysis.
-
-## URL notes
-
-https://open.assembly.go.kr (Korean National Assembly Open Data API)
-returns HTTP 400 to automated URL checkers but is accessible in a
-browser. This is the official data source for five of the seven
-datasets in this package.
 
 ## Test environments
 

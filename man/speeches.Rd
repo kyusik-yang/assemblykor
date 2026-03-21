@@ -66,8 +66,8 @@ table(speeches$role)
 leg <- speeches[speeches$role == "legislator", ]
 head(sort(table(leg$speaker_name), decreasing = TRUE), 10)
 
-# Simple keyword search
-ai <- speeches[grepl("AI|인공지능", speeches$speech), ]
+# Simple keyword search (example: AI-related speeches)
+ai <- speeches[grepl("AI", speeches$speech), ]
 nrow(ai)
 }
 \keyword{datasets}

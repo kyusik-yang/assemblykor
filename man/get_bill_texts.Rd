@@ -21,7 +21,7 @@ A data frame with 60,925 rows and 3 variables:
 }
 }
 \description{
-Downloads the full propose-reason texts (제안이유) for all 60,925 bills.
+Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
 The file is approximately 40 MB and is cached locally after the first
 download. Requires the \pkg{arrow} package to read parquet files.
 }

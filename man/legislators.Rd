@@ -25,7 +25,7 @@ A data frame with 947 rows and 15 variables:
 }
 }
 \source{
-Open National Assembly API (\url{https://open.assembly.go.kr}).
+Open National Assembly Information API (Republic of Korea).
 License: public domain (Korean government open data).
 }
 \usage{
