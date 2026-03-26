@@ -19,7 +19,7 @@ to all ggplot2 plots via \code{theme_set()}. Call this once at the top
 of your script to avoid broken Korean text in plot titles and labels.
 }
 \examples{
-\donttest{
+\dontrun{
 library(ggplot2)
 set_ko_font()
 

@@ -20,7 +20,7 @@ can type and run code directly in the browser with hints and solutions.
 Requires the \pkg{learnr} package.
 }
 \examples{
-\donttest{
+\dontrun{
 run_tutorial(1)  # Launch tutorial 1 in browser
 }
 

@@ -26,7 +26,7 @@ The file is approximately 40 MB and is cached locally after the first
 download. Requires the \pkg{arrow} package to read parquet files.
 }
 \examples{
-\donttest{
+\dontrun{
 texts <- get_bill_texts()
 nchar_dist <- nchar(texts$propose_reason)
 hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")

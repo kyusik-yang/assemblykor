@@ -30,7 +30,7 @@ Downloads the complete proposer records (769,773 rows) listing every
 legislator who co-sponsored each bill. Requires the \pkg{arrow} package.
 }
 \examples{
-\donttest{
+\dontrun{
 props <- get_proposers()
 
 # Build co-sponsorship edgelist
