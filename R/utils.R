@@ -74,7 +74,7 @@ list_tutorials <- function() {
 #' @seealso \code{\link{run_tutorial}} for the interactive browser version.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Copy by name
 #' open_tutorial("01-tidyverse-basics")
 #'
@@ -124,10 +124,13 @@ open_tutorial <- function(name, dest_dir = getwd()) {
 #' @param name Tutorial name or number (1-9). Use \code{\link{list_tutorials}}
 #'   to see available tutorials.
 #'
+#' @return No return value, called for the side effect of launching a
+#'   \pkg{learnr} tutorial in the browser.
+#'
 #' @seealso \code{\link{open_tutorial}} for the plain Rmd version.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' run_tutorial(1)  # Launch tutorial 1 in browser
 #' }
 #'
@@ -164,7 +167,7 @@ run_tutorial <- function(name) {
 #' @return The font family name used (invisibly).
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(ggplot2)
 #' set_ko_font()
 #'

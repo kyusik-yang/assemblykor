@@ -10,13 +10,17 @@ run_tutorial(name)
 \item{name}{Tutorial name or number (1-9). Use \code{\link{list_tutorials}}
 to see available tutorials.}
 }
+\value{
+No return value, called for the side effect of launching a
+\pkg{learnr} tutorial in the browser.
+}
 \description{
 Launches a \pkg{learnr} interactive tutorial in the browser. Students
 can type and run code directly in the browser with hints and solutions.
 Requires the \pkg{learnr} package.
 }
 \examples{
-\dontrun{
+\donttest{
 run_tutorial(1)  # Launch tutorial 1 in browser
 }
 

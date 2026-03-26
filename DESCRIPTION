@@ -1,15 +1,18 @@
 Package: assemblykor
 Title: Korean National Assembly Data for Political Science Education
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("Kyusik", "Yang", , "kyusik.yang@nyu.edu", role = c("aut", "cre"))
 Description: Provides ready-to-use datasets from the Korean National Assembly
-    (assemblies 20 through 22, 2016-2026) for teaching quantitative methods in political
-    science. Includes legislator metadata, bill proposals, asset declarations,
-    and policy seminar records. Designed as a Korean politics counterpart to
-    packages like 'palmerpenguins', enabling students to practice regression,
-    panel data analysis, text analysis, and network analysis with real
-    legislative data.
+    (assemblies 20 through 22, 2016-2026) for teaching quantitative methods in
+    political science. Includes legislator metadata, bill proposals, roll call
+    votes, asset declarations, and policy seminar records. Designed as a Korean
+    politics counterpart to packages like 'palmerpenguins', enabling students to
+    practice regression, panel data analysis, text analysis, and network analysis
+    with real legislative data. Roll call vote data and spatial voting models are
+    described in Poole and Rosenthal (1985) <doi:10.2307/2111172>. Legislative
+    data is sourced from the Korean National Assembly Open API
+    <https://open.assembly.go.kr/>.
 License: MIT + file LICENSE
 URL: https://kyusik-yang.github.io/assemblykor/,
     https://github.com/kyusik-yang/assemblykor
