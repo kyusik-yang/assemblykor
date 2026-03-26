@@ -18,6 +18,11 @@ run_tutorial(name)
   [`list_tutorials`](https://kyusik-yang.github.io/assemblykor/reference/list_tutorials.md)
   to see available tutorials.
 
+## Value
+
+No return value, called for the side effect of launching a learnr
+tutorial in the browser.
+
 ## See also
 
 [`open_tutorial`](https://kyusik-yang.github.io/assemblykor/reference/open_tutorial.md)

@@ -75,16 +75,16 @@ data(roll_calls)
 # Vote distribution
 table(roll_calls$vote)
 #> 
-#>    기권    반대    불참    찬성 
-#>   43987   23737  671730 1644378 
+#>   기권   반대   불참   찬성 
+#>   4886   6827  87877 284149 
 
 # Votes per party
 head(sort(table(roll_calls$party), decreasing = TRUE))
 #> 
-#> 더불어민주당     국민의힘   미래통합당       무소속       민생당   미래한국당 
-#>      1107204       657192       184359       137868        69723        66329 
+#> 더불어민주당     국민의힘   조국혁신당       무소속       진보당     개혁신당 
+#>       212993       137372        15430         7043         4471         3858 
 
 # Number of unique legislators
 length(unique(roll_calls$member_id))
-#> [1] 660
+#> [1] 304
 ```

@@ -186,14 +186,14 @@ assembly, 1,233 bills).
 
 | Variable    | Type      | Missing | Distribution                                                                                                                 |
 |:------------|:----------|:--------|:-----------------------------------------------------------------------------------------------------------------------------|
-| bill_id     | character | 0.0%    | 8049 unique; top: ARC_B2U4U0H7N2J2O0N8R5I5F1J9G2D2U5, ARC_C2A4B0A8H3R0V0R9F2L0E3Z7P8F7S5, ARC_C2A4M0W7H2E2U0L8Z5W5D3P2U7T2A3 |
-| assembly    | numeric   | 0.0%    | min=20, Q1=20, median=21, Q3=21, max=22                                                                                      |
-| member_name | character | 0.0%    | 652 unique; top: 권성동, 권칠승, 김도읍                                                                                      |
-| member_id   | character | 0.0%    | 660 unique; top: 04T3751T, 0VU8517U, 1WE5693J                                                                                |
-| party       | character | 0.0%    | 23 unique; top: 더불어민주당, 국민의힘, 미래통합당                                                                           |
-| district    | character | 0.0%    | 282 unique; top: 비례대표, 경남 양산시을, 서울 노원구갑                                                                      |
-| vote        | character | 0.0%    | 4 unique; top: 찬성, 불참, 기권                                                                                              |
-| vote_date   | Date      | 0.0%    | 2016-06-09 to 2026-03-12                                                                                                     |
+| bill_id     | character | 0.0%    | 1286 unique; top: ARC_B2U4U0H7N2J2O0N8R5I5F1J9G2D2U5, ARC_C2A4B0A8H3R0V0R9F2L0E3Z7P8F7S5, ARC_C2A4M0W7H2E2U0L8Z5W5D3P2U7T2A3 |
+| assembly    | numeric   | 0.0%    | min=22, Q1=22, median=22, Q3=22, max=22                                                                                      |
+| member_name | character | 0.0%    | 304 unique; top: 강경숙, 강대식, 강득구                                                                                      |
+| member_id   | character | 0.0%    | 304 unique; top: 04T3751T, 0698755I, 0R68099X                                                                                |
+| party       | character | 0.0%    | 8 unique; top: 더불어민주당, 국민의힘, 조국혁신당                                                                            |
+| district    | character | 0.0%    | 255 unique; top: 비례대표, 강원 강릉시, 강원 동해시태백시삼척시정선군                                                        |
+| vote        | character | 0.0%    | 4 unique; top: 찬성, 불참, 반대                                                                                              |
+| vote_date   | Date      | 0.0%    | 2024-07-04 to 2026-03-12                                                                                                     |
 
 ------------------------------------------------------------------------
 

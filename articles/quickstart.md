@@ -11,7 +11,7 @@ remotes::install_github("kyusik-yang/assemblykor")
 library(assemblykor)
 #> 
 #>   ┌───────────────────────────────────────────────────────────────┐
-#>   │ assemblykor 0.1.0                                             │
+#>   │ assemblykor 0.1.1                                             │
 #>   │ Korean National Assembly Data for Political Science Education │
 #>   └───────────────────────────────────────────────────────────────┘
 #> 
