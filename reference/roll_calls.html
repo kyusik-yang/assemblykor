@@ -112,18 +112,18 @@ metadata.</p>
 <span class="r-in"><span><span class="co"># Vote distribution</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">roll_calls</span><span class="op">$</span><span class="va">vote</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   기권   반대   불참   찬성 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   4738   6796  82365 274311 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    기권    반대    불참    찬성 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   43987   23737  671730 1644378 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Votes per party</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">roll_calls</span><span class="op">$</span><span class="va">party</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 더불어민주당     국민의힘   조국혁신당       무소속       진보당     개혁신당 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       204513       131754        14794         6725         4259         3699 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 더불어민주당     국민의힘   미래통합당       무소속       민생당   미래한국당 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      1107204       657192       184359       137868        69723        66329 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Number of unique legislators</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">roll_calls</span><span class="op">$</span><span class="va">member_id</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 304</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 660</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

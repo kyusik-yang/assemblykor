@@ -157,17 +157,17 @@ and ICT Committee (22nd assembly, 2024).
 
 | Variable      | Type      | Missing | Distribution                                                                                                                                                              |
 |:--------------|:----------|:--------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| bill_id       | character | 0.0%    | 7996 unique; top: ARC_D1U6W0S6P2G7T1G1C2X3M1S6L7N2N0, ARC_A1D6N0F9G0E9M1T7F4B8E3C0T6E9E3, ARC_A1E8A1H2I2X1C1Q7Q4W7A0G6F1S9Q2                                              |
-| bill_no       | numeric   | 0.0%    | min=2000010, Q1=2014340, median=2104894, Q3=2120611, max=2216983                                                                                                          |
-| bill_name     | character | 0.0%    | 5713 unique; top: 도로교통법 일부개정법률안(대안)(행정안전위원장), 자동차관리법 일부개정법률안(대안)(국토교통위원장), 국민건강보험법 일부개정법률안(대안)(보건복지위원장) |
+| bill_id       | character | 0.0%    | 8049 unique; top: ARC_D1U6W0S6P2G7T1G1C2X3M1S6L7N2N0, ARC_A1D6N0F9G0E9M1T7F4B8E3C0T6E9E3, ARC_A1E8A1H2I2X1C1Q7Q4W7A0G6F1S9Q2                                              |
+| bill_no       | character | 0.0%    | 8031 unique; top: 2022996, 2000491, 2012299                                                                                                                               |
+| bill_name     | character | 0.0%    | 5752 unique; top: 도로교통법 일부개정법률안(대안)(행정안전위원장), 자동차관리법 일부개정법률안(대안)(국토교통위원장), 국민건강보험법 일부개정법률안(대안)(보건복지위원장) |
 | assembly      | numeric   | 0.0%    | min=20, Q1=20, median=21, Q3=21, max=22                                                                                                                                   |
-| committee     | character | 0.0%    | 46 unique; top: 농림축산식품해양수산위원회, 국토교통위원회, 보건복지위원회                                                                                                |
-| vote_date     | Date      | 0.0%    | 2016-06-09 to 2026-03-01                                                                                                                                                  |
+| committee     | character | 0.0%    | 47 unique; top: 농림축산식품해양수산위원회, 국토교통위원회, 보건복지위원회                                                                                                |
+| vote_date     | Date      | 0.0%    | 2016-06-09 to 2026-03-12                                                                                                                                                  |
 | result        | character | 0.0%    | 3 unique; top: 원안가결, 수정가결, 부결                                                                                                                                   |
 | bill_type     | character | 0.0%    | 9 unique; top: 법률안, 예산안, 결의안                                                                                                                                     |
 | total_members | numeric   | 0.0%    | min=288, Q1=296, median=299, Q3=300, max=300                                                                                                                              |
 | voted         | numeric   | 0.0%    | min=3, Q1=188, median=213, Q3=238, max=297                                                                                                                                |
-| yes           | numeric   | 0.0%    | min=1, Q1=180, median=205, Q3=229, max=297                                                                                                                                |
+| yes           | numeric   | 0.0%    | min=1, Q1=180, median=204, Q3=229, max=297                                                                                                                                |
 | no            | numeric   | 0.0%    | min=0, Q1=0, median=0, Q3=1, max=187                                                                                                                                      |
 | abstain       | numeric   | 0.0%    | min=0, Q1=1, median=3, Q3=7, max=64                                                                                                                                       |
 
@@ -186,14 +186,14 @@ assembly, 1,233 bills).
 
 | Variable    | Type      | Missing | Distribution                                                                                                                 |
 |:------------|:----------|:--------|:-----------------------------------------------------------------------------------------------------------------------------|
-| bill_id     | character | 0.0%    | 1233 unique; top: ARC_B2U4U0H7N2J2O0N8R5I5F1J9G2D2U5, ARC_C2A4B0A8H3R0V0R9F2L0E3Z7P8F7S5, ARC_C2A4M0W7H2E2U0L8Z5W5D3P2U7T2A3 |
-| assembly    | numeric   | 0.0%    | min=22, Q1=22, median=22, Q3=22, max=22                                                                                      |
-| member_name | character | 0.0%    | 304 unique; top: 강경숙, 강대식, 강득구                                                                                      |
-| member_id   | character | 0.0%    | 304 unique; top: 04T3751T, 0698755I, 0R68099X                                                                                |
-| party       | character | 0.0%    | 8 unique; top: 더불어민주당, 국민의힘, 조국혁신당                                                                            |
-| district    | character | 0.0%    | 255 unique; top: 비례대표, 강원 강릉시, 강원 동해시태백시삼척시정선군                                                        |
-| vote        | character | 0.0%    | 4 unique; top: 찬성, 불참, 반대                                                                                              |
-| vote_date   | Date      | 0.0%    | 2024-07-04 to 2026-03-01                                                                                                     |
+| bill_id     | character | 0.0%    | 8049 unique; top: ARC_B2U4U0H7N2J2O0N8R5I5F1J9G2D2U5, ARC_C2A4B0A8H3R0V0R9F2L0E3Z7P8F7S5, ARC_C2A4M0W7H2E2U0L8Z5W5D3P2U7T2A3 |
+| assembly    | numeric   | 0.0%    | min=20, Q1=20, median=21, Q3=21, max=22                                                                                      |
+| member_name | character | 0.0%    | 652 unique; top: 권성동, 권칠승, 김도읍                                                                                      |
+| member_id   | character | 0.0%    | 660 unique; top: 04T3751T, 0VU8517U, 1WE5693J                                                                                |
+| party       | character | 0.0%    | 23 unique; top: 더불어민주당, 국민의힘, 미래통합당                                                                           |
+| district    | character | 0.0%    | 282 unique; top: 비례대표, 경남 양산시을, 서울 노원구갑                                                                      |
+| vote        | character | 0.0%    | 4 unique; top: 찬성, 불참, 기권                                                                                              |
+| vote_date   | Date      | 0.0%    | 2016-06-09 to 2026-03-12                                                                                                     |
 
 ------------------------------------------------------------------------
 

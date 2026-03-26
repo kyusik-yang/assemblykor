@@ -96,19 +96,19 @@ data(votes)
 table(votes$assembly)
 #> 
 #>   20   21   22 
-#> 3492 3272 1233 
+#> 3492 3272 1286 
 
 # Pass rate
 table(votes$result)
 #> 
 #>     부결 수정가결 원안가결 
-#>       26     2664     5307 
+#>       26     2688     5336 
 
 # Average yes rate
 votes$yes_rate <- votes$yes / votes$voted
 summary(votes$yes_rate)
 #>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-#> 0.006369 0.961538 0.983696 0.961377 0.994083 1.000000 
+#> 0.006369 0.961690 0.983784 0.961513 0.994143 1.000000 
 
 # Contentious votes (yes rate < 70%)
 contentious <- votes[votes$yes / votes$voted < 0.7, ]

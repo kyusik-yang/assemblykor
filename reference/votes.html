@@ -126,19 +126,19 @@ discipline analysis.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">votes</span><span class="op">$</span><span class="va">assembly</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   20   21   22 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3492 3272 1233 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3492 3272 1286 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Pass rate</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">votes</span><span class="op">$</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     부결 수정가결 원안가결 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       26     2664     5307 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       26     2688     5336 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Average yes rate</span></span></span>
 <span class="r-in"><span><span class="va">votes</span><span class="op">$</span><span class="va">yes_rate</span> <span class="op">&lt;-</span> <span class="va">votes</span><span class="op">$</span><span class="va">yes</span> <span class="op">/</span> <span class="va">votes</span><span class="op">$</span><span class="va">voted</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">votes</span><span class="op">$</span><span class="va">yes_rate</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.006369 0.961538 0.983696 0.961377 0.994083 1.000000 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.006369 0.961690 0.983784 0.961513 0.994143 1.000000 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Contentious votes (yes rate &lt; 70%)</span></span></span>
 <span class="r-in"><span><span class="va">contentious</span> <span class="op">&lt;-</span> <span class="va">votes</span><span class="op">[</span><span class="va">votes</span><span class="op">$</span><span class="va">yes</span> <span class="op">/</span> <span class="va">votes</span><span class="op">$</span><span class="va">voted</span> <span class="op">&lt;</span> <span class="fl">0.7</span>, <span class="op">]</span></span></span>
