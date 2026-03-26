@@ -181,10 +181,10 @@ test_that("roll_calls has expected structure", {
 
 test_that("roll_calls key columns are valid", {
   data(roll_calls, envir = environment())
-  expect_true(all(roll_calls$assembly %in% c(20, 21, 22)))
+  expect_true(all(roll_calls$assembly == 22))
   expect_s3_class(roll_calls$vote_date, "Date")
-  # member_id + bill_id should be unique within each assembly
-  key <- paste(roll_calls$assembly, roll_calls$member_id, roll_calls$bill_id)
+  # member_id + bill_id should be unique
+  key <- paste(roll_calls$member_id, roll_calls$bill_id)
   expect_equal(length(key), length(unique(key)))
 })
 
@@ -201,9 +201,9 @@ test_that("join keys are compatible across datasets", {
   overlap <- mean(wealth$member_id %in% legislators$member_id, na.rm = TRUE)
   expect_true(overlap > 0.5)
 
-  # roll_calls member_ids should overlap with legislators
+  # roll_calls member_ids should overlap with legislators (22대)
   rc_ids <- unique(roll_calls$member_id)
-  leg_ids <- unique(legislators$member_id)
+  leg_ids <- unique(legislators$member_id[legislators$assembly == 22])
   overlap_rc <- mean(rc_ids %in% leg_ids)
   expect_true(overlap_rc > 0.8)
 })
