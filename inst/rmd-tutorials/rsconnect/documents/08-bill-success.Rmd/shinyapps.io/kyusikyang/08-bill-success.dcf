@@ -1,0 +1,10 @@
+name: 08-bill-success
+title:
+username: kyusikyang
+account: kyusikyang
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16997299
+bundleId: 11767433
+url: https://kyusikyang.shinyapps.io/08-bill-success/
+version: 1

@@ -16,7 +16,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(stringr)
-set_ko_font()
+tryCatch(set_ko_font(), error = function(e) message("Korean font not available"))
 data(bills)
 data(speeches)
 ```

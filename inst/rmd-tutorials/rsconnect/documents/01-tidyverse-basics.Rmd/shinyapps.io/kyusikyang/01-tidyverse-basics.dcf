@@ -1,0 +1,10 @@
+name: 01-tidyverse-basics
+title:
+username: kyusikyang
+account: kyusikyang
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16993522
+bundleId: 11767280
+url: https://kyusikyang.shinyapps.io/01-tidyverse-basics/
+version: 1

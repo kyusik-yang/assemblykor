@@ -1,0 +1,10 @@
+name: 02-data-visualization
+title:
+username: kyusikyang
+account: kyusikyang
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16993536
+bundleId: 11767423
+url: https://kyusikyang.shinyapps.io/02-data-visualization/
+version: 1
