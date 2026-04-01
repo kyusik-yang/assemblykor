@@ -169,5 +169,5 @@ open_tutorial(1)     # Copy Rmd file
 </div>
 
 <div style="text-align:center; font-size:9px; color:#999; margin-top:4px;">
-assemblykor v0.1.0 | Kyusik Yang | https://github.com/kyusik-yang/assemblykor
+assemblykor v0.1.1 | Kyusik Yang | https://github.com/kyusik-yang/assemblykor
 </div>

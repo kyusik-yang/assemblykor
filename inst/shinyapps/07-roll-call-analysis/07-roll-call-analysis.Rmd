@@ -1,0 +1,506 @@
+---
+title: "튜토리얼 7: 기명투표 분석"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
+library(assemblykor)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+set_ko_font()
+data(votes)
+data(roll_calls)
+data(legislators)
+```
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 우리 당 의원들은 얼마나 같이 투표하는가?
+
+민주주의에서 입법부의 핵심 기능은 **투표(표결)**입니다. 누가 찬성하고 반대하는지를
+분석하면, 정당의 결속력, 이탈투표 의원, 의원들 사이의 이념적 거리를 파악할 수
+있습니다.
+
+배울 내용:
+
+- 본회의 표결 데이터의 구조와 탐색
+- 정당 결속력 측정: Rice Index
+- 이탈투표 의원 찾기
+- 투표 패턴의 시각화: 히트맵
+- 투표 유사도로 의원 간 거리 측정하기
+
+---
+
+## 1. 표결 데이터 이해하기
+
+`assemblykor`에는 두 가지 표결 데이터가 있습니다:
+
+| 데이터 | 수준 | 범위 | 행 수 |
+|--------|------|------|-------|
+| `votes` | **법안별** 전체 결과 | 20-22대 | 7,997 |
+| `roll_calls` | **의원별** 투표 기록 | 22대만 | 368,210 |
+
+### votes: 법안별 표결 결과
+
+```{r votes-overview}
+cat("법안 수:", nrow(votes), "\n")
+cat("대수별:\n")
+table(votes$assembly)
+```
+
+```{r votes-example}
+votes %>%
+  select(bill_name, assembly, voted, yes, no, abstain) %>%
+  head(5)
+```
+
+### 찬성률 분포
+
+대부분의 법안은 압도적 다수로 통과됩니다. 논쟁적인 법안은 소수입니다.
+
+```{r yes-rate-dist}
+votes <- votes %>%
+  mutate(yes_rate = yes / voted)
+
+ggplot(votes, aes(x = yes_rate)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    x = "찬성률",
+    y = "법안 수",
+    title = "본회의 표결 찬성률 분포 (20-22대)"
+  ) +
+  theme_minimal()
+```
+
+> 오른쪽에 크게 몰린 것은 대부분의 법안이 90% 이상의 찬성으로 통과됨을
+> 의미합니다. 정치적으로 흥미로운 것은 왼쪽의 **논쟁적 법안**들입니다.
+
+### 논쟁적 법안 찾기
+
+```{r contentious}
+votes %>%
+  filter(yes_rate < 0.7) %>%
+  arrange(yes_rate) %>%
+  select(bill_name, assembly, yes_rate, yes, no) %>%
+  head(10)
+```
+
+---
+
+## 2. roll_calls: 의원별 투표 기록
+
+```{r rc-overview}
+cat("투표 기록:", nrow(roll_calls), "건\n")
+cat("의원 수:", n_distinct(roll_calls$member_id), "\n")
+cat("법안 수:", n_distinct(roll_calls$bill_id), "\n")
+
+# 투표 종류
+table(roll_calls$vote)
+```
+
+```{r rc-recode}
+# 투표를 영어로 재코딩 (분석 편의)
+roll_calls <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "찬성" ~ "yes",
+    "반대" ~ "no",
+    "기권" ~ "abstain",
+    .default = "absent"
+  ))
+
+table(roll_calls$vote_en)
+```
+
+---
+
+## 3. 정당 결속력: Rice Index
+
+**Rice Index**는 정당 결속력을 측정하는 고전적 지표입니다.
+
+$$\text{Rice Index} = |찬성비율 - 반대비율|$$
+
+- 1이면: 모든 당원이 같은 방향으로 투표 (완벽한 결속)
+- 0이면: 절반은 찬성, 절반은 반대 (완전한 분열)
+
+### 법안별 Rice Index 계산
+
+```{r rice-calc}
+# 출석 투표만 (불참 제외)
+rc_voted <- roll_calls %>%
+  filter(vote_en %in% c("yes", "no"))
+
+# 법안별-정당별 Rice Index
+rice_by_bill <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    n_voted = n(),
+    n_yes = sum(vote_en == "yes"),
+    n_no = sum(vote_en == "no"),
+    rice = abs(n_yes - n_no) / n_voted,
+    .groups = "drop"
+  ) %>%
+  filter(n_voted >= 5)  # 충분한 투표자 수
+
+# 주요 정당의 평균 Rice Index
+rice_summary <- rice_by_bill %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  group_by(party) %>%
+  summarise(
+    n_votes = n(),
+    mean_rice = round(mean(rice), 3),
+    median_rice = round(median(rice), 3),
+    min_rice = round(min(rice), 3)
+  )
+
+rice_summary
+```
+
+### Rice Index 분포 시각화
+
+```{r rice-plot}
+rice_by_bill %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  ggplot(aes(x = rice, fill = party)) +
+  geom_histogram(bins = 30, alpha = 0.7, position = "identity") +
+  scale_fill_manual(values = c(
+    "국민의힘" = "#E61E2B",
+    "더불어민주당" = "#004EA2",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  facet_wrap(~ party, ncol = 1) +
+  labs(
+    x = "Rice Index", y = "법안 수",
+    fill = NULL,
+    title = "정당별 결속력 (Rice Index) 분포"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+대부분의 법안에서 Rice Index가 1에 가까우면, 해당 정당은 거의 항상
+일사불란하게 투표한다는 뜻입니다.
+
+---
+
+## 4. 이탈투표 의원 찾기
+
+**이탈투표(rebel vote)**란 자기 당의 다수 의견과 다르게 투표하는 것입니다.
+
+```{r rebel-calc}
+# 각 법안에서 정당의 다수 의견 결정
+party_majority <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    majority_vote = ifelse(sum(vote_en == "yes") >= sum(vote_en == "no"),
+                           "yes", "no"),
+    .groups = "drop"
+  )
+
+# 의원별 이탈투표 식별
+rebel_votes <- rc_voted %>%
+  inner_join(party_majority, by = c("bill_id", "party")) %>%
+  mutate(is_rebel = vote_en != majority_vote)
+
+# 의원별 이탈투표 비율
+rebel_rate <- rebel_votes %>%
+  group_by(member_id, member_name, party) %>%
+  summarise(
+    n_votes = n(),
+    n_rebel = sum(is_rebel),
+    rebel_rate = round(n_rebel / n_votes, 3),
+    .groups = "drop"
+  ) %>%
+  filter(n_votes >= 50)  # 충분한 투표 참여
+
+# 이탈투표 비율 상위 10명
+rebel_rate %>%
+  filter(party %in% c("국민의힘", "더불어민주당")) %>%
+  arrange(desc(rebel_rate)) %>%
+  head(10)
+```
+
+### 정당별 이탈투표 분포
+
+```{r rebel-plot}
+rebel_rate %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  ggplot(aes(x = party, y = rebel_rate, fill = party)) +
+  geom_boxplot(alpha = 0.7, show.legend = FALSE) +
+  scale_fill_manual(values = c(
+    "국민의힘" = "#E61E2B",
+    "더불어민주당" = "#004EA2",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = NULL, y = "이탈투표 비율",
+    title = "정당별 이탈투표 비율 (22대)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 5. 투표 패턴 히트맵
+
+의원들의 투표 패턴을 시각화하면 정당 구조를 한눈에 볼 수 있습니다.
+모든 법안을 다 그리면 너무 복잡하니, **논쟁적 법안**만 선택합니다.
+
+```{r heatmap-prep}
+# 논쟁적 법안: 찬성률 50-85% (여야 의견 차이가 큰 법안)
+contentious_bills <- votes %>%
+  filter(assembly == 22, yes_rate >= 0.45, yes_rate <= 0.85) %>%
+  arrange(yes_rate) %>%
+  head(30) %>%  # 상위 30개
+  pull(bill_id)
+
+cat("논쟁적 법안:", length(contentious_bills), "건\n")
+
+# 해당 법안의 의원별 투표 (양대 정당만)
+rc_heat <- roll_calls %>%
+  filter(bill_id %in% contentious_bills,
+         party %in% c("국민의힘", "더불어민주당")) %>%
+  mutate(vote_num = case_match(vote_en,
+    "yes" ~ 1,
+    "no" ~ -1,
+    "abstain" ~ 0,
+    .default = NA_real_
+  )) %>%
+  filter(!is.na(vote_num))
+```
+
+```{r heatmap, fig.height=8}
+# 투표 행렬 (의원 x 법안)
+vote_matrix <- rc_heat %>%
+  select(member_name, bill_id, vote_num, party) %>%
+  pivot_wider(names_from = bill_id, values_from = vote_num, values_fill = 0)
+
+# 의원을 정당별로 정렬
+vote_matrix <- vote_matrix %>%
+  arrange(party, member_name)
+
+# 긴 형식으로 다시 변환 (ggplot용)
+heat_data <- vote_matrix %>%
+  pivot_longer(cols = -c(member_name, party),
+               names_to = "bill_id", values_to = "vote_num") %>%
+  mutate(
+    vote_label = case_match(vote_num,
+      1 ~ "찬성", -1 ~ "반대", 0 ~ "기권/불참"
+    ),
+    member_name = factor(member_name, levels = vote_matrix$member_name)
+  )
+
+ggplot(heat_data, aes(x = bill_id, y = member_name, fill = vote_label)) +
+  geom_tile(color = "white", linewidth = 0.1) +
+  scale_fill_manual(values = c(
+    "찬성" = "#4DAF4A",
+    "반대" = "#E41A1C",
+    "기권/불참" = "#CCCCCC"
+  )) +
+  labs(
+    x = "법안", y = NULL, fill = "투표",
+    title = "논쟁적 법안에 대한 의원별 투표 패턴 (22대)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
+  )
+```
+
+히트맵에서 정당별로 색이 뚜렷하게 구분되면 (한쪽은 초록, 다른 쪽은 빨강),
+여야 대립이 강한 것입니다.
+
+---
+
+## 6. 의원 간 투표 유사도
+
+두 의원이 얼마나 비슷하게 투표하는지 측정할 수 있습니다.
+같은 방향으로 투표한 비율이 **일치율(agreement rate)**입니다.
+
+```{r agreement}
+# 논쟁적 법안에서 투표 행렬 만들기 (숫자)
+vote_mat <- vote_matrix %>%
+  select(-member_name, -party) %>%
+  as.matrix()
+rownames(vote_mat) <- vote_matrix$member_name
+
+# 샘플: 상위 20명만 (계산 효율)
+set.seed(42)
+sample_names <- vote_matrix %>%
+  group_by(party) %>%
+  slice_sample(n = 10) %>%
+  pull(member_name)
+
+vote_small <- vote_mat[rownames(vote_mat) %in% sample_names, ]
+
+# 일치율 행렬 계산
+n_bills_mat <- ncol(vote_small)
+agreement <- matrix(0, nrow(vote_small), nrow(vote_small))
+for (i in 1:nrow(vote_small)) {
+  for (j in 1:nrow(vote_small)) {
+    agreement[i, j] <- sum(vote_small[i, ] == vote_small[j, ]) / n_bills_mat
+  }
+}
+rownames(agreement) <- rownames(vote_small)
+colnames(agreement) <- rownames(vote_small)
+```
+
+### 투표 유사도 히트맵
+
+```{r agreement-heatmap}
+# 정당 정보 추가
+party_info <- vote_matrix %>%
+  filter(member_name %in% sample_names) %>%
+  select(member_name, party)
+
+agree_df <- as.data.frame(as.table(agreement)) %>%
+  rename(member1 = Var1, member2 = Var2, agreement = Freq) %>%
+  left_join(party_info, by = c("member1" = "member_name")) %>%
+  rename(party1 = party)
+
+ggplot(agree_df, aes(x = member1, y = member2, fill = agreement)) +
+  geom_tile() +
+  scale_fill_gradient2(
+    low = "#E41A1C", mid = "white", high = "#4DAF4A",
+    midpoint = 0.5, labels = scales::percent
+  ) +
+  labs(
+    x = NULL, y = NULL, fill = "일치율",
+    title = "의원 간 투표 일치율 (22대 논쟁적 법안)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+```
+
+같은 정당 의원끼리 일치율이 높고(초록), 다른 정당 의원과는
+일치율이 낮으면(빨강), 정당이 투표의 핵심 결정 요인임을 보여줍니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 개념 | 의미 | 측정 |
+|------|------|------|
+| 찬성률 | 법안의 논쟁성 | `yes / voted` |
+| Rice Index | 정당 결속력 | `|찬성비율 - 반대비율|` |
+| 이탈투표 | 당론과 다른 투표 | 다수 의견과 불일치 |
+| 투표 유사도 | 의원 간 행태 유사성 | 일치율 행렬 |
+
+이 분석들은 정치학에서 **입법 행태(legislative behavior)** 연구의 기초입니다.
+더 발전시키면 이념 스케일링(ideal point estimation)으로 의원의 이념 위치를
+추정할 수 있습니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+22대 국회에서 **불참률**이 가장 높은 의원 10명을 찾으시오.
+(힌트: `vote_en`이 "absent"인 비율)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+roll_calls %>%
+  group_by(member_name, party) %>%
+  summarise(
+    n_total = n(),
+    n_absent = sum(vote_en == "absent"),
+    absent_rate = round(n_absent / n_total, 3),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(absent_rate)) %>%
+  head(10)
+```
+</details>
+
+### 문제 2 (응용)
+
+논쟁적 법안(찬성률 50-85%)에서의 Rice Index와 비논쟁적 법안(찬성률 90% 이상)에서의
+Rice Index를 비교하시오. 어떤 차이가 있으며, 왜 그런지 설명하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+# 법안별 찬성률 구하기
+bill_yes_rate <- votes %>%
+  filter(assembly == 22) %>%
+  select(bill_id, yes_rate)
+
+rice_with_type <- rice_by_bill %>%
+  inner_join(bill_yes_rate, by = "bill_id") %>%
+  mutate(bill_type = ifelse(yes_rate >= 0.9, "비논쟁", "논쟁"))
+
+rice_with_type %>%
+  filter(party %in% c("국민의힘", "더불어민주당")) %>%
+  group_by(party, bill_type) %>%
+  summarise(
+    n = n(),
+    mean_rice = round(mean(rice), 3),
+    .groups = "drop"
+  )
+```
+비논쟁적 법안에서는 모든 정당이 찬성하므로 Rice Index가 자연히 높습니다.
+논쟁적 법안에서 Rice Index가 낮아지면, 당내 이견이 존재한다는 뜻입니다.
+</details>
+
+### 문제 3 (도전)
+
+특정 상임위원회(예: 국토교통위원회) 소관 법안에서의 정당 결속력과
+다른 위원회 법안에서의 결속력을 비교하시오. 위원회에 따라 결속력이
+달라지는 패턴이 있는가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+# votes에서 위원회 정보 가져오기
+rice_committee <- rice_by_bill %>%
+  inner_join(votes %>% select(bill_id, committee), by = "bill_id") %>%
+  filter(party %in% c("국민의힘", "더불어민주당"),
+         !is.na(committee))
+
+rice_committee %>%
+  group_by(party, committee) %>%
+  summarise(
+    n = n(),
+    mean_rice = round(mean(rice), 3),
+    .groups = "drop"
+  ) %>%
+  filter(n >= 10) %>%
+  arrange(party, mean_rice) %>%
+  group_by(party) %>%
+  slice(c(1:3, (n()-2):n()))
+```
+위원회별로 결속력이 다르다면, 특정 정책 영역에서 당내 이견이 더 크다는
+증거입니다.
+</details>

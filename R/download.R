@@ -16,7 +16,7 @@
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' texts <- get_bill_texts()
 #' nchar_dist <- nchar(texts$propose_reason)
 #' hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
@@ -70,7 +70,7 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' props <- get_proposers()
 #'
 #' # Build co-sponsorship edgelist

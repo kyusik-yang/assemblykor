@@ -26,9 +26,8 @@ entries in \code{legislators}.}
 }
 }
 \source{
-National Assembly committee minutes, derived from the
-\href{https://github.com/kyusik-yang/speech-assembly-korea}{speech-assembly-korea}
-project (all_speeches_16_22.parquet).
+National Assembly committee minutes via the
+Open National Assembly Information API.
 }
 \usage{
 speeches

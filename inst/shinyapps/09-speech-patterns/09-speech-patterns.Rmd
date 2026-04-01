@@ -1,0 +1,519 @@
+---
+title: "튜토리얼 9: 국회 발언 패턴 분석"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+set_ko_font()
+data(speeches)
+data(legislators)
+```
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 국회 위원회에서 누가, 얼마나, 어떻게 발언하는가?
+
+국회 상임위원회는 법안 심사의 핵심 무대입니다. 의원들은 질의를 통해
+정부를 견제하고, 관료들은 답변을 통해 정책을 설명합니다.
+이 발언 데이터에는 참여 패턴, 의제 설정, 질의-응답 구조 등
+풍부한 정보가 담겨 있습니다.
+
+이 튜토리얼은 주로 **기술통계와 시각화**를 활용합니다.
+복잡한 모형 없이도, 데이터를 꼼꼼히 들여다보는 것만으로
+의미 있는 패턴을 발견할 수 있습니다.
+
+배울 내용:
+
+- 발언 데이터의 구조와 발언자 역할 분류
+- 참여도 측정: 누가 많이, 길게 발언하는가?
+- 질의-응답 구조 분석
+- 의제별 발언 패턴
+- 시간에 따른 발언 주제 변화
+
+---
+
+## 1. 데이터 구조 파악
+
+`speeches` 데이터는 22대 과학기술정보방송통신위원회의 발언 전문입니다.
+
+```{r overview}
+cat("총 발언 수:", nrow(speeches), "\n")
+cat("회의 날짜:", n_distinct(speeches$date), "일\n")
+cat("발언자:", n_distinct(speeches$speaker_name), "명\n")
+```
+
+### 발언자 역할
+
+위원회에는 다양한 역할의 발언자가 참여합니다.
+
+```{r roles}
+speeches %>%
+  count(role, sort = TRUE) %>%
+  mutate(pct = round(n / sum(n) * 100, 1))
+```
+
+```{r role-plot}
+role_summary <- speeches %>%
+  mutate(role_kr = case_match(role,
+    "legislator"       ~ "의원",
+    "chair"            ~ "위원장",
+    "minister"         ~ "장관",
+    "vice_minister"    ~ "차관",
+    "senior_bureaucrat" ~ "고위관료",
+    "agency_head"      ~ "기관장",
+    "committee_staff"  ~ "전문위원",
+    .default = "기타"
+  )) %>%
+  count(role_kr, sort = TRUE)
+
+ggplot(role_summary, aes(x = reorder(role_kr, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "발언 횟수",
+    title = "발언자 역할별 발언 횟수 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 2. 참여도 분석: 누가 많이 발언하는가?
+
+### 발언 횟수
+
+```{r freq-top}
+leg_speeches <- speeches %>%
+  filter(role == "legislator")
+
+top_speakers <- leg_speeches %>%
+  count(speaker_name, sort = TRUE) %>%
+  head(15)
+
+ggplot(top_speakers, aes(x = reorder(speaker_name, n), y = n)) +
+  geom_col(fill = "coral") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "발언 횟수",
+    title = "가장 많이 발언한 의원 (22대 과방위, 상위 15명)"
+  ) +
+  theme_minimal()
+```
+
+### 발언 길이
+
+발언 횟수만큼 중요한 것이 **발언 길이**입니다.
+짧은 질문을 자주 하는 의원과 긴 질의를 하는 의원의 패턴이 다릅니다.
+
+```{r length-analysis}
+leg_speeches <- leg_speeches %>%
+  mutate(speech_length = nchar(speech))
+
+# 의원별 발언 통계
+speaker_stats <- leg_speeches %>%
+  group_by(speaker_name) %>%
+  summarise(
+    n_speeches = n(),
+    total_chars = sum(speech_length),
+    avg_length = round(mean(speech_length)),
+    median_length = median(speech_length)
+  ) %>%
+  filter(n_speeches >= 10) %>%
+  arrange(desc(total_chars))
+
+head(speaker_stats, 10)
+```
+
+### 발언 횟수 vs 평균 길이
+
+```{r freq-vs-length}
+ggplot(speaker_stats, aes(x = n_speeches, y = avg_length)) +
+  geom_point(alpha = 0.6, color = "steelblue", size = 2) +
+  labs(
+    x = "발언 횟수",
+    y = "평균 발언 길이 (글자 수)",
+    title = "발언 횟수와 평균 발언 길이의 관계"
+  ) +
+  theme_minimal()
+```
+
+많이 발언하는 의원이 더 길게도 발언하나요, 아니면 짧게 자주 발언하나요?
+이 그래프에서 두 가지 패턴의 의원을 구분할 수 있습니다.
+
+---
+
+## 3. 역할별 발언 패턴
+
+위원회의 질의-응답 구조를 분석합니다.
+
+```{r role-length}
+speeches %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_group = case_match(role,
+      "legislator" ~ "의원",
+      "chair" ~ "위원장",
+      c("minister", "vice_minister", "senior_bureaucrat") ~ "정부측",
+      "committee_staff" ~ "전문위원",
+      .default = "기타"
+    )
+  ) %>%
+  group_by(role_group) %>%
+  summarise(
+    n = n(),
+    avg_length = round(mean(speech_length)),
+    median_length = round(median(speech_length)),
+    total_chars = sum(speech_length)
+  ) %>%
+  arrange(desc(total_chars))
+```
+
+### 발언 길이 분포 비교
+
+```{r role-density}
+speeches %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_group = case_match(role,
+      "legislator" ~ "의원",
+      c("minister", "vice_minister", "senior_bureaucrat") ~ "정부측",
+      .default = NA_character_
+    )
+  ) %>%
+  filter(!is.na(role_group)) %>%
+  ggplot(aes(x = speech_length, fill = role_group)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("의원" = "steelblue", "정부측" = "coral")) +
+  labs(
+    x = "발언 길이 (글자 수, 로그 스케일)",
+    y = "밀도",
+    fill = NULL,
+    title = "의원 vs 정부측 발언 길이 분포"
+  ) +
+  theme_minimal()
+```
+
+의원은 주로 **짧은 질문**을 하고, 정부측은 **긴 답변**을 합니다.
+이 차이는 위원회의 질의-응답 구조를 반영합니다.
+
+---
+
+## 4. 질의-응답 턴 구조
+
+`speech_order` 변수를 활용하면 회의 내 발언 순서를 추적할 수 있습니다.
+의원 질문 후 정부 답변이 이어지는 패턴을 확인해봅시다.
+
+```{r turn-structure}
+# 특정 날짜의 발언 순서 추적
+sample_date <- speeches %>%
+  count(date, sort = TRUE) %>%
+  head(1) %>%
+  pull(date)
+
+turns <- speeches %>%
+  filter(date == sample_date) %>%
+  arrange(speech_order) %>%
+  mutate(
+    role_group = case_match(role,
+      "legislator" ~ "의원",
+      "chair" ~ "위원장",
+      c("minister", "vice_minister", "senior_bureaucrat",
+        "agency_head") ~ "정부측",
+      .default = "기타"
+    ),
+    speech_length = nchar(speech)
+  ) %>%
+  head(40)  # 처음 40턴
+
+ggplot(turns, aes(x = speech_order, y = speech_length, fill = role_group)) +
+  geom_col(width = 0.8) +
+  scale_fill_manual(values = c(
+    "의원" = "steelblue", "정부측" = "coral",
+    "위원장" = "gray70", "기타" = "gray90"
+  )) +
+  labs(
+    x = "발언 순서",
+    y = "발언 길이 (글자 수)",
+    fill = "역할",
+    title = paste("회의 발언 턴 구조 (", sample_date, ")")
+  ) +
+  theme_minimal()
+```
+
+의원(파랑)과 정부측(빨강)이 번갈아 나타나는 패턴을 확인할 수 있습니다.
+
+---
+
+## 5. 의제별 발언 분석
+
+특정 의제에 대한 발언을 키워드로 필터링하여 분석합니다.
+
+```{r agenda-keywords}
+# 의제별 발언 수 비교
+agendas <- list(
+  "AI/인공지능"  = "인공지능|AI|에이아이",
+  "반도체"       = "반도체|칩|파운드리",
+  "방송/미디어"  = "방송|미디어|OTT|넷플릭스",
+  "통신/5G"      = "통신|5G|이동통신|주파수",
+  "개인정보"     = "개인정보|프라이버시|데이터보호"
+)
+
+agenda_counts <- do.call(rbind, lapply(names(agendas), function(topic) {
+  n <- sum(str_detect(speeches$speech, agendas[[topic]]))
+  data.frame(topic = topic, n_mentions = n)
+}))
+
+ggplot(agenda_counts, aes(x = reorder(topic, n_mentions), y = n_mentions)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "관련 발언 수",
+    title = "의제별 발언 빈도 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+### 의제별 시간 추이
+
+```{r agenda-trend}
+agenda_trend <- do.call(rbind, lapply(names(agendas), function(topic) {
+  speeches %>%
+    mutate(month = format(date, "%Y-%m")) %>%
+    group_by(month) %>%
+    summarise(
+      mentions = sum(str_detect(speech, agendas[[topic]])),
+      total = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(topic = topic, pct = mentions / total * 100)
+}))
+
+agenda_trend %>%
+  mutate(month_date = as.Date(paste0(month, "-01"))) %>%
+  ggplot(aes(x = month_date, y = pct, color = topic)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  labs(
+    x = NULL, y = "관련 발언 비율 (%)",
+    color = "의제",
+    title = "의제별 발언 추이 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+특정 시기에 급증하는 의제가 있나요? 해당 시기에 어떤 사건이 있었는지
+검색해보세요.
+
+---
+
+## 6. 의원별 관심 의제
+
+같은 위원회 의원이라도 관심 분야가 다릅니다.
+
+```{r member-agenda}
+# 의원별-의제별 발언 비율
+member_agenda <- do.call(rbind, lapply(names(agendas), function(topic) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n_total = n(),
+      n_topic = sum(str_detect(speech, agendas[[topic]])),
+      .groups = "drop"
+    ) %>%
+    filter(n_total >= 20) %>%
+    mutate(topic = topic, pct = n_topic / n_total * 100)
+}))
+
+# 각 의제에서 가장 활발한 의원
+member_agenda %>%
+  group_by(topic) %>%
+  slice_max(pct, n = 3) %>%
+  select(topic, speaker_name, n_total, n_topic, pct) %>%
+  arrange(topic, desc(pct))
+```
+
+### 의원별 의제 프로필 히트맵
+
+```{r member-heatmap, fig.height=7}
+# 발언 20회 이상인 의원
+active_members <- leg_speeches %>%
+  count(speaker_name) %>%
+  filter(n >= 30) %>%
+  pull(speaker_name)
+
+heatmap_data <- member_agenda %>%
+  filter(speaker_name %in% active_members) %>%
+  select(speaker_name, topic, pct)
+
+ggplot(heatmap_data, aes(x = topic, y = speaker_name, fill = pct)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(pct, 1)), size = 2.5) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  labs(
+    x = NULL, y = NULL, fill = "발언 비율(%)",
+    title = "의원별 의제 관심도 (22대 과방위)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+---
+
+## 7. 발언 다양성 측정
+
+의원이 얼마나 다양한 주제에 대해 발언하는지도 분석할 수 있습니다.
+여러 의제에 골고루 발언하는 의원과, 한 의제에 집중하는 의원이 있을 것입니다.
+
+```{r diversity}
+# 의제 집중도: 가장 많이 발언한 의제의 비율
+member_concentration <- member_agenda %>%
+  filter(speaker_name %in% active_members) %>%
+  group_by(speaker_name) %>%
+  summarise(
+    max_pct = max(pct),
+    n_topics_active = sum(pct > 5)  # 5% 이상 발언한 의제 수
+  )
+
+ggplot(member_concentration, aes(x = n_topics_active, y = max_pct)) +
+  geom_jitter(width = 0.2, alpha = 0.6, color = "steelblue", size = 3) +
+  labs(
+    x = "활발한 의제 수 (5% 이상 발언)",
+    y = "최대 의제 발언 비율 (%)",
+    title = "의원별 발언 집중도 vs 다양성"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 정리: 오늘 배운 것
+
+이 튜토리얼에서는 복잡한 모형 없이, **기술통계와 시각화**만으로
+발언 데이터에서 의미 있는 패턴을 발견했습니다.
+
+| 분석 | 발견할 수 있는 것 |
+|------|-------------------|
+| 발언 빈도 | 활발한 의원과 소극적 의원 |
+| 발언 길이 | 질문 스타일 (짧은 질의 vs 긴 연설) |
+| 역할별 비교 | 위원회의 질의-응답 구조 |
+| 의제 추적 | 시간에 따른 관심사 변화 |
+| 의원별 의제 | 개인별 전문 분야와 관심사 |
+
+> **데이터 분석의 핵심**: 모형은 도구일 뿐이고, 정말 중요한 것은
+> **데이터를 이해하는 것**입니다. 잘 만든 기술통계와 시각화가
+> 복잡한 모형보다 더 많은 것을 알려줄 때가 많습니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+위원장(`role == "chair"`)의 발언 패턴을 분석하시오.
+위원장은 주로 어떤 길이의 발언을 하며, 다른 역할과 어떻게 다른가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+speeches %>%
+  mutate(speech_length = nchar(speech)) %>%
+  filter(role %in% c("legislator", "chair", "minister")) %>%
+  mutate(role_kr = case_match(role,
+    "legislator" ~ "의원", "chair" ~ "위원장", "minister" ~ "장관"
+  )) %>%
+  group_by(role_kr) %>%
+  summarise(
+    n = n(),
+    avg = round(mean(speech_length)),
+    median = median(speech_length)
+  )
+```
+위원장의 발언은 대체로 매우 짧습니다. "의사진행" 발언 (발언권 부여,
+안건 소개 등)이 대부분이기 때문입니다.
+</details>
+
+### 문제 2 (응용)
+
+의원의 `member_id`를 활용하여 `legislators` 데이터와 결합하고,
+**선수(seniority)별 발언 패턴** (발언 횟수, 평균 길이)을 비교하시오.
+경험 많은 의원이 더 많이, 더 길게 발언하는가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+leg_22 <- legislators %>%
+  filter(assembly == 22) %>%
+  select(member_id, seniority)
+
+leg_speeches %>%
+  inner_join(leg_22, by = "member_id") %>%
+  mutate(speech_length = nchar(speech)) %>%
+  group_by(seniority) %>%
+  summarise(
+    n_members = n_distinct(member_id),
+    avg_speeches = round(n() / n_members),
+    avg_length = round(mean(speech_length))
+  )
+```
+</details>
+
+### 문제 3 (도전)
+
+자신만의 키워드 사전을 만들어 의제 분석을 수행하시오.
+예를 들어, "규제", "혁신", "산업", "보호" 같은 정책 프레이밍 키워드를
+선택하고, 의원별/시기별 사용 패턴을 분석하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>예시 접근법</summary>
+```{r}
+frames <- list(
+  "규제" = "규제|규정|제한|금지",
+  "혁신" = "혁신|발전|성장|촉진",
+  "보호" = "보호|안전|피해|방지"
+)
+
+frame_by_member <- do.call(rbind, lapply(names(frames), function(fr) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n = n(),
+      mentions = sum(str_detect(speech, frames[[fr]])),
+      .groups = "drop"
+    ) %>%
+    filter(n >= 20) %>%
+    mutate(frame = fr, pct = mentions / n * 100)
+}))
+
+frame_by_member %>%
+  group_by(frame) %>%
+  summarise(avg_pct = round(mean(pct), 1))
+```
+</details>

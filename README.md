@@ -252,7 +252,7 @@ All data in this package are derived from publicly available sources.
 | Dataset | Source | License |
 |---------|--------|---------|
 | Legislators, bills, proposers, votes, roll calls | Open National Assembly Information API (open.assembly.go.kr) | Public domain (Korean government open data) |
-| Speeches (committee minutes) | [speech-assembly-korea](https://github.com/kyusik-yang/speech-assembly-korea) | Public domain |
+| Speeches (committee minutes) | Open National Assembly Information API (open.assembly.go.kr) | Public domain (Korean government open data) |
 | Asset declarations | [OpenWatch](https://docs.openwatch.kr/data/national-assembly) | CC BY-SA 4.0 |
 | Policy seminars | National Assembly Seminar Database | Public data |
 
@@ -278,7 +278,7 @@ citation("assemblykor")
 
 ```
 Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
-Political Science Education. R package version 0.1.0.
+Political Science Education. R package version 0.1.1.
 https://github.com/kyusik-yang/assemblykor
 ```
 

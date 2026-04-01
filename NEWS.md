@@ -1,3 +1,10 @@
+# assemblykor 0.1.1
+
+* Replaced all `\dontrun{}` in examples per CRAN reviewer request:
+  - `get_bill_texts()`, `get_proposers()`: changed to `\donttest{}` (download functions).
+  - `open_tutorial()`, `run_tutorial()`, `set_ko_font()`: changed to
+    `if (interactive()) {}` (interactive or system-dependent functions).
+
 # assemblykor 0.1.0
 
 * Initial CRAN release.

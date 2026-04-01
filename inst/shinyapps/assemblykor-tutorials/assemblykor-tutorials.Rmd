@@ -1,0 +1,4447 @@
+---
+title: "assemblykor: 한국 국회 데이터 튜토리얼"
+output: 
+  learnr::tutorial:
+    progressive: false
+    allow_skip: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+library(scales)
+library(fixest)
+library(igraph)
+library(tidytext)
+library(patchwork)
+tryCatch(set_ko_font(), error = function(e) message("Korean font not available: ", e$message))
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+tutorial_options(exercise.timelimit = 60)
+```
+
+
+## 01. 튜토리얼 1: R 기초와 tidyverse
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 한국 국회의 구성은 어떻게 변해왔는가?
+
+이 튜토리얼에서는 20-22대 국회의원 데이터를 탐색하면서 R의 기본 도구를 익힙니다.
+단순히 함수를 외우는 것이 아니라, "어떤 질문에 답하기 위해 이 도구가 필요한가?"를
+생각하며 진행합니다.
+
+배울 내용:
+
+- R에서 데이터를 불러오고 구조를 파악하는 방법
+- `dplyr` 핵심 함수 5개: `filter()`, `select()`, `mutate()`, `arrange()`, `summarise()`
+- 파이프 연산자(`%>%`)로 분석 흐름을 자연스럽게 연결하기
+- 두 데이터를 `join`으로 합치기
+
+---
+
+## 1. 데이터 불러오기
+
+`assemblykor` 패키지에는 한국 국회 관련 데이터가 내장되어 있습니다.
+`library()`로 패키지를 불러오고, `data()`로 데이터를 메모리에 올립니다.
+
+```{r eval=FALSE}
+library(assemblykor)
+library(dplyr)
+
+data(legislators)
+```
+
+### 데이터 구조 파악하기
+
+처음 데이터를 받으면 반드시 구조부터 확인합니다.
+이 습관은 분석 실수를 줄여주는 가장 중요한 첫 단계입니다.
+
+```{r eval=FALSE}
+# 행(row)과 열(column)의 수
+dim(legislators)
+```
+
+947개 행, 15개 열입니다. 행 하나가 무엇을 의미하는지 아는 것이 중요합니다.
+여기서 **한 행 = 한 의원의 한 대(assembly)에서의 기록**입니다.
+같은 의원이 20대와 21대에 모두 활동했다면, 두 개의 행으로 나타납니다.
+
+```{r eval=FALSE}
+# 변수 이름과 타입 확인
+str(legislators)
+```
+
+### 주요 변수 이해하기
+
+| 변수 | 설명 | 예시 |
+|------|------|------|
+| `member_id` | 의원 고유 식별자 | 대를 걸쳐 동일 |
+| `assembly` | 국회 대수 | 20, 21, 22 |
+| `name` | 이름 (한글) | 홍길동 |
+| `party` | 소속 정당 | 더불어민주당 |
+| `district_type` | 선출 방식 | constituency (지역구), proportional (비례대표) |
+| `gender` | 성별 | M (남), F (여) |
+| `seniority` | 선수 (당선 횟수) | 1 = 초선, 2 = 재선, ... |
+| `n_bills` | 발의 참여 총건수 (대표 + 공동) | 중앙값 약 700 |
+| `n_bills_lead` | **대표발의** 건수 | 중앙값 약 56 |
+
+> **주의**: `n_bills`는 대표발의와 공동발의(연서)를 합산한 수치입니다.
+> 한국 국회에서는 공동발의 문화가 활발하여, `n_bills`가 수천 건에 달하는
+> 의원도 있습니다. 순수하게 "이 의원이 주도한 법안"을 보려면
+> `n_bills_lead`를 사용하세요.
+
+### 처음 몇 행 확인하기
+
+```{r eval=FALSE}
+head(legislators)
+```
+
+### 요약 통계
+
+```{r eval=FALSE}
+summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
+```
+
+대표발의 건수의 최솟값이 0, 최댓값이 696입니다. 의원 간 편차가 크다는 것을
+알 수 있습니다. 왜 이런 차이가 생길까요? 이 질문을 가지고 계속 진행해봅시다.
+
+---
+
+## 2. filter(): 조건에 맞는 행 골라내기
+
+분석할 때 "전체 데이터 중에서 특정 조건에 맞는 부분만 보고 싶다"는
+상황이 자주 생깁니다. `filter()`가 바로 그 역할을 합니다.
+
+**기본 문법**: `filter(데이터, 조건1, 조건2, ...)`
+
+여러 조건을 쉼표로 나열하면 **AND** (모두 만족)입니다.
+
+```{r eval=FALSE}
+# 22대 여성 의원만 골라내기
+women_22 <- filter(legislators, assembly == 22, gender == "F")
+nrow(women_22)
+```
+
+22대 국회에 여성 의원이 `r nrow(women_22)`명 있습니다.
+전체 의원 수 대비 몇 퍼센트인지 계산해봅시다.
+
+```{r eval=FALSE}
+total_22 <- nrow(filter(legislators, assembly == 22))
+cat("22대 여성 의원 비율:", round(nrow(women_22) / total_22 * 100, 1), "%")
+```
+
+### 자주 쓰는 비교 연산자
+
+| 연산자 | 의미 | 예시 |
+|--------|------|------|
+| `==` | 같다 | `assembly == 22` |
+| `!=` | 같지 않다 | `party != "무소속"` |
+| `>`, `>=` | 크다, 크거나 같다 | `seniority >= 3` |
+| `<`, `<=` | 작다, 작거나 같다 | `n_bills_lead < 10` |
+| `%in%` | 목록 안에 있다 | `party %in% c("국민의힘", "더불어민주당")` |
+
+```{r eval=FALSE}
+# 3선 이상 의원
+senior <- filter(legislators, assembly == 22, seniority >= 3)
+cat("22대 3선 이상 의원:", nrow(senior), "명")
+```
+
+```{r eval=FALSE}
+# 양대 정당 소속 의원
+two_party <- filter(legislators, assembly == 22,
+                    party %in% c("국민의힘", "더불어민주당"))
+cat("양대 정당 의원:", nrow(two_party), "명 /", total_22, "명 중")
+```
+
+---
+
+## 3. select(): 필요한 열만 골라보기
+
+데이터에 15개 열이 있지만, 분석 목적에 따라 몇 개만 필요한 경우가 많습니다.
+`select()`로 원하는 열만 뽑아 데이터를 깔끔하게 정리할 수 있습니다.
+
+```{r eval=FALSE}
+# 이름, 정당, 대표발의 건수만
+legislators %>%
+  filter(assembly == 22) %>%
+  select(name, party, n_bills_lead) %>%
+  head(10)
+```
+
+여기서 `%>%`(파이프)가 처음 등장했습니다. 다음 섹션에서 자세히 설명하겠지만,
+"그리고 나서"라고 읽으면 됩니다: 데이터를 **필터하고** 그리고 나서 **열을 고르고**
+그리고 나서 **처음 10개만 보여줘**.
+
+### 열 선택의 다양한 방법
+
+```{r eval=FALSE}
+# 특정 열 제외하기 (- 기호)
+legislators %>%
+  select(-name_hanja, -name_eng, -committees) %>%
+  head(3)
+```
+
+```{r eval=FALSE}
+# 특정 패턴으로 시작하는 열
+legislators %>%
+  select(name, starts_with("n_")) %>%
+  head(5)
+```
+
+---
+
+## 4. 파이프 연산자 `%>%`: 분석 흐름 연결하기
+
+파이프(`%>%`)는 tidyverse의 핵심 아이디어입니다.
+왼쪽의 결과를 오른쪽 함수의 **첫 번째 인자**로 넘깁니다.
+
+파이프 없이 쓰면:
+
+```{r t01c1, eval=FALSE}
+# 파이프 없이 - 안쪽부터 바깥쪽으로 읽어야 함 (읽기 어려움)
+head(select(filter(legislators, assembly == 22), name, party), 5)
+```
+
+파이프로 쓰면:
+
+```{r eval=FALSE}
+# 파이프 사용 - 위에서 아래로 자연스럽게 읽힘
+legislators %>%
+  filter(assembly == 22) %>%
+  select(name, party) %>%
+  head(5)
+```
+
+"legislators 데이터를 가져와서 → 22대만 골라서 → 이름과 정당만 뽑아서 →
+처음 5개를 보여줘." 글로 쓴 것과 코드가 거의 같은 순서입니다.
+
+> **팁**: RStudio에서 `Ctrl+Shift+M` (Mac: `Cmd+Shift+M`)을 누르면
+> 파이프 연산자가 자동 입력됩니다.
+
+---
+
+## 5. mutate(): 새 변수 만들기
+
+기존 변수를 조합해서 새로운 변수를 만들 때 `mutate()`를 씁니다.
+원래 데이터가 바뀌는 것이 아니라, 열이 추가된 새 데이터가 만들어집니다.
+
+**질문**: 대표발의와 공동발의의 비율은 의원마다 얼마나 다를까?
+
+```{r eval=FALSE}
+legislators_extended <- legislators %>%
+  mutate(
+    n_cosponsor = n_bills - n_bills_lead,
+    lead_ratio  = round(n_bills_lead / n_bills, 3)
+  )
+
+# 22대 의원 중 대표발의 비율이 가장 높은 10명
+legislators_extended %>%
+  filter(assembly == 22) %>%
+  select(name, party, n_bills_lead, n_cosponsor, lead_ratio) %>%
+  arrange(desc(lead_ratio)) %>%
+  head(10)
+```
+
+`lead_ratio`가 높은 의원은 공동발의보다 직접 발의를 많이 하는 의원입니다.
+어떤 특성의 의원이 이 비율이 높을까요? (선수? 정당? 성별?)
+이런 질문이 회귀분석(튜토리얼 3)으로 이어집니다.
+
+---
+
+## 6. arrange(): 정렬하기
+
+`arrange()`는 데이터를 특정 변수 기준으로 정렬합니다.
+`desc()`를 쓰면 내림차순(큰 것부터)입니다.
+
+```{r eval=FALSE}
+# 22대 국회에서 대표발의를 가장 많이 한 의원 10명
+legislators %>%
+  filter(assembly == 22) %>%
+  arrange(desc(n_bills_lead)) %>%
+  select(name, party, district_type, seniority, n_bills_lead) %>%
+  head(10)
+```
+
+상위 10명의 특징을 살펴보세요. 특정 정당이나 선수에 집중되어 있나요?
+
+---
+
+## 7. group_by() + summarise(): 그룹별 요약
+
+이것이 `dplyr`에서 가장 강력한 패턴입니다.
+데이터를 그룹으로 나누고(`group_by`), 각 그룹의 요약 통계를
+계산합니다(`summarise`).
+
+**질문**: 대수별로 국회 구성은 어떻게 달라졌는가?
+
+```{r eval=FALSE}
+legislators %>%
+  group_by(assembly) %>%
+  summarise(
+    total       = n(),
+    n_women     = sum(gender == "F"),
+    pct_women   = round(n_women / total * 100, 1),
+    n_pr        = sum(district_type == "proportional"),
+    avg_senior  = round(mean(seniority, na.rm = TRUE), 1),
+    median_bills = median(n_bills_lead)
+  )
+```
+
+이 하나의 테이블에서 여러 가지를 읽을 수 있습니다:
+
+- 여성 의원 비율이 대수마다 어떻게 변하고 있는지
+- 비례대표 의원 수의 변화
+- 평균 선수와 법안 활동의 추이
+
+### 정당별 비교
+
+```{r eval=FALSE}
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(party) %>%
+  summarise(
+    n          = n(),
+    pct_women  = round(sum(gender == "F") / n() * 100, 1),
+    pct_pr     = round(sum(district_type == "proportional") / n() * 100, 1),
+    avg_bills  = round(mean(n_bills_lead), 1)
+  ) %>%
+  filter(n >= 5) %>%
+  arrange(desc(n))
+```
+
+> **해석할 때 주의할 점**: 이 표에서 "A 정당이 B 정당보다 평균 발의 건수가 많다"는
+> 사실을 확인할 수 있지만, 그 **이유**는 이 표만으로는 알 수 없습니다.
+> 정당 효과인지, 선수 차이 때문인지, 또 다른 요인 때문인지를 분리하려면
+> 회귀분석(튜토리얼 3)이 필요합니다.
+
+### 두 변수로 그룹 나누기
+
+```{r eval=FALSE}
+# 대수별 + 성별 대표발의 건수
+legislators %>%
+  group_by(assembly, gender) %>%
+  summarise(
+    n = n(),
+    median_bills = median(n_bills_lead),
+    .groups = "drop"
+  )
+```
+
+---
+
+## 8. 다른 데이터도 살펴보기
+
+`assemblykor`에는 의원 데이터 외에도 법안, 재산 데이터가 있습니다.
+
+```{r eval=FALSE}
+data(bills)
+data(wealth)
+```
+
+### 법안 데이터
+
+```{r eval=FALSE}
+dim(bills)
+head(bills %>% select(bill_name, committee, propose_date, result), 5)
+```
+
+60,925건의 법안 메타데이터입니다. `result` 열에서 법안의 최종 처리 결과를 볼 수 있습니다.
+
+```{r eval=FALSE}
+# 법안 처리 결과 분포
+bills %>%
+  count(result, sort = TRUE) %>%
+  head(8)
+```
+
+대부분의 법안이 "임기만료폐기" (국회 임기가 끝나면서 자동 폐기)되는 것을
+알 수 있습니다. 원안 그대로 통과되는 법안은 전체의 극히 일부입니다.
+
+### 재산 데이터
+
+```{r eval=FALSE}
+dim(wealth)
+
+# 순자산 요약 (10억 원 단위로 변환)
+summary(wealth$net_worth / 1e6)
+```
+
+> **단위**: `wealth` 데이터의 금액은 **천원(1,000원)** 단위입니다.
+> 10억 원 = 1,000,000 (백만 단위). 분석할 때 `/ 1e6`으로 나누면
+> 10억 원 단위가 됩니다.
+
+---
+
+## 9. 두 데이터 합치기 (join)
+
+서로 다른 데이터를 공통 열(키)로 연결하는 것을 **join**이라 합니다.
+`legislators`와 `wealth`는 `member_id`라는 공통 식별자를 가지고 있어,
+의원의 인적 정보와 재산 정보를 합칠 수 있습니다.
+
+### join의 종류
+
+| 함수 | 설명 |
+|------|------|
+| `inner_join()` | 양쪽 모두에 있는 행만 |
+| `left_join()` | 왼쪽 데이터 기준, 오른쪽에 없으면 NA |
+| `full_join()` | 양쪽 모든 행 포함 |
+
+```{r eval=FALSE}
+leg_wealth <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(
+    wealth %>% filter(year == 2024),
+    by = "member_id"
+  )
+
+cat("합친 후 행 수:", nrow(leg_wealth), "\n")
+cat("원래 22대 의원:", nrow(filter(legislators, assembly == 22)), "\n")
+```
+
+행 수가 줄어들었다면, 일부 의원의 재산 데이터가 없다는 뜻입니다.
+`inner_join`은 양쪽 모두에 존재하는 경우만 남기기 때문입니다.
+
+### 합친 데이터로 분석하기
+
+```{r eval=FALSE}
+# 성별에 따른 순자산 차이
+leg_wealth %>%
+  group_by(gender) %>%
+  summarise(
+    n = n(),
+    median_nw_bn = round(median(net_worth / 1e6, na.rm = TRUE), 1),
+    avg_nw_bn    = round(mean(net_worth / 1e6, na.rm = TRUE), 1)
+  )
+```
+
+```{r eval=FALSE}
+# 강남 부동산 보유 여부에 따른 순자산
+leg_wealth %>%
+  group_by(has_gangnam_property) %>%
+  summarise(
+    n = n(),
+    median_nw_bn = round(median(net_worth / 1e6, na.rm = TRUE), 1)
+  )
+```
+
+---
+
+## 정리: 오늘 배운 것
+
+| 함수 | 용도 | 비유 |
+|------|------|------|
+| `filter()` | 행 선택 | 엑셀에서 필터 걸기 |
+| `select()` | 열 선택 | 필요한 열만 남기기 |
+| `mutate()` | 새 열 추가 | 새 계산 열 만들기 |
+| `arrange()` | 정렬 | 오름차순/내림차순 |
+| `group_by() + summarise()` | 그룹 요약 | 피벗 테이블 |
+| `%>%` (파이프) | 연결 | "그리고 나서" |
+| `inner_join()` | 데이터 합치기 | VLOOKUP |
+
+다음 튜토리얼에서는 이 데이터를 **ggplot2로 시각화**합니다.
+숫자 표만으로는 놓치기 쉬운 패턴을 그래프로 발견하는 방법을 배웁니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+22대 국회에서 비례대표(`district_type == "proportional"`) 의원은 몇 명인가?
+
+```{r t01c2, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+legislators %>%
+  filter(assembly == 22, district_type == "proportional") %>%
+  nrow()
+```
+</details>
+
+### 문제 2 (기초)
+
+대수별로 초선(`seniority == 1`) 의원의 비율을 계산하시오.
+
+```{r t01c3, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+legislators %>%
+  group_by(assembly) %>%
+  summarise(
+    total = n(),
+    freshmen = sum(seniority == 1, na.rm = TRUE),
+    pct = round(freshmen / total * 100, 1)
+  )
+```
+</details>
+
+### 문제 3 (응용)
+
+`bills` 데이터에서 대수별(`assembly`) 법안 수와 원안가결 비율을 구하시오.
+(힌트: `result == "원안가결"`인 법안의 비율)
+
+```{r t01c4, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+bills %>%
+  group_by(assembly) %>%
+  summarise(
+    n_bills = n(),
+    n_passed = sum(result == "원안가결", na.rm = TRUE),
+    pass_rate = round(n_passed / n_bills * 100, 1)
+  )
+```
+</details>
+
+### 문제 4 (응용)
+
+의원별 대표발의 건수(`n_bills_lead`)와 2024년 순자산(`net_worth`)의 상관계수를
+구하시오. 두 데이터를 합치는 과정이 필요합니다.
+
+```{r t01c5, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+merged <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
+
+cor(merged$n_bills_lead, merged$net_worth, use = "complete.obs")
+```
+상관계수가 0에 가까우면 재산과 입법 활동 사이에 강한 선형 관계가 없다는 뜻입니다.
+하지만 선형 관계가 없다고 해서 아무 관계도 없다는 것은 아닙니다.
+튜토리얼 3에서 이 관계를 더 자세히 분석합니다.
+</details>
+
+### 문제 5 (도전)
+
+다음 질문에 답하는 분석을 처음부터 끝까지 직접 설계하시오:
+**"지역구 의원과 비례대표 의원의 입법 활동 패턴은 어떻게 다른가?"**
+
+비교할 지표를 최소 3개 선택하고, 결과를 해석하는 문장을 1-2줄 작성하시오.
+
+```{r t01c6, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>예시 답안</summary>
+```{r eval=FALSE}
+legislators %>%
+  filter(assembly == 22) %>%
+  group_by(district_type) %>%
+  summarise(
+    n = n(),
+    median_lead = median(n_bills_lead),
+    median_total = median(n_bills),
+    pct_women = round(sum(gender == "F") / n() * 100, 1),
+    avg_seniority = round(mean(seniority, na.rm = TRUE), 1)
+  )
+```
+이 결과를 보면, 지역구 의원과 비례대표 의원은 입법 활동량,
+여성 비율, 평균 선수 등에서 차이를 보일 수 있습니다.
+다만, 이 차이가 선출 방식 자체의 효과인지, 다른 요인(정당, 경력 등) 때문인지는
+이 표만으로는 판단할 수 없습니다.
+</details>
+
+
+## 02. 튜토리얼 2: ggplot2로 국회 데이터 시각화
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 데이터로 보는 한국 국회 - 누가, 얼마나, 어떻게 활동하는가?
+
+지난 튜토리얼에서 숫자 표로 데이터를 요약했습니다. 하지만 표만으로는
+분포의 형태, 시간적 추이, 그룹 간 차이를 한눈에 파악하기 어렵습니다.
+이 튜토리얼에서는 `ggplot2`로 데이터를 시각적으로 탐색합니다.
+
+배울 내용:
+
+- `ggplot2`의 기본 구조: **데이터 + 매핑(aes) + 기하(geom)**
+- 6가지 핵심 그래프: 막대, 히스토그램, 박스플롯, 산점도, 꺾은선, 면분할
+- 그래프를 읽기 좋게 다듬는 방법 (제목, 색상, 테마)
+
+---
+
+## 1. ggplot2의 기본 구조
+
+`ggplot2`는 **레이어를 쌓아 올리는** 방식으로 그래프를 만듭니다.
+모든 ggplot은 세 가지 요소로 시작합니다:
+
+1. **데이터** (`data`): 어떤 데이터프레임을 쓸 것인가?
+2. **매핑** (`aes`): 어떤 변수를 x축, y축, 색상 등에 대응시킬 것인가?
+3. **기하** (`geom_*`): 점, 선, 막대 등 어떤 형태로 그릴 것인가?
+
+```{r t02c7, eval=FALSE}
+# ggplot의 기본 구조 (이것은 실행하지 않아도 됩니다)
+ggplot(data = 데이터, aes(x = x변수, y = y변수)) +
+  geom_xxx()
+```
+
+`+` 기호로 레이어를 추가합니다.
+파이프(`%>%`)와 비슷하지만, ggplot 내부에서는 `+`를 씁니다.
+
+---
+
+## 2. 막대 그래프: 범주 비교
+
+**질문**: 22대 국회의 정당별 의석 분포는 어떠한가?
+
+```{r t02-bar-basic-8, eval=FALSE}
+legislators %>%
+  filter(assembly == 22) %>%
+  count(party) %>%
+  filter(n >= 3) %>%
+  ggplot(aes(x = reorder(party, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL,
+    y = "의원 수",
+    title = "22대 국회 정당별 의석 수"
+  )
+```
+
+코드를 한 줄씩 읽어봅시다:
+
+- `count(party)`: 정당별 의원 수를 세고
+- `filter(n >= 3)`: 3명 미만인 소수 정당은 제외
+- `aes(x = reorder(party, n), y = n)`: 의원 수 기준으로 정당을 정렬
+- `geom_col()`: 막대 그래프
+- `coord_flip()`: 가로 방향으로 뒤집기 (긴 정당명이 잘 보이도록)
+- `labs()`: 축 라벨과 제목
+
+### 쌓은 막대: 비율 비교
+
+정당별 성별 구성을 비교해봅시다.
+
+```{r t02-bar-stacked-9, eval=FALSE}
+legislators %>%
+  filter(assembly == 22,
+         party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  count(party, gender) %>%
+  ggplot(aes(x = party, y = n, fill = gender)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(
+    values = c("F" = "#E66101", "M" = "#5E3C99"),
+    labels = c("여성", "남성")
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = NULL, y = "비율", fill = "성별",
+    title = "주요 정당의 성별 구성 (22대)"
+  ) +
+  theme_minimal()
+```
+
+`position = "fill"`은 각 막대의 높이를 100%로 맞춰서 비율을 비교하기 좋게 합니다.
+`position = "dodge"`로 바꾸면 막대가 나란히 놓입니다. 직접 바꿔보세요.
+
+> **색상 선택 팁**: 범주가 2-3개일 때는 직접 색을 지정하는 것이 좋습니다.
+> 색각 이상(색맹)이 있는 사람도 구별할 수 있도록 주황-보라 같은 조합을
+> 사용합니다. 빨강-초록 조합은 피하세요.
+
+---
+
+## 3. 히스토그램: 분포 살펴보기
+
+**질문**: 국회의원의 재산은 어떻게 분포하는가?
+
+히스토그램은 연속형 변수의 **분포 형태**를 보여줍니다.
+데이터가 어디에 몰려 있는지, 극단값이 있는지 파악할 수 있습니다.
+
+```{r t02-hist-basic-10, eval=FALSE}
+ggplot(wealth, aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 50, fill = "coral", color = "white") +
+  labs(
+    x = "순자산 (10억 원)",
+    y = "빈도",
+    title = "국회의원 순자산 분포"
+  ) +
+  theme_minimal()
+```
+
+오른쪽으로 긴 꼬리가 보입니다. 대부분의 의원은 순자산이 낮은 쪽에 몰려 있지만,
+극소수의 매우 부유한 의원이 있어 분포를 오른쪽으로 끌어당깁니다.
+
+### 로그 변환: 치우친 분포를 다루는 방법
+
+이렇게 치우친 분포는 로그 스케일로 보면 구조가 더 잘 보입니다.
+
+```{r t02-hist-log-11, eval=FALSE}
+wealth %>%
+  filter(net_worth > 0) %>%
+  ggplot(aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 40, fill = "darkgreen", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    x = "순자산 (10억 원, 로그 스케일)",
+    y = "빈도",
+    title = "순자산의 로그 스케일 분포"
+  ) +
+  theme_minimal()
+```
+
+> **`scale_x_log10()`**: x축을 로그 스케일로 바꿉니다.
+> 로그 스케일에서 한 칸의 차이는 "몇 배"의 차이를 의미합니다.
+> 치우친 재산/소득 데이터에서 자주 쓰이는 기법입니다.
+
+### 밀도 곡선: 두 그룹 비교
+
+히스토그램을 겹치면 읽기 어렵습니다. 밀도 곡선은 그룹 비교에 더 적합합니다.
+
+```{r t02-density-compare-12, eval=FALSE}
+wealth %>%
+  filter(net_worth > 0) %>%
+  mutate(gangnam = ifelse(has_gangnam_property, "강남 보유", "미보유")) %>%
+  ggplot(aes(x = net_worth / 1e6, fill = gangnam)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("강남 보유" = "#D95F02", "미보유" = "#7570B3")) +
+  labs(
+    x = "순자산 (10억 원, 로그 스케일)",
+    y = "밀도",
+    fill = NULL,
+    title = "강남 부동산 보유 여부에 따른 순자산 분포"
+  ) +
+  theme_minimal()
+```
+
+두 분포의 위치가 다르다면, 강남 부동산을 가진 의원이 전반적으로 더 부유한
+경향이 있다는 것을 시각적으로 확인할 수 있습니다.
+
+---
+
+## 4. 박스플롯: 그룹 간 비교
+
+**질문**: 선수(당선 횟수)에 따라 재산 수준이 다른가?
+
+박스플롯은 중앙값, 사분위, 이상값을 한 눈에 보여주는 그래프입니다.
+
+```{r t02-boxplot-anatomy-13, echo=FALSE, fig.height=3, eval=FALSE}
+# 박스플롯 구조 설명용 그래프
+set.seed(42)
+df_box <- data.frame(x = "예시", y = rnorm(100, 50, 15))
+ggplot(df_box, aes(x, y)) +
+  geom_boxplot(fill = "lightblue", width = 0.4) +
+  annotate("text", x = 1.35, y = median(df_box$y), label = "중앙값 (50%)", size = 3.5) +
+  annotate("text", x = 1.35, y = quantile(df_box$y, 0.75), label = "3사분위 (75%)", size = 3.5) +
+  annotate("text", x = 1.35, y = quantile(df_box$y, 0.25), label = "1사분위 (25%)", size = 3.5) +
+  labs(x = NULL, y = "값", title = "박스플롯 읽는 법") +
+  theme_minimal()
+```
+
+- **상자**: 데이터의 중간 50%가 이 안에 있습니다 (1사분위 ~ 3사분위)
+- **가운데 선**: 중앙값
+- **수염**: 상자 밖으로 1.5배 IQR까지
+- **점**: 그보다 바깥에 있는 이상값
+
+```{r t02-boxplot-seniority-14, eval=FALSE}
+leg_w <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
+
+ggplot(leg_w, aes(x = factor(seniority), y = net_worth / 1e6)) +
+  geom_boxplot(fill = "lightblue", outlier.alpha = 0.3) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "순자산 (10억 원)",
+    title = "선수별 국회의원 순자산 분포 (22대)"
+  ) +
+  theme_minimal()
+```
+
+선수가 높을수록 재산이 많은 경향이 있나요?
+상자의 위치와 이상값의 분포를 비교해보세요.
+
+---
+
+## 5. 산점도: 두 변수의 관계
+
+**질문**: 선수와 입법 생산성 사이에는 어떤 관계가 있는가?
+
+산점도는 두 연속형 변수 사이의 관계를 보여줍니다.
+
+```{r t02-scatter-basic-15, eval=FALSE}
+legislators %>%
+  filter(assembly == 22) %>%
+  ggplot(aes(x = seniority, y = n_bills_lead)) +
+  geom_jitter(width = 0.2, alpha = 0.5, color = "steelblue") +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "대표발의 건수",
+    title = "선수와 입법 생산성 (22대)"
+  ) +
+  theme_minimal()
+```
+
+> **`geom_jitter()`**: `geom_point()` 대신 사용하면 같은 위치에 겹치는 점들을
+> 살짝 흔들어 놓아 분포를 더 잘 볼 수 있습니다. `width`로 흔들림 정도를 조절합니다.
+> **`alpha`**: 투명도 (0 = 완전 투명, 1 = 불투명). 점이 겹치는 영역을 확인하는 데 유용합니다.
+
+### 추세선과 그룹 구분 추가하기
+
+```{r t02-scatter-groups-16, eval=FALSE}
+legislators %>%
+  filter(assembly == 22) %>%
+  ggplot(aes(x = seniority, y = n_bills_lead, color = gender)) +
+  geom_jitter(width = 0.2, alpha = 0.5, size = 2) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("F" = "#E66101", "M" = "#5E3C99"),
+    labels = c("여성", "남성")
+  ) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "대표발의 건수",
+    color = "성별",
+    title = "선수와 입법 생산성: 성별 비교 (22대)"
+  ) +
+  theme_minimal()
+```
+
+`geom_smooth(method = "lm")`은 직선 추세선을 추가합니다.
+두 선의 기울기가 다르다면, 선수의 효과가 성별에 따라 다를 수 있다는
+신호입니다 (이것을 **상호작용 효과**라고 하며, 튜토리얼 3에서 다룹니다).
+
+---
+
+## 6. 꺾은선 그래프: 시간에 따른 변화
+
+**질문**: 법안 발의 추이는 어떻게 변해왔는가?
+
+시간 축이 있는 데이터에서 추이(trend)를 보여줄 때 사용합니다.
+
+```{r t02-line-bills-17, eval=FALSE}
+bills %>%
+  mutate(month = as.Date(format(propose_date, "%Y-%m-01"))) %>%
+  count(month) %>%
+  filter(!is.na(month)) %>%
+  ggplot(aes(x = month, y = n)) +
+  geom_line(color = "steelblue", linewidth = 0.8) +
+  geom_point(size = 0.8, color = "steelblue") +
+  labs(
+    x = NULL,
+    y = "월별 발의 건수",
+    title = "월별 법안 발의 건수 (20-22대)"
+  ) +
+  theme_minimal()
+```
+
+대수가 바뀌는 시점(4년마다)에 급격한 변화가 보이나요?
+국회 임기 시작과 끝 무렵에 발의 패턴이 어떻게 달라지는지 관찰해보세요.
+
+### 여당-야당 비교: 초당적 협력 추이
+
+```{r t02-line-seminar-18, eval=FALSE}
+seminars %>%
+  filter(year >= 2016) %>%
+  group_by(year, is_governing) %>%
+  summarise(avg_cross = mean(cross_party_ratio, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
+  ggplot(aes(x = year, y = avg_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "연도",
+    y = "초당적 세미나 비율",
+    color = NULL,
+    title = "여당 vs 야당의 초당적 협력 추이"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. facet_wrap(): 소그룹 나란히 비교
+
+**질문**: 대수별로 의원들의 발의 활동 분포가 어떻게 다른가?
+
+같은 유형의 그래프를 여러 그룹으로 나눠서 나란히 보여주는 것을
+**면분할(faceting)**이라 합니다. 그룹 간 패턴을 비교하기에 매우 효과적입니다.
+
+```{r t02-facet-bills-19, eval=FALSE}
+legislators %>%
+  ggplot(aes(x = n_bills_lead)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ assembly, ncol = 3) +
+  labs(
+    x = "대표발의 건수",
+    y = "빈도",
+    title = "대수별 의원 대표발의 건수 분포"
+  ) +
+  theme_minimal()
+```
+
+### 자산 구성의 시간 변화
+
+```{r t02-facet-wealth-20, eval=FALSE}
+wealth %>%
+  select(year, real_estate, deposits, stocks) %>%
+  group_by(year) %>%
+  summarise(across(everything(), \(x) median(x / 1e6, na.rm = TRUE))) %>%
+  pivot_longer(-year, names_to = "asset_type", values_to = "median_bn") %>%
+  mutate(asset_type = case_match(asset_type,
+    "real_estate" ~ "부동산",
+    "deposits"    ~ "예금",
+    "stocks"      ~ "주식"
+  )) %>%
+  ggplot(aes(x = year, y = median_bn, color = asset_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "연도",
+    y = "중앙값 (10억 원)",
+    color = "자산 유형",
+    title = "국회의원 자산 구성 변화"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 8. 그래프 다듬기: 기본에서 완성으로
+
+같은 데이터라도 그래프를 어떻게 다듬느냐에 따라 전달력이 크게 달라집니다.
+기본 그래프에서 출발해 단계적으로 개선해봅시다.
+
+### Step 1: 기본 (최소한의 코드)
+
+```{r t02-polish-step1-21, eval=FALSE}
+df_party <- legislators %>%
+  filter(assembly == 22,
+         party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  group_by(party) %>%
+  summarise(median_bills = median(n_bills_lead))
+
+ggplot(df_party, aes(x = party, y = median_bills)) +
+  geom_col()
+```
+
+읽을 수는 있지만, 제목도 없고 색도 없어서 어떤 이야기를 하려는지 불분명합니다.
+
+### Step 2: 정보 추가 (제목, 색상, 라벨)
+
+```{r t02-polish-step2-22, eval=FALSE}
+party_colors <- c(
+  "국민의힘" = "#E61E2B",
+  "더불어민주당" = "#004EA2",
+  "조국혁신당" = "#00B0F0"
+)
+
+ggplot(df_party, aes(x = reorder(party, -median_bills),
+                     y = median_bills, fill = party)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  scale_fill_manual(values = party_colors) +
+  labs(
+    x = NULL,
+    y = "대표발의 건수 (중앙값)",
+    title = "22대 국회 주요 정당별 입법 생산성",
+    caption = "출처: assemblykor 패키지 (국회 공공데이터)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+### Step 3: 값 표시 추가
+
+```{r t02-polish-step3-23, eval=FALSE}
+ggplot(df_party, aes(x = reorder(party, -median_bills),
+                     y = median_bills, fill = party)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = median_bills), vjust = -0.5, size = 4.5) +
+  scale_fill_manual(values = party_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    x = NULL,
+    y = "대표발의 건수 (중앙값)",
+    title = "22대 국회 주요 정당별 입법 생산성",
+    caption = "출처: assemblykor 패키지 (국회 공공데이터)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+> **핵심**: 좋은 그래프는 (1) 무엇을 보여주는지 제목으로 명확히 하고,
+> (2) 축과 범례가 직관적이며, (3) 불필요한 요소를 제거합니다.
+
+---
+
+## 9. 유용한 테마 비교
+
+ggplot2에는 여러 기본 테마가 있습니다. 같은 그래프에 다른 테마를 적용해봅시다.
+
+```{r t02-themes-24, fig.height=8, eval=FALSE}
+base_plot <- legislators %>%
+  filter(assembly == 22) %>%
+  ggplot(aes(x = seniority, y = n_bills_lead)) +
+  geom_jitter(width = 0.2, alpha = 0.4, color = "steelblue") +
+  labs(x = "선수", y = "대표발의 건수")
+
+library(patchwork)
+
+(base_plot + ggtitle("theme_gray() (기본)")) +
+(base_plot + theme_minimal() + ggtitle("theme_minimal()")) +
+(base_plot + theme_classic() + ggtitle("theme_classic()")) +
+(base_plot + theme_bw() + ggtitle("theme_bw()")) +
+  plot_layout(ncol = 2)
+```
+
+> **`patchwork` 패키지**: 여러 그래프를 `+`로 합쳐서 하나의 그림으로 만듭니다.
+> `plot_layout()`으로 배치를 조정합니다.
+> 설치: `install.packages("patchwork")`
+
+---
+
+## 그래프 선택 가이드
+
+어떤 상황에 어떤 그래프가 적합한지 정리합니다.
+
+| 알고 싶은 것 | 추천 그래프 | geom |
+|-------------|------------|------|
+| 범주별 크기 비교 | 막대 그래프 | `geom_col()` |
+| 연속 변수의 분포 | 히스토그램 / 밀도 | `geom_histogram()` / `geom_density()` |
+| 그룹 간 분포 비교 | 박스플롯 | `geom_boxplot()` |
+| 두 변수의 관계 | 산점도 | `geom_point()` / `geom_jitter()` |
+| 시간에 따른 변화 | 꺾은선 | `geom_line()` |
+| 소그룹 패턴 비교 | 면분할 | `facet_wrap()` |
+| 비율 구성 | 쌓은 막대 | `geom_col(position = "fill")` |
+
+다음 튜토리얼에서는 이 시각화 기법을 **회귀분석** 결과를 표현하는 데 활용합니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+22대 국회 상임위원회별 법안 수를 막대그래프로 그리시오 (상위 10개만).
+
+```{r t02c25, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+bills %>%
+  filter(assembly == 22) %>%
+  count(committee, sort = TRUE) %>%
+  head(10) %>%
+  ggplot(aes(x = reorder(committee, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "법안 수",
+       title = "22대 국회 상임위원회별 법안 수 (상위 10개)") +
+  theme_minimal()
+```
+</details>
+
+### 문제 2 (기초)
+
+`wealth` 데이터에서 서울 부동산 보유 여부(`has_seoul_property`)에 따른
+부동산 자산(`real_estate`) 분포를 박스플롯으로 비교하시오.
+(힌트: x축을 `has_seoul_property`, y축을 `real_estate / 1e6`으로)
+
+```{r t02c26, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+wealth %>%
+  filter(year == 2024) %>%
+  mutate(seoul = ifelse(has_seoul_property, "보유", "미보유")) %>%
+  ggplot(aes(x = seoul, y = real_estate / 1e6)) +
+  geom_boxplot(fill = c("lightblue", "salmon")) +
+  labs(x = "서울 부동산", y = "부동산 자산 (10억 원)",
+       title = "서울 부동산 보유 여부별 부동산 자산 분포") +
+  theme_minimal()
+```
+</details>
+
+### 문제 3 (응용)
+
+`seminars` 데이터에서 선수(`seniority`)별 세미나 개최 건수의 산점도를 그리고,
+추세선을 추가하시오. 어떤 경향이 보이는가?
+
+```{r t02c27, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+seminars %>%
+  ggplot(aes(x = seniority, y = n_seminars)) +
+  geom_jitter(width = 0.2, alpha = 0.3, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "선수", y = "세미나 개최 건수",
+       title = "선수와 세미나 활동의 관계") +
+  theme_minimal()
+```
+</details>
+
+### 문제 4 (응용)
+
+대수(`assembly`)별로 `facet_wrap()`을 사용하여 의원들의 대표발의 건수
+히스토그램을 나란히 그리시오. 대수에 따라 분포의 형태가 달라지는가?
+
+```{r t02c28, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+legislators %>%
+  ggplot(aes(x = n_bills_lead)) +
+  geom_histogram(bins = 30, fill = "coral", color = "white") +
+  facet_wrap(~ assembly) +
+  labs(x = "대표발의 건수", y = "빈도",
+       title = "대수별 대표발의 분포") +
+  theme_minimal()
+```
+</details>
+
+### 문제 5 (도전)
+
+오늘 배운 시각화 기법 중 **두 가지 이상**을 조합하여 흥미로운 패턴을 발견하고,
+제목과 축 라벨을 포함한 완성된 그래프를 만드시오.
+예를 들어: 정당별 + 성별 산점도를 `facet_wrap`으로 나누거나,
+시계열에 강조 영역(`annotate`)을 추가하는 등.
+
+그래프 아래에 발견한 패턴을 1-2문장으로 설명하시오.
+
+
+## 03. 튜토리얼 3: 회귀분석
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 국회의원의 재산은 입법 활동에 영향을 미치는가?
+
+튜토리얼 1에서 재산과 발의 건수의 상관계수를 구했습니다.
+하지만 상관계수만으로는 "다른 조건이 같을 때에도 관계가 유지되는가?"를
+알 수 없습니다. 회귀분석은 이 질문에 답하는 도구입니다.
+
+배울 내용:
+
+- `lm()`으로 단순/다중 회귀분석을 실행하고 결과를 읽는 방법
+- 통제변수의 역할: 왜 변수를 추가하면 계수가 바뀌는가?
+- 로그 변환: 치우친 변수를 다루는 방법
+- 상호작용 항: 효과가 그룹마다 다를 때
+- 회귀 결과를 시각화하는 방법
+
+---
+
+## 1. 데이터 준비
+
+22대 의원의 인적 정보와 2024년 재산 데이터를 합칩니다.
+
+```{r eval=FALSE}
+df <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(
+    wealth %>% filter(year == 2024),
+    by = "member_id"
+  )
+
+cat("분석 대상:", nrow(df), "명\n")
+```
+
+---
+
+## 2. 회귀분석이란?
+
+**핵심 아이디어**: "X가 한 단위 변할 때, Y는 평균적으로 얼마나 변하는가?"
+
+산점도에 직선을 긋는 것이 회귀분석의 기본입니다. 이 직선은
+데이터 점들과의 거리(오차)를 최소화하는 **최적의 직선**입니다.
+
+$$Y = \beta_0 + \beta_1 X + \epsilon$$
+
+- $\beta_0$ (절편): X가 0일 때 Y의 예측값
+- $\beta_1$ (기울기): X가 1 증가할 때 Y의 평균 변화량
+- $\epsilon$ (오차): 모형이 설명하지 못하는 부분
+
+### 시각적으로 이해하기
+
+```{r t03-ols-visual-29, eval=FALSE}
+ggplot(df, aes(x = net_worth / 1e6, y = n_bills_lead)) +
+  geom_point(alpha = 0.4, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    x = "순자산 (10억 원)",
+    y = "대표발의 건수",
+    title = "순자산과 입법 활동의 관계",
+    subtitle = "빨간 선 = 회귀 직선, 회색 영역 = 95% 신뢰구간"
+  ) +
+  theme_minimal()
+```
+
+점들이 직선 주위에 넓게 퍼져 있다면, 순자산만으로는 발의 건수를
+잘 설명하지 못한다는 뜻입니다.
+
+---
+
+## 3. 단순회귀 실행하기
+
+```{r t03-simple-ols-30, eval=FALSE}
+m1 <- lm(n_bills_lead ~ net_worth, data = df)
+summary(m1)
+```
+
+### 결과 읽는 법
+
+`summary()` 출력에서 중요한 부분:
+
+| 항목 | 위치 | 의미 |
+|------|------|------|
+| `Estimate` | Coefficients 테이블 | 추정된 계수 ($\hat{\beta}$) |
+| `Std. Error` | Coefficients 테이블 | 계수의 불확실성 |
+| `Pr(>|t|)` | Coefficients 테이블 | p-value (0.05 미만이면 통계적으로 유의) |
+| `R-squared` | 하단 | 모형이 설명하는 분산의 비율 (0~1) |
+
+```{r t03-interpret-m1-31, eval=FALSE}
+cat("net_worth 계수:", round(coef(m1)["net_worth"], 6), "\n")
+cat("p-value:", round(summary(m1)$coefficients["net_worth", 4], 4), "\n")
+cat("R-squared:", round(summary(m1)$r.squared, 4), "\n")
+```
+
+R-squared가 매우 낮다면, 순자산 하나로는 발의 건수의 변동을
+거의 설명하지 못한다는 뜻입니다.
+
+> **p-value에 대해**: p-value가 작다는 것은 "이 관계가 우연히 나타났을
+> 가능성이 낮다"는 뜻이지, "관계가 크다"는 뜻이 아닙니다.
+> 계수의 크기(실질적 의미)와 통계적 유의성은 별개입니다.
+
+---
+
+## 4. 로그 변환: 치우친 변수 다루기
+
+재산 데이터는 대부분 오른쪽으로 치우져 있습니다 (소수의 극부자가 평균을 끌어올림).
+이런 경우 로그 변환을 하면 관계를 더 잘 포착할 수 있습니다.
+
+```{r t03-log-why-32, fig.height=3.5, eval=FALSE}
+library(patchwork)
+
+p1 <- ggplot(df, aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 40, fill = "steelblue", color = "white") +
+  labs(x = "순자산 (10억 원)", y = "빈도", title = "원래 스케일") +
+  theme_minimal()
+
+p2 <- df %>%
+  filter(net_worth > 0) %>%
+  ggplot(aes(x = log(net_worth))) +
+  geom_histogram(bins = 40, fill = "coral", color = "white") +
+  labs(x = "log(순자산)", y = "빈도", title = "로그 변환 후") +
+  theme_minimal()
+
+p1 + p2
+```
+
+로그 변환 후 분포가 훨씬 대칭적입니다.
+
+```{r t03-log-model-33, eval=FALSE}
+df <- df %>%
+  mutate(log_nw = log(pmax(net_worth, 1)))  # 0 이하 값 방지
+
+m2 <- lm(n_bills_lead ~ log_nw, data = df)
+summary(m2)
+```
+
+> **해석 방법**: 로그 변환된 변수의 계수는 "X가 1% 증가할 때 Y가 β/100 변화"로
+> 해석합니다. 정확히는 log(X)가 1 증가하면 Y가 β 변화이므로,
+> X가 약 2.7배(= e배) 될 때 Y가 β만큼 변합니다.
+
+---
+
+## 5. 다중회귀: 다른 요인 통제하기
+
+단순회귀의 한계: 재산이 높은 의원이 발의를 더 많이 한다고 해도,
+그것이 재산 때문인지, 아니면 재산이 높은 의원이 동시에 경험이 많은
+(선수가 높은) 의원이기 때문인지 구분할 수 없습니다.
+
+**다중회귀**는 여러 변수를 동시에 넣어, 각 변수의 **독립적 효과**를 추정합니다.
+
+$$Y = \beta_0 + \beta_1 \text{log\_nw} + \beta_2 \text{gender} + \beta_3 \text{seniority} + \beta_4 \text{district\_type} + \epsilon$$
+
+```{r t03-multiple-34, eval=FALSE}
+m3 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type,
+         data = df)
+summary(m3)
+```
+
+### 계수가 바뀌었나?
+
+```{r t03-coef-compare-35, eval=FALSE}
+data.frame(
+  Model = c("단순회귀 (M2)", "다중회귀 (M3)"),
+  log_nw_coef = c(round(coef(m2)["log_nw"], 3),
+                  round(coef(m3)["log_nw"], 3)),
+  log_nw_p = c(round(summary(m2)$coefficients["log_nw", 4], 4),
+               round(summary(m3)$coefficients["log_nw", 4], 4)),
+  R_squared = c(round(summary(m2)$r.squared, 3),
+                round(summary(m3)$r.squared, 3))
+)
+```
+
+통제변수를 추가했을 때 재산의 계수가 줄어들었다면,
+처음에 보였던 재산의 효과 중 일부가 사실 성별, 선수, 선거구 유형의
+차이에 의한 것이었음을 의미합니다. 이것을 **교란(confounding)**이라 합니다.
+
+---
+
+## 6. 범주형 변수와 기준 범주
+
+정당을 모형에 추가하면 어떤 일이 생기는지 봅시다.
+
+```{r t03-categorical-36, eval=FALSE}
+# 주요 3당만 (소수 정당은 표본 부족)
+df_3party <- df %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당"))
+
+m4 <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type + party,
+         data = df_3party)
+summary(m4)
+```
+
+R은 범주형 변수를 자동으로 **더미 변수**로 변환합니다.
+하나의 범주가 **기준(reference)**이 되고, 나머지 범주의 계수는
+"기준 대비 차이"를 나타냅니다.
+
+```{r eval=FALSE}
+# 기준 범주 확인
+cat("기준 정당:", levels(factor(df_3party$party))[1])
+```
+
+기준 범주를 바꾸고 싶다면:
+
+```{r t03-relevel-37, eval=FALSE}
+df_3party$party <- relevel(factor(df_3party$party), ref = "국민의힘")
+m4b <- lm(n_bills_lead ~ log_nw + gender + seniority + district_type + party,
+          data = df_3party)
+summary(m4b)
+```
+
+> **기준 범주가 바뀌어도 모형의 설명력은 같습니다.**
+> 달라지는 것은 각 범주의 계수뿐입니다.
+
+---
+
+## 7. 상호작용 항: 효과가 그룹마다 다를 때
+
+**질문**: 재산의 효과가 남성과 여성에게 같은가?
+
+상호작용 항(`*`)은 두 변수의 조합 효과를 추정합니다.
+
+```{r t03-interaction-38, eval=FALSE}
+m5 <- lm(n_bills_lead ~ log_nw * gender + seniority + district_type,
+         data = df)
+summary(m5)
+```
+
+`log_nw:genderM`이 상호작용 항입니다.
+
+- 유의미하다면: 재산의 효과가 성별에 따라 다르다
+- 유의미하지 않다면: 재산의 효과가 성별에 관계없이 비슷하다
+
+### 상호작용 시각화
+
+```{r t03-interaction-plot-39, eval=FALSE}
+ggplot(df, aes(x = log_nw, y = n_bills_lead, color = gender)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("F" = "#E66101", "M" = "#5E3C99"),
+    labels = c("여성", "남성")
+  ) +
+  labs(
+    x = "log(순자산)",
+    y = "대표발의 건수",
+    color = "성별",
+    title = "재산과 발의 활동: 성별 상호작용"
+  ) +
+  theme_minimal()
+```
+
+두 선의 기울기가 비슷하면 상호작용이 없는 것이고,
+기울기가 다르면 상호작용이 있는 것입니다.
+
+---
+
+## 8. 회귀 결과 시각화
+
+### 계수 플롯 (Coefficient Plot)
+
+회귀 결과를 표가 아닌 그래프로 보여주면 더 직관적입니다.
+
+```{r t03-coef-plot-40, eval=FALSE}
+# m3의 계수와 신뢰구간 추출
+coef_df <- broom::tidy(m3, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term = case_match(term,
+      "log_nw" ~ "log(순자산)",
+      "genderM" ~ "남성 (vs 여성)",
+      "seniority" ~ "선수",
+      "district_typeproportional" ~ "비례대표 (vs 지역구)"
+    )
+  )
+
+ggplot(coef_df, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high),
+                  color = "steelblue", size = 0.8) +
+  labs(
+    x = "추정 계수 (95% 신뢰구간)",
+    y = NULL,
+    title = "대표발의 건수의 결정 요인 (다중회귀)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+- 신뢰구간이 0을 포함하면 통계적으로 유의하지 않음
+- 신뢰구간이 0의 왼쪽이면 음의 효과, 오른쪽이면 양의 효과
+- 구간이 좁을수록 추정이 정밀함
+
+> **`broom` 패키지**: `tidy()`는 회귀 결과를 깔끔한 데이터프레임으로 변환합니다.
+> 시각화나 모형 비교에 매우 편리합니다.
+> 설치: `install.packages("broom")`
+
+---
+
+## 9. 모형 진단
+
+회귀분석은 몇 가지 가정에 기반합니다. 이 가정이 심하게 위반되면
+결과를 신뢰하기 어렵습니다. 진단 그래프로 확인해봅시다.
+
+```{r t03-diagnostics-41, fig.height=8, eval=FALSE}
+par(mfrow = c(2, 2))
+plot(m3)
+```
+
+| 그래프 | 확인하는 것 | 좋은 신호 |
+|--------|-----------|----------|
+| Residuals vs Fitted | 등분산성 | 수평 띠, 패턴 없음 |
+| Q-Q Plot | 오차의 정규성 | 점이 대각선 위에 놓임 |
+| Scale-Location | 등분산성 (재확인) | 수평 추세선 |
+| Residuals vs Leverage | 영향력 큰 관측치 | 극단적으로 떨어진 점 없음 |
+
+대부분의 사회과학 데이터에서 가정이 완벽히 충족되지는 않습니다.
+중요한 것은 **심각한 위반**이 있는지 확인하는 것입니다.
+
+---
+
+## 10. 결과 비교 정리
+
+여러 모형의 결과를 나란히 비교합니다.
+
+```{r t03-results-table-42, eval=FALSE}
+models <- list(m1, m2, m3)
+results <- data.frame(
+  Model = c("M1: 원래 스케일", "M2: 로그 변환", "M3: 통제변수 추가"),
+  Key_var = c("net_worth", "log(net_worth)", "log(net_worth)"),
+  Coef = sapply(models, \(m) round(coef(m)[2], 4)),
+  SE = sapply(models, \(m) round(summary(m)$coef[2, 2], 4)),
+  p = sapply(models, \(m) round(summary(m)$coef[2, 4], 4)),
+  R2 = sapply(models, \(m) round(summary(m)$r.squared, 3)),
+  N = sapply(models, \(m) nobs(m))
+)
+print(results, row.names = FALSE)
+```
+
+통제변수를 추가했을 때 R-squared가 높아지고, 재산의 계수가 변하는 패턴을
+관찰해보세요. 이것이 **교란 변수 통제**의 효과입니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+1. **단순회귀**: 하나의 변수로 결과를 예측
+2. **로그 변환**: 치우친 변수를 대칭적으로 만들기
+3. **다중회귀**: 여러 변수를 동시에 통제하여 독립적 효과 추정
+4. **범주형 변수**: 자동으로 더미 변수 생성, 기준 범주 이해
+5. **상호작용 항**: 효과가 그룹마다 다른지 검정
+6. **시각화**: 계수 플롯으로 결과를 직관적으로 전달
+7. **모형 진단**: 가정 위반 여부 확인
+
+다음 튜토리얼에서는 **패널 데이터**를 다룹니다. 같은 의원을
+여러 시점에서 관찰할 때, 관찰되지 않는 개인 특성을 통제하는
+**고정효과(fixed effects)** 모형을 배웁니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+부동산 자산(`real_estate`)을 독립변수로 사용하여 대표발의 건수를 예측하는
+회귀모형을 추정하시오. 순자산(`net_worth`)을 사용했을 때와 결과가 어떻게 다른가?
+
+```{r t03c43, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+m_re <- lm(n_bills_lead ~ real_estate, data = df)
+summary(m_re)
+cat("\n순자산 R2:", round(summary(m1)$r.squared, 4),
+    "\n부동산 R2:", round(summary(m_re)$r.squared, 4))
+```
+</details>
+
+### 문제 2 (기초)
+
+강남 부동산 보유 여부(`has_gangnam_property`)를 통제변수로 추가한 다중회귀 모형을
+추정하시오. 이 변수가 통계적으로 유의미한가?
+
+```{r t03c44, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+m_gangnam <- lm(n_bills_lead ~ log_nw + has_gangnam_property + gender +
+                  seniority + district_type, data = df)
+summary(m_gangnam)
+```
+</details>
+
+### 문제 3 (응용)
+
+`seminars` 데이터를 사용하여, 세미나 개최 건수(`n_seminars`)가 초당적 협력
+비율(`cross_party_ratio`)에 미치는 영향을 분석하시오. 여당 여부(`is_governing`)와
+선수(`seniority`)를 통제하시오. 결과를 계수 플롯으로 시각화하시오.
+
+```{r t03c45, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+data(seminars)
+m_sem <- lm(cross_party_ratio ~ n_seminars + is_governing + seniority,
+            data = seminars)
+summary(m_sem)
+
+broom::tidy(m_sem, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high), color = "steelblue") +
+  labs(x = "추정 계수 (95% CI)", y = NULL,
+       title = "초당적 협력의 결정 요인") +
+  theme_minimal()
+```
+</details>
+
+### 문제 4 (도전)
+
+종속변수를 로그 변환한 log-log 모형(`log(n_bills_lead) ~ log_nw`)을 추정하고,
+계수의 의미를 **탄력성(elasticity)**으로 해석하시오.
+(힌트: log-log 모형에서 계수는 "X가 1% 증가할 때 Y가 β% 변화"로 해석됩니다.)
+
+```{r t03c46, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+df_log <- df %>% filter(n_bills_lead > 0, net_worth > 0)
+m_loglog <- lm(log(n_bills_lead) ~ log(net_worth), data = df_log)
+summary(m_loglog)
+cat("\n해석: 순자산이 1% 증가하면, 대표발의 건수가",
+    round(coef(m_loglog)[2], 3), "% 변화합니다.")
+```
+</details>
+
+
+## 04. 튜토리얼 4: 패널 데이터와 고정효과
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 여당이 되면 초당적 협력이 줄어드는가?
+
+튜토리얼 3에서 배운 회귀분석은 한 시점의 데이터를 분석했습니다.
+하지만 같은 의원을 여러 시점에 걸쳐 관찰하면, 개인 특성을 통제하면서
+**변화**의 효과를 추정할 수 있습니다. 이것이 **패널 데이터** 분석입니다.
+
+배울 내용:
+
+- 패널 데이터의 구조 (개체 x 시간)
+- 왜 합동 OLS로는 부족한가: 빠진 변수 편의 (omitted variable bias)
+- 고정효과(Fixed Effects) 모형: 관찰되지 않는 개인 특성 통제
+- 양방향 고정효과 (Two-Way FE): 시간 추세까지 통제
+- 이중차분법(DiD)의 기본 아이디어
+
+---
+
+## 1. 패널 데이터란?
+
+**패널 데이터**는 같은 대상(개체)을 여러 시점에 걸쳐 반복 관찰한 데이터입니다.
+횡단면 데이터(한 시점, 여러 개체)와 시계열 데이터(한 개체, 여러 시점)의
+장점을 결합한 것입니다.
+
+`wealth` 데이터는 전형적인 패널입니다:
+
+```{r t04-panel-structure-47, eval=FALSE}
+cat("총 관측치:", nrow(wealth), "\n")
+cat("의원 수:", n_distinct(wealth$member_id), "\n")
+cat("연도 범위:", paste(range(wealth$year), collapse = "-"), "\n")
+cat("연도 수:", n_distinct(wealth$year), "\n")
+```
+
+한 의원이 여러 해에 걸쳐 관측됩니다:
+
+```{r t04-panel-balance-48, eval=FALSE}
+# 의원별 관측 횟수 분포
+obs_per_member <- wealth %>%
+  count(member_id, name = "n_obs")
+
+table(obs_per_member$n_obs)
+```
+
+모든 의원이 같은 횟수만큼 관측되지는 않습니다.
+이렇게 관측 횟수가 다른 패널을 **불균형 패널(unbalanced panel)**이라 합니다.
+
+---
+
+## 2. Between vs Within: 패널 데이터의 핵심 구분
+
+패널 데이터의 변동(variation)은 두 가지로 나뉩니다:
+
+- **Between (개체 간)**: 부자 의원 vs 그렇지 않은 의원 - 수준의 차이
+- **Within (개체 내)**: 같은 의원의 재산이 시간에 따라 어떻게 변하는가 - 변화
+
+이 구분이 왜 중요한지, 그래프로 봅시다.
+
+```{r t04-between-within-49, eval=FALSE}
+# 5명의 의원을 선택해서 시간에 따른 변화를 관찰
+set.seed(42)
+sample_ids <- wealth %>%
+  count(member_id) %>%
+  filter(n >= 6) %>%
+  slice_sample(n = 5) %>%
+  pull(member_id)
+
+wealth %>%
+  filter(member_id %in% sample_ids) %>%
+  ggplot(aes(x = year, y = net_worth / 1e6,
+             color = name, group = member_id)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "연도", y = "순자산 (10억 원)", color = "의원",
+    title = "같은 의원의 순자산 변화 추적 (5명 표본)"
+  ) +
+  theme_minimal()
+```
+
+- 선의 **높이 차이** = between variation (부자/비부자)
+- 선의 **기울기** = within variation (시간에 따른 변화)
+
+**고정효과 모형**은 between을 무시하고 within 변동만 사용합니다.
+"같은 사람 안에서 무엇이 변했는가?"만 보는 것입니다.
+
+---
+
+## 3. 왜 합동 OLS로는 부족한가?
+
+합동 OLS (Pooled OLS)는 개체 간 차이를 무시합니다.
+
+```{r t04-pooled-50, eval=FALSE}
+m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
+summary(m_pooled)
+```
+
+**문제**: 재산이 많은 의원은 예금도, 부동산도 모두 많을 수 있습니다.
+관찰되지 않는 개인 특성 (가문 배경, 사업 능력, 정치 경력 등)이
+두 변수 모두에 영향을 주면, OLS 계수에 **편의(bias)**가 생깁니다.
+
+이것을 **빠진 변수 편의(omitted variable bias)**라 합니다.
+관찰할 수 없는 변수 때문에 인과 관계를 잘못 추정하는 것입니다.
+
+---
+
+## 4. 고정효과 모형
+
+고정효과(FE) 모형은 각 개체에 대한 더미 변수를 추가하여,
+**시간에 따라 변하지 않는 모든 개인 특성**을 자동으로 통제합니다.
+
+`fixest` 패키지의 `feols()`를 사용합니다.
+
+```{r t04-fe-51, eval=FALSE}
+if (!requireNamespace("fixest", quietly = TRUE)) {
+  install.packages("fixest")
+}
+library(fixest)
+
+m_fe <- feols(deposits ~ real_estate + n_properties | member_id,
+              data = wealth)
+summary(m_fe)
+```
+
+`| member_id`가 고정효과를 지정하는 부분입니다.
+
+### 어떻게 작동하는가?
+
+고정효과 모형은 내부적으로 이렇게 작동합니다:
+
+1. 각 의원의 **개인 평균**을 계산
+2. 모든 관측값에서 개인 평균을 **빼기** (demeaning)
+3. 평균 차감된 데이터로 OLS 실행
+
+결과적으로, "같은 의원 내에서 부동산이 늘었을 때 예금이 어떻게 변했는가?"를
+추정합니다. 개인 간 차이는 완전히 제거됩니다.
+
+### 합동 OLS vs 고정효과 비교
+
+```{r t04-compare-52, eval=FALSE}
+etable(m_pooled, m_fe,
+       headers = c("합동 OLS", "개체 FE"),
+       notes = "주: 괄호 안은 표준오차")
+```
+
+계수가 얼마나 달라졌나요? 차이가 크다면, 개인 특성이 교란 요인으로
+작용하고 있었다는 증거입니다.
+
+---
+
+## 5. 양방향 고정효과 (Two-Way FE)
+
+개체 고정효과는 개인 특성을 통제하지만, **모든 의원에게 공통으로
+작용하는 시간 효과** (예: 부동산 가격 상승, 경기 변동)는 통제하지 않습니다.
+
+연도 고정효과를 추가하면 이 문제를 해결합니다.
+
+```{r t04-twfe-53, eval=FALSE}
+m_twfe <- feols(deposits ~ real_estate + n_properties | member_id + year,
+                data = wealth)
+summary(m_twfe)
+```
+
+`| member_id + year`는 의원 고정효과와 연도 고정효과를 동시에 적용합니다.
+
+```{r t04-compare-all-54, eval=FALSE}
+etable(m_pooled, m_fe, m_twfe,
+       headers = c("합동 OLS", "개체 FE", "양방향 FE"),
+       notes = "주: 괄호 안은 표준오차")
+```
+
+세 모형의 계수를 비교해보세요. 고정효과를 추가할수록 계수가 어떻게 변하는지,
+그리고 그 이유가 무엇인지 생각해봅시다.
+
+---
+
+## 6. 이중차분법 (Difference-in-Differences)
+
+### 기본 아이디어
+
+이중차분법(DiD)은 **처치(treatment)가 발생하기 전후**의 변화를
+**처치를 받은 그룹과 받지 않은 그룹** 사이에서 비교합니다.
+
+핵심 질문: "여당이 되면 초당적 협력이 줄어드는가?"
+
+`seminars` 데이터에서 `is_governing` (여당 여부)이 자연스러운 처치 변수입니다.
+같은 의원이 정권 교체에 따라 여당에서 야당으로, 또는 반대로 전환됩니다.
+
+```{r t04-did-prep-55, eval=FALSE}
+sem_panel <- seminars %>%
+  filter(n_seminars > 0, year >= 2016)
+
+cat("관측치:", nrow(sem_panel), "\n")
+cat("의원 수:", n_distinct(sem_panel$name), "\n")
+
+# 여당-야당 전환 경험 의원 수 (switchers)
+switchers <- sem_panel %>%
+  group_by(name) %>%
+  summarise(
+    ever_gov = any(is_governing),
+    ever_opp = any(!is_governing)
+  ) %>%
+  summarise(n_switchers = sum(ever_gov & ever_opp))
+
+cat("여당/야당 모두 경험한 의원:", switchers$n_switchers, "명\n")
+```
+
+이 "전환자(switchers)"들이 고정효과 모형에서 식별(identification)의
+핵심입니다. 항상 여당이었거나 항상 야당이었던 의원은 변화가 없으므로,
+고정효과 모형에서 기여하지 않습니다.
+
+### DiD 시각화
+
+```{r t04-did-visual-56, eval=FALSE}
+sem_panel %>%
+  group_by(year, is_governing) %>%
+  summarise(mean_cross = mean(cross_party_ratio, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
+  ggplot(aes(x = year, y = mean_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "연도", y = "초당적 세미나 비율",
+    color = NULL,
+    title = "여당 vs 야당의 초당적 협력 추이"
+  ) +
+  theme_minimal()
+```
+
+### DiD 추정
+
+```{r t04-did-estimate-57, eval=FALSE}
+m_did <- feols(cross_party_ratio ~ is_governing + n_seminars |
+                 name + year,
+               data = sem_panel)
+summary(m_did)
+```
+
+- `is_governing`의 계수가 **음수이고 유의미**하면: 여당이 되었을 때 초당적 협력이 감소
+- `| name + year`: 의원 고정효과 + 연도 고정효과
+
+### 클러스터 표준오차
+
+패널 데이터에서는 같은 의원의 오차가 시간에 걸쳐 상관될 수 있습니다.
+이를 무시하면 표준오차가 과소추정되어, 유의하지 않은 결과가 유의하게
+보일 수 있습니다.
+
+```{r t04-cluster-58, eval=FALSE}
+# 의원 수준 클러스터링 (fixest는 고정효과 수준에서 기본 클러스터링)
+summary(m_did, cluster = "name")
+```
+
+> **클러스터 표준오차**: 같은 그룹(여기서는 같은 의원) 내에서 오차가
+> 상관되는 것을 허용합니다. 보통 표준오차가 커져서, 유의성이 약해집니다.
+> 패널 데이터에서는 **항상** 클러스터 표준오차를 사용하는 것이 좋습니다.
+
+---
+
+## 7. 고정효과 모형의 주의점
+
+### 시간 불변 변수는 추정 불가
+
+고정효과 모형은 개인 평균을 제거하므로, 시간에 따라 변하지 않는
+변수의 효과를 추정할 수 없습니다.
+
+```{r t04-time-invariant-59, eval=FALSE}
+# 성별은 시간에 따라 변하지 않으므로 FE에서 자동 제거됨
+m_gender <- feols(cross_party_ratio ~ is_governing + is_female |
+                    name + year,
+                  data = sem_panel)
+summary(m_gender)
+```
+
+`is_female`이 결과에 나타나지 않습니다. 이미 `name` 고정효과에 흡수되었기
+때문입니다. 성별의 효과를 보려면 고정효과 없는 모형이 필요합니다.
+
+### 충분한 within 변동이 필요
+
+고정효과 모형이 작동하려면 같은 개체 내에서 독립변수가 충분히 변해야 합니다.
+모든 의원이 항상 여당이거나 항상 야당이었다면, `is_governing`의 효과를
+추정할 수 없습니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 모형 | 통제하는 것 | 한계 |
+|------|-----------|------|
+| 합동 OLS | 모형에 포함된 변수만 | 관측 불가 변수에 의한 편의 |
+| 개체 FE | 시간 불변 개인 특성 전체 | 시간 추세 미통제, 시간 불변 변수 추정 불가 |
+| 양방향 FE | 개인 특성 + 공통 시간 효과 | 개체별 시간 추세 미통제 |
+| DiD (FE 기반) | 위 + 처치 효과 추정 | 평행 추세 가정 필요 |
+
+**핵심 교훈**: 같은 데이터라도 분석 방법에 따라 결론이 달라질 수 있습니다.
+어떤 가정 하에서 어떤 변동(variation)을 사용하는지 이해하는 것이 중요합니다.
+
+다음 튜토리얼에서는 **텍스트 분석**을 다룹니다. 법안 제안이유와
+국회 발언을 텍스트 데이터로 분석하는 방법을 배웁니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+`wealth` 데이터에서 `stocks`(주식)를 종속변수로, `real_estate`를 독립변수로 하는
+개체 고정효과 모형을 추정하시오. 같은 의원의 부동산이 늘면 주식도 느는가?
+
+```{r t04c60, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+m_stocks <- feols(stocks ~ real_estate | member_id, data = wealth)
+summary(m_stocks)
+```
+음의 계수라면 부동산에 투자할수록 주식을 줄이는 경향 (자산 대체 효과),
+양의 계수라면 부의 증가 효과 (전반적으로 부유해지는 것)를 의미합니다.
+</details>
+
+### 문제 2 (응용)
+
+`has_seoul_property`를 독립변수로 사용하여 개체 고정효과 모형을 추정하면
+어떤 일이 발생하는가? 이유를 설명하시오.
+(힌트: 이 변수가 시간에 따라 변하는지 확인해보세요.)
+
+```{r t04c61, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+# 서울 부동산 보유 여부가 시간에 따라 변하는 의원이 있는지 확인
+wealth %>%
+  group_by(member_id) %>%
+  summarise(
+    n_changes = n_distinct(has_seoul_property)
+  ) %>%
+  count(n_changes)
+```
+`n_changes == 1`인 의원이 대부분이라면, 이 변수는 거의 시간 불변이므로
+고정효과 모형에서 추정이 어렵거나 불안정합니다.
+</details>
+
+### 문제 3 (응용)
+
+합동 OLS, 개체 FE, 양방향 FE 세 모형으로 재산(`net_worth`)이 예금(`deposits`)에
+미치는 영향을 추정하고, `etable()`로 결과를 비교하시오.
+모형에 따라 계수가 어떻게 달라지며, 어떤 모형이 가장 적절한지 근거를 제시하시오.
+
+```{r t04c62, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+m1 <- lm(deposits ~ net_worth, data = wealth)
+m2 <- feols(deposits ~ net_worth | member_id, data = wealth)
+m3 <- feols(deposits ~ net_worth | member_id + year, data = wealth)
+etable(m1, m2, m3, headers = c("Pooled", "FE", "TWFE"))
+```
+개인 간 부의 차이를 통제한 후(FE)에도 순자산이 예금에 미치는 효과가
+유의한지 확인합니다. 연도 FE까지 추가하면 부동산 가격 상승 같은
+공통 시간 효과도 제거됩니다.
+</details>
+
+### 문제 4 (도전)
+
+`seminars` 데이터에서 비례대표 의원(`is_proportional`)이 지역구 의원보다
+초당적 협력을 더 많이 하는지 분석하시오. 개체 고정효과를 적용할 때
+`is_proportional` 변수에 어떤 문제가 생기는지 설명하시오.
+
+```{r t04c63, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+# 합동 OLS에서는 추정 가능
+m_pr_ols <- lm(cross_party_ratio ~ is_proportional + is_governing +
+                 seniority, data = sem_panel)
+summary(m_pr_ols)
+
+# 고정효과에서는 is_proportional이 시간 불변이므로 제거됨
+# (같은 의원이 지역구에서 비례로 바뀌는 경우가 극히 드물기 때문)
+```
+`is_proportional`은 거의 시간 불변 변수이므로, 개체 고정효과에서는
+추정이 불가능합니다. 이 변수의 효과를 보려면 합동 OLS나 랜덤 효과
+모형을 사용해야 합니다.
+</details>
+
+
+## 05. 튜토리얼 5: 텍스트 분석 입문
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 국회의 관심사는 어떻게 변해왔는가?
+
+지금까지 다룬 데이터는 숫자(발의 건수, 재산, 투표 등)였습니다.
+하지만 정치학에서 매우 중요한 데이터 유형이 하나 더 있습니다: **텍스트**.
+법안 제안이유, 국회 발언, 보도자료 등 텍스트에서 패턴을 발견하는 것이
+텍스트 분석입니다.
+
+배울 내용:
+
+- 텍스트 데이터의 전처리 (토큰화, 불용어 제거)
+- 단어 빈도 분석과 시각화
+- TF-IDF: 특정 그룹의 특징 단어 찾기
+- 키워드 추적: 시간에 따른 의제 변화
+- 발언 데이터(`speeches`)로 위원회 담론 분석
+
+---
+
+## 1. 텍스트를 데이터로 바꾸기
+
+컴퓨터에게 텍스트는 그냥 문자열입니다. 분석하려면 텍스트를 **구조화된 데이터**로
+바꿔야 합니다. 가장 기본적인 접근은 **단어 주머니(bag of words)** 모형입니다:
+텍스트를 단어들의 집합으로 보고, 각 단어의 빈도를 세는 것입니다.
+
+### 전처리의 흐름
+
+```
+원본 텍스트 → 토큰화(단어 쪼개기) → 불용어 제거 → 빈도 계산 → 분석
+```
+
+### tidytext 패키지
+
+```{r eval=FALSE}
+if (!requireNamespace("tidytext", quietly = TRUE)) {
+  install.packages("tidytext")
+}
+library(tidytext)
+library(patchwork)
+```
+
+`tidytext`는 텍스트를 tidy data 형식으로 다룹니다.
+한 행에 하나의 토큰(단어)이 오는 **긴 형식** 데이터프레임을 만듭니다.
+
+---
+
+## 2. 법안 텍스트 다운로드
+
+`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다.
+
+```{r t05-download-64, eval=FALSE}
+texts <- get_bill_texts()
+```
+
+```{r t05-load-fallback-65, include=FALSE, eval=FALSE}
+texts <- tryCatch(
+  get_bill_texts(),
+  error = function(e) {
+    message("텍스트 다운로드 실패. 법안 이름을 대신 사용합니다.")
+    data.frame(
+      bill_id = bills$bill_id,
+      propose_reason = bills$bill_name,
+      scrape_status = "fallback"
+    )
+  }
+)
+```
+
+```{r t05-merge-66, eval=FALSE}
+bill_text <- bills %>%
+  inner_join(texts, by = "bill_id") %>%
+  filter(scrape_status == "ok") %>%
+  mutate(text_length = nchar(propose_reason))
+
+cat("분석 대상 법안:", nrow(bill_text), "건\n")
+```
+
+### 텍스트 길이 분포
+
+제안이유의 길이 자체도 의미 있는 변수입니다.
+
+```{r t05-length-dist-67, eval=FALSE}
+ggplot(bill_text, aes(x = text_length)) +
+  geom_histogram(bins = 80, fill = "steelblue", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    x = "제안이유 길이 (문자 수, 로그 스케일)",
+    y = "빈도",
+    title = "법안 제안이유 텍스트 길이 분포"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 3. 키워드 추적: 시간에 따른 의제 변화
+
+가장 간단하면서도 강력한 텍스트 분석은 **특정 키워드가 얼마나 자주 언급되는지**
+추적하는 것입니다.
+
+```{r t05-keyword-trend-68, eval=FALSE}
+keywords <- c("인공지능", "디지털", "플랫폼", "기후", "탄소", "반도체")
+
+keyword_df <- do.call(rbind, lapply(keywords, function(kw) {
+  bill_text %>%
+    mutate(year = as.integer(format(propose_date, "%Y"))) %>%
+    group_by(year) %>%
+    summarise(
+      mentions = sum(str_detect(propose_reason, kw), na.rm = TRUE),
+      total = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(keyword = kw, pct = mentions / total * 100)
+}))
+
+ggplot(keyword_df, aes(x = year, y = pct, color = keyword)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 1.5) +
+  labs(
+    x = "연도", y = "언급 비율 (%)", color = "키워드",
+    title = "법안 제안이유 속 키워드 추이 (20-22대)"
+  ) +
+  theme_minimal()
+```
+
+어떤 키워드가 급등했나요? 그 시기에 어떤 사회적 이슈가 있었는지
+떠올려보세요.
+
+> **주의**: 키워드 빈도는 실제 정책 관심을 반영하지만,
+> 같은 단어라도 맥락에 따라 다른 의미로 쓰일 수 있습니다.
+> 키워드 분석은 탐색적 도구이지, 그 자체로 결론을 내리기는 어렵습니다.
+
+---
+
+## 4. 토큰화와 불용어 제거
+
+텍스트를 단어 단위로 쪼개는 것을 **토큰화(tokenization)**라 합니다.
+
+한국어의 특수성: 한국어는 조사가 단어에 붙어 있어서 ("법률을", "법률이", "법률에")
+같은 단어가 다른 형태로 나타납니다. 완벽한 처리를 위해서는 형태소 분석기가
+필요하지만, 간단한 분석에서는 **공백 기반 토큰화**도 유용합니다.
+
+```{r t05-tokenize-69, eval=FALSE}
+# 22대 법안 중 최대 5,000건 표본
+sample_bills <- bill_text %>%
+  filter(assembly == 22) %>%
+  slice_sample(n = min(5000, n()))
+
+# 공백 기반 토큰화
+tokens <- sample_bills %>%
+  select(bill_id, committee, propose_reason) %>%
+  unnest_tokens(word, propose_reason, token = "words")
+
+cat("토큰 수:", nrow(tokens), "\n")
+```
+
+### 불용어 제거
+
+토큰화 결과를 보면, "의", "에", "를" 같은 조사와 기능어가 상위를 차지합니다.
+이런 단어를 **불용어(stopwords)**라 하고, 분석에서 제거합니다.
+
+```{r t05-stopwords-70, eval=FALSE}
+ko_stopwords <- c(
+  "의", "에", "를", "을", "이", "가", "은", "는", "및", "등",
+  "한", "하는", "에서", "으로", "로", "위한", "대한", "따른",
+  "그", "수", "것", "있는", "하여", "또는", "관한", "위하여",
+  "경우", "있다", "해당", "필요", "현행", "대하여", "때문에",
+  "하고", "대해", "이를", "따라", "하기", "하며", "있으며",
+  "규정", "관련", "정하고", "마련", "있도록", "위해"
+)
+
+tokens_clean <- tokens %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+```
+
+### 가장 자주 등장하는 단어
+
+```{r t05-top-words-71, eval=FALSE}
+top20 <- tokens_clean %>%
+  count(word, sort = TRUE) %>%
+  head(20)
+
+ggplot(top20, aes(x = reorder(word, n), y = n)) +
+  geom_col(fill = "coral") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "빈도",
+    title = "가장 많이 등장하는 단어 (22대 법안)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 5. TF-IDF: 위원회별 특징 단어
+
+단순 빈도만으로는 "모든 법안에서 자주 쓰이는 일반적 단어"와
+"특정 위원회에서만 자주 쓰이는 특징적 단어"를 구분하기 어렵습니다.
+
+**TF-IDF (Term Frequency - Inverse Document Frequency)**는 이 문제를 해결합니다.
+
+- **TF**: 특정 문서(여기서는 위원회)에서 해당 단어가 얼마나 자주 나타나는가
+- **IDF**: 해당 단어가 전체 문서 중 얼마나 **드물게** 나타나는가
+- **TF-IDF = TF x IDF**: 특정 문서에서 자주 나타나면서, 전체적으로는 드문 단어 = **특징 단어**
+
+```{r t05-tfidf-72, eval=FALSE}
+committee_words <- tokens_clean %>%
+  count(committee, word, sort = TRUE)
+
+committee_tfidf <- committee_words %>%
+  bind_tf_idf(word, committee, n)
+```
+
+### 위원회별 특징 단어 비교
+
+```{r t05-tfidf-plot-73, fig.height=7, eval=FALSE}
+top_committees <- c("보건복지위원회", "국토교통위원회",
+                    "과학기술정보방송통신위원회", "환경노동위원회")
+
+committee_tfidf %>%
+  filter(committee %in% top_committees) %>%
+  group_by(committee) %>%
+  slice_max(tf_idf, n = 8) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, committee), y = tf_idf)) +
+  geom_col(fill = "steelblue") +
+  facet_wrap(~ committee, scales = "free_y", ncol = 2) +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "위원회별 특징 단어"
+  ) +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10))
+```
+
+각 위원회의 특징 단어가 그 위원회의 관할 영역을 잘 반영하는지 확인해보세요.
+
+---
+
+## 6. 발언 데이터로 담론 분석
+
+`speeches` 데이터는 22대 과학기술정보방송통신위원회의 발언 전문입니다.
+법안 텍스트와는 다른 종류의 분석이 가능합니다.
+
+```{r t05-speeches-overview-74, eval=FALSE}
+cat("발언 수:", nrow(speeches), "\n")
+cat("발언자 역할:\n")
+table(speeches$role) %>% sort(decreasing = TRUE) %>% head(8)
+```
+
+### 의원 vs 관료의 발언 비교
+
+```{r t05-role-compare-75, eval=FALSE}
+role_tokens <- speeches %>%
+  filter(role %in% c("legislator", "minister", "vice_minister")) %>%
+  mutate(role_kr = case_match(role,
+    "legislator" ~ "의원",
+    "minister" ~ "장관",
+    "vice_minister" ~ "차관"
+  )) %>%
+  select(role_kr, speech) %>%
+  unnest_tokens(word, speech, token = "words") %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+role_tfidf <- role_tokens %>%
+  count(role_kr, word) %>%
+  bind_tf_idf(word, role_kr, n)
+
+role_tfidf %>%
+  group_by(role_kr) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, role_kr), y = tf_idf)) +
+  geom_col(fill = "steelblue") +
+  facet_wrap(~ role_kr, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "발언자 유형별 특징 단어 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+의원과 관료가 같은 위원회에서 어떤 다른 언어를 사용하는지 비교해보세요.
+
+### 특정 키워드 발언 패턴
+
+AI 관련 발언이 시간에 따라 어떻게 변하는지 살펴봅시다.
+
+```{r t05-ai-speeches-76, eval=FALSE}
+ai_speeches <- speeches %>%
+  filter(str_detect(speech, "인공지능|AI|에이아이")) %>%
+  mutate(month = format(date, "%Y-%m"))
+
+ai_trend <- ai_speeches %>%
+  count(month) %>%
+  mutate(month = as.Date(paste0(month, "-01")))
+
+ggplot(ai_trend, aes(x = month, y = n)) +
+  geom_col(fill = "coral") +
+  labs(
+    x = NULL, y = "AI 관련 발언 수",
+    title = "과학기술정보방송통신위원회 AI 관련 발언 추이 (22대)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. 시기별 비교: 대수 간 텍스트 변화
+
+```{r t05-temporal-77, eval=FALSE}
+era_tokens <- tokens_clean %>%
+  inner_join(sample_bills %>% select(bill_id, assembly), by = "bill_id") %>%
+  filter(assembly %in% c(20, 22)) %>%
+  mutate(era = paste0(assembly, "대"))
+
+era_tfidf <- era_tokens %>%
+  count(era, word, sort = TRUE) %>%
+  bind_tf_idf(word, era, n)
+
+era_tfidf %>%
+  group_by(era) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, era), y = tf_idf, fill = era)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ era, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  scale_fill_manual(values = c("20대" = "steelblue", "22대" = "coral")) +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "20대 vs 22대 국회: 특징 단어 비교"
+  ) +
+  theme_minimal()
+```
+
+6년 사이에 국회의 관심사가 어떻게 바뀌었는지 단어 수준에서 확인할 수 있습니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 기법 | 용도 | 핵심 함수 |
+|------|------|----------|
+| 키워드 추적 | 특정 단어의 시간적 추이 | `str_detect()` |
+| 토큰화 | 텍스트를 단어 단위로 분해 | `unnest_tokens()` |
+| 불용어 제거 | 의미 없는 기능어 필터링 | `filter(!word %in% ...)` |
+| 단어 빈도 | 가장 많이 쓰이는 단어 | `count(word)` |
+| TF-IDF | 그룹별 특징 단어 발견 | `bind_tf_idf()` |
+
+> **한계**: 공백 기반 토큰화는 한국어의 교착어 특성을 무시합니다.
+> "국민들이", "국민의", "국민을"이 다른 단어로 취급됩니다.
+> 더 정확한 분석을 위해서는 형태소 분석기(KoNLPy, MeCab 등)가 필요합니다.
+
+다음 튜토리얼에서는 **공동발의 네트워크**를 분석합니다.
+누가 누구와 함께 법안을 만드는지, 그 관계의 구조를 탐색합니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+"부동산", "주택", "임대"가 포함된 법안의 비율을 대수별로 계산하시오.
+
+```{r t05c78, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+bill_text %>%
+  mutate(housing = str_detect(propose_reason, "부동산|주택|임대")) %>%
+  group_by(assembly) %>%
+  summarise(
+    total = n(),
+    n_housing = sum(housing, na.rm = TRUE),
+    pct = round(n_housing / total * 100, 1)
+  )
+```
+</details>
+
+### 문제 2 (기초)
+
+`speeches` 데이터에서 가장 많이 발언한 의원 상위 10명을 찾고,
+발언 횟수를 막대그래프로 그리시오.
+(힌트: `role == "legislator"`로 필터링)
+
+```{r t05c79, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+speeches %>%
+  filter(role == "legislator") %>%
+  count(speaker_name, sort = TRUE) %>%
+  head(10) %>%
+  ggplot(aes(x = reorder(speaker_name, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "발언 횟수",
+       title = "22대 과방위에서 가장 많이 발언한 의원 (상위 10명)") +
+  theme_minimal()
+```
+</details>
+
+### 문제 3 (응용)
+
+두 정당(국민의힘 vs 더불어민주당) 의원의 법안 텍스트를 비교하시오.
+`proposer_id`를 `legislators`와 연결하여 정당 정보를 가져온 뒤,
+정당별 TF-IDF 상위 단어를 비교하시오.
+
+```{r t05c80, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+data(legislators)
+
+party_bills <- sample_bills %>%
+  inner_join(
+    legislators %>% filter(assembly == 22) %>% select(member_id, party),
+    by = c("proposer_id" = "member_id")
+  ) %>%
+  filter(party %in% c("국민의힘", "더불어민주당"))
+
+party_tokens <- party_bills %>%
+  select(bill_id, party, propose_reason) %>%
+  unnest_tokens(word, propose_reason) %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2)
+
+party_tfidf <- party_tokens %>%
+  count(party, word) %>%
+  bind_tf_idf(word, party, n)
+
+party_tfidf %>%
+  group_by(party) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(word, tf_idf, party), y = tf_idf, fill = party)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ party, scales = "free") +
+  coord_flip() + scale_x_reordered() +
+  scale_fill_manual(values = c("국민의힘" = "#E61E2B", "더불어민주당" = "#004EA2")) +
+  labs(x = NULL, y = "TF-IDF", title = "정당별 법안 특징 단어") +
+  theme_minimal()
+```
+</details>
+
+### 문제 4 (도전)
+
+`speeches` 데이터에서 의원(`legislator`)과 관료(`minister`, `vice_minister`)의
+**평균 발언 길이**를 비교하시오. 발언 길이가 역할에 따라 다른 이유는 무엇일까?
+
+```{r t05c81, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+speeches %>%
+  filter(role %in% c("legislator", "minister", "vice_minister")) %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_kr = case_match(role,
+      "legislator" ~ "의원",
+      "minister" ~ "장관",
+      "vice_minister" ~ "차관"
+    )
+  ) %>%
+  group_by(role_kr) %>%
+  summarise(
+    n = n(),
+    mean_length = round(mean(speech_length)),
+    median_length = median(speech_length)
+  )
+```
+의원은 주로 짧은 질문을 하고, 관료는 긴 답변을 하기 때문에
+발언 길이 차이가 나타납니다. 위원회 질의-응답 구조를 반영합니다.
+</details>
+
+
+## 06. 튜토리얼 6: 공동발의 네트워크 분석
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 누가 누구와 함께 법안을 만드는가?
+
+국회의원은 혼자서 법안을 발의하지 않습니다. 대표발의자 외에 여러 의원이
+공동발의자로 참여합니다. 이 공동발의 관계를 **네트워크(그래프)**로 구성하면,
+의원들의 협력 구조, 정당 간 관계, 핵심 인물을 파악할 수 있습니다.
+
+배울 내용:
+
+- 네트워크란 무엇인가: 노드와 엣지의 개념
+- 공동발의 데이터로 네트워크 구축하기
+- 중심성(centrality) 지표: 누가 네트워크의 중심인가?
+- 커뮤니티 탐지: 밀접하게 연결된 그룹 찾기
+- 네트워크 시각화
+
+---
+
+## 1. 네트워크의 기본 개념
+
+네트워크(그래프)는 두 가지 요소로 구성됩니다:
+
+- **노드(node, 꼭짓점)**: 분석 단위. 여기서는 **의원**
+- **엣지(edge, 변)**: 노드 간의 관계. 여기서는 **공동발의 관계**
+
+```{r t06-concept-82, echo=FALSE, fig.height=3.5, eval=FALSE}
+if (!requireNamespace("igraph", quietly = TRUE)) {
+  install.packages("igraph")
+}
+library(igraph)
+# 간단한 예시 네트워크
+g_ex <- graph_from_data_frame(
+  data.frame(from = c("A", "A", "B", "C", "D"),
+             to   = c("B", "C", "C", "D", "E")),
+  directed = FALSE
+)
+set.seed(1)
+plot(g_ex, vertex.size = 30, vertex.color = "lightblue",
+     vertex.label.cex = 1.2, edge.width = 2,
+     main = "네트워크의 기본 구조")
+```
+
+위 그림에서:
+- A, B, C, D, E가 **노드** (5개)
+- 선들이 **엣지** (5개)
+- C는 3개의 엣지가 연결되어 있어 가장 **연결 중심성(degree)**이 높음
+
+---
+
+## 2. 공동발의 데이터 가져오기
+
+```{r t06-download-83, eval=FALSE}
+proposers <- get_proposers()
+```
+
+```{r t06-load-cache-84, include=FALSE, eval=FALSE}
+proposers <- tryCatch(
+  get_proposers(),
+  error = function(e) {
+    message("다운로드 실패.")
+    NULL
+  }
+)
+```
+
+```{r t06-check-85, eval=FALSE}
+if (is.null(proposers)) {
+  cat("데이터를 다운로드할 수 없습니다. 인터넷 연결을 확인하세요.\n")
+} else {
+  cat("공동발의 기록:", nrow(proposers), "건\n")
+  head(proposers)
+}
+```
+
+---
+
+## 3. 엣지리스트 만들기
+
+네트워크를 만들려면, "누구와 누구가 연결되었는가"를 나타내는
+**엣지리스트(edge list)**가 필요합니다.
+
+법안 하나에서 대표발의자와 공동발의자를 연결합니다.
+
+```{r t06-edgelist-86, eval=FALSE}
+# 22대 법안으로 한정
+props_22 <- proposers %>%
+  filter(propose_date >= as.Date("2024-05-30"))
+
+# 대표발의자와 공동발의자 분리
+leads <- props_22 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cosponsors <- props_22 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+
+# 대표-공동발의 쌍 만들기
+edges <- inner_join(leads, cosponsors, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor)
+
+# 엣지 가중치: 같이 발의한 횟수
+edge_weights <- edges %>%
+  count(lead, cosponsor, name = "weight")
+
+cat("노드(의원):", n_distinct(c(edge_weights$lead, edge_weights$cosponsor)), "\n")
+cat("엣지(연결):", nrow(edge_weights), "\n")
+cat("평균 가중치:", round(mean(edge_weights$weight), 1), "\n")
+```
+
+---
+
+## 4. igraph 네트워크 생성
+
+```{r eval=FALSE}
+library(igraph)
+```
+
+`igraph`는 R에서 가장 널리 쓰이는 네트워크 분석 패키지입니다.
+
+```{r t06-create-graph-87, eval=FALSE}
+g <- graph_from_data_frame(edge_weights, directed = FALSE)
+
+# 의원 메타데이터 추가
+leg_22 <- legislators %>%
+  filter(assembly == 22) %>%
+  distinct(member_id, .keep_all = TRUE)
+
+V(g)$party  <- leg_22$party[match(V(g)$name, leg_22$member_id)]
+V(g)$gender <- leg_22$gender[match(V(g)$name, leg_22$member_id)]
+V(g)$label  <- leg_22$name[match(V(g)$name, leg_22$member_id)]
+
+cat("노드:", vcount(g), "\n")
+cat("엣지:", ecount(g), "\n")
+cat("밀도:", round(graph.density(g), 4), "\n")
+```
+
+> **네트워크 밀도**: 가능한 모든 연결 중 실제로 존재하는 연결의 비율.
+> 밀도가 1이면 모든 노드가 서로 연결, 0이면 아무 연결 없음.
+> 보통 공동발의 네트워크의 밀도는 상당히 높습니다.
+
+---
+
+## 5. 중심성 지표: 누가 네트워크의 중심인가?
+
+"네트워크에서 중요한 노드"를 정의하는 방법은 여러 가지입니다.
+각 지표는 "중요하다"의 다른 측면을 포착합니다.
+
+### 연결 중심성 (Degree Centrality)
+
+가장 단순한 지표: **얼마나 많은 다른 의원과 연결되어 있는가?**
+
+```{r t06-degree-88, eval=FALSE}
+V(g)$degree <- degree(g)
+
+degree_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = V(g)$degree,
+  stringsAsFactors = FALSE
+) %>%
+  filter(!is.na(name))
+
+# 연결 중심성 상위 10명
+degree_df %>%
+  arrange(desc(degree)) %>%
+  head(10)
+```
+
+### 매개 중심성 (Betweenness Centrality)
+
+**서로 다른 그룹을 연결하는 "다리" 역할을 하는 의원**은 누구인가?
+매개 중심성은 네트워크의 최단 경로 중 해당 노드를 지나가는 비율을 측정합니다.
+
+```{r t06-betweenness-89, eval=FALSE}
+V(g)$betweenness <- betweenness(g, normalized = TRUE)
+
+between_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  betweenness = round(V(g)$betweenness, 6),
+  stringsAsFactors = FALSE
+) %>%
+  filter(!is.na(name))
+
+between_df %>%
+  arrange(desc(betweenness)) %>%
+  head(10)
+```
+
+연결 중심성이 높은 의원과 매개 중심성이 높은 의원이 다를 수 있습니다.
+매개 중심성이 높은 의원은 "많은 사람을 아는 사람"이 아니라
+"서로 다른 그룹을 연결하는 사람"입니다.
+
+### 중심성 비교 산점도
+
+```{r t06-centrality-scatter-90, eval=FALSE}
+centrality_df <- data.frame(
+  name = V(g)$label,
+  party = V(g)$party,
+  degree = V(g)$degree,
+  betweenness = V(g)$betweenness,
+  stringsAsFactors = FALSE
+) %>%
+  filter(!is.na(name), !is.na(party))
+
+ggplot(centrality_df, aes(x = degree, y = betweenness)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  labs(
+    x = "연결 중심성 (Degree)",
+    y = "매개 중심성 (Betweenness)",
+    title = "두 가지 중심성 지표 비교"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 6. 정당별 네트워크 구조
+
+```{r t06-party-stats-91, eval=FALSE}
+centrality_df %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  group_by(party) %>%
+  summarise(
+    n = n(),
+    avg_degree = round(mean(degree), 1),
+    max_degree = max(degree),
+    avg_between = round(mean(betweenness), 6)
+  )
+```
+
+### 정당별 연결 중심성 분포
+
+```{r t06-party-boxplot-92, eval=FALSE}
+centrality_df %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  ggplot(aes(x = party, y = degree, fill = party)) +
+  geom_boxplot(show.legend = FALSE, alpha = 0.7) +
+  scale_fill_manual(values = c(
+    "국민의힘" = "#E61E2B",
+    "더불어민주당" = "#004EA2",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  labs(
+    x = NULL, y = "연결 중심성 (Degree)",
+    title = "정당별 공동발의 네트워크 연결 중심성"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. 커뮤니티 탐지
+
+네트워크에서 밀접하게 연결된 하위 그룹을 **커뮤니티(community)**라 합니다.
+알고리즘이 자동으로 커뮤니티를 찾아줍니다.
+
+### Louvain 알고리즘
+
+```{r t06-community-93, eval=FALSE}
+comm <- cluster_louvain(g)
+V(g)$community <- membership(comm)
+
+cat("발견된 커뮤니티 수:", max(membership(comm)), "\n")
+cat("모듈성(modularity):", round(modularity(comm), 3), "\n")
+```
+
+> **모듈성(modularity)**: 커뮤니티 구분이 얼마나 명확한지를 나타냅니다.
+> 0에 가까우면 무작위와 다를 바 없고, 1에 가까우면 커뮤니티가 매우 뚜렷합니다.
+> 보통 0.3 이상이면 의미 있는 구조가 있다고 봅니다.
+
+### 커뮤니티와 정당의 관계
+
+커뮤니티가 정당과 어느 정도 일치하는지 확인합시다.
+
+```{r t06-comm-party-94, eval=FALSE}
+comm_party <- data.frame(
+  community = V(g)$community,
+  party = V(g)$party
+) %>%
+  filter(!is.na(party))
+
+comm_table <- table(comm_party$community, comm_party$party)
+comm_table_df <- as.data.frame(comm_table) %>%
+  filter(Freq > 3) %>%
+  arrange(Var1, desc(Freq))
+
+comm_table_df
+```
+
+각 커뮤니티가 특정 정당에 의해 지배되나요?
+만약 그렇다면, 공동발의가 주로 같은 당 안에서 이루어진다는 뜻입니다.
+
+---
+
+## 8. 초당적 연결 분석
+
+정당 간 공동발의(cross-party edges)는 얼마나 되는지 계산합니다.
+
+```{r t06-cross-party-95, eval=FALSE}
+edge_df <- as_data_frame(g, what = "edges") %>%
+  mutate(
+    party_from = V(g)$party[match(from, V(g)$name)],
+    party_to   = V(g)$party[match(to, V(g)$name)],
+    cross_party = party_from != party_to
+  ) %>%
+  filter(!is.na(party_from), !is.na(party_to))
+
+cat("전체 엣지:", nrow(edge_df), "\n")
+cat("초당적 엣지:", sum(edge_df$cross_party), "\n")
+cat("초당적 비율:", round(mean(edge_df$cross_party) * 100, 1), "%\n")
+```
+
+### 정당 간 연결 히트맵
+
+어떤 정당 쌍이 가장 많이 공동발의하는지 히트맵으로 봅시다.
+
+```{r t06-cross-party-heatmap-96, eval=FALSE}
+party_pair <- edge_df %>%
+  filter(party_from %in% c("국민의힘", "더불어민주당", "조국혁신당"),
+         party_to %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  count(party_from, party_to) %>%
+  mutate(n_log = log10(n + 1))
+
+ggplot(party_pair, aes(x = party_from, y = party_to, fill = n_log)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = scales::comma(n)), size = 4) +
+  scale_fill_gradient(low = "lightyellow", high = "tomato",
+                      guide = "none") +
+  labs(
+    x = NULL, y = NULL,
+    title = "정당 간 공동발의 횟수"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+대각선(같은 당 내)이 비대각선(다른 당 간)보다 훨씬 크면,
+공동발의가 정당 경계 안에서 주로 이루어진다는 것입니다.
+
+---
+
+## 9. 네트워크 시각화
+
+```{r t06-network-viz-97, eval=FALSE}
+# 주요 2당만 시각화 (전체는 너무 복잡)
+main_parties <- c("국민의힘", "더불어민주당")
+keep <- V(g)$party %in% main_parties & !is.na(V(g)$party)
+g_sub <- induced_subgraph(g, which(keep))
+
+party_colors <- ifelse(V(g_sub)$party == "국민의힘", "#E61E2B", "#004EA2")
+
+set.seed(42)
+layout <- layout_with_fr(g_sub)
+
+# 약한 연결 제거 (시각적 가독성)
+g_viz <- delete_edges(g_sub, which(E(g_sub)$weight < 10))
+
+plot(g_viz,
+     vertex.color = party_colors,
+     vertex.size = sqrt(degree(g_viz)) * 0.8,
+     vertex.label = NA,
+     edge.width = E(g_viz)$weight / 50,
+     edge.color = rgb(0, 0, 0, 0.08),
+     layout = layout,
+     main = "22대 국회 공동발의 네트워크 (국민의힘 vs 더불어민주당)")
+
+legend("bottomleft",
+       legend = main_parties,
+       col = c("#E61E2B", "#004EA2"),
+       pch = 19, pt.cex = 1.5, bty = "n")
+```
+
+두 정당이 네트워크에서 분리되어 있나요, 아니면 섞여 있나요?
+이 시각화에서 정당 간 공동발의 구조를 직관적으로 파악할 수 있습니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 개념 | 의미 | 함수 |
+|------|------|------|
+| 노드/엣지 | 분석 단위 / 관계 | `graph_from_data_frame()` |
+| 연결 중심성 | 연결이 많은 노드 | `degree()` |
+| 매개 중심성 | 다리 역할을 하는 노드 | `betweenness()` |
+| 커뮤니티 탐지 | 밀접한 하위 그룹 | `cluster_louvain()` |
+| 모듈성 | 커뮤니티 구분의 명확성 | `modularity()` |
+| 초당적 비율 | 정당 간 공동발의 | 엣지 속성 비교 |
+
+다음 튜토리얼에서는 **기명투표 분석**을 다룹니다.
+같은 당 의원이 얼마나 일치해서 투표하는지, 이탈투표는 누가 하는지 분석합니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+여성 의원과 남성 의원의 평균 매개 중심성을 비교하시오.
+성별에 따른 네트워크 위치 차이가 있는가?
+
+```{r t06c98, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+data.frame(
+  name = V(g)$label,
+  gender = V(g)$gender,
+  betweenness = V(g)$betweenness
+) %>%
+  filter(!is.na(gender)) %>%
+  group_by(gender) %>%
+  summarise(
+    n = n(),
+    avg_between = round(mean(betweenness), 6),
+    median_between = round(median(betweenness), 6)
+  )
+```
+</details>
+
+### 문제 2 (응용)
+
+Louvain 대신 `cluster_walktrap()` 알고리즘으로 커뮤니티를 탐지하고,
+Louvain 결과와 비교하시오. 모듈성과 커뮤니티 수가 어떻게 다른가?
+
+```{r t06c99, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+comm_wt <- cluster_walktrap(g)
+
+data.frame(
+  Algorithm = c("Louvain", "Walktrap"),
+  Communities = c(max(membership(comm)), max(membership(comm_wt))),
+  Modularity = c(round(modularity(comm), 3), round(modularity(comm_wt), 3))
+)
+```
+</details>
+
+### 문제 3 (도전)
+
+21대 국회의 공동발의 네트워크를 구축하고, 22대와 비교하시오.
+밀도, 평균 연결 중심성, 초당적 비율 중 하나 이상을 비교하여 보고하시오.
+(힌트: `proposers`에서 `propose_date`로 대수를 구분)
+
+```{r t06c100, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+# 21대 엣지리스트
+props_21 <- proposers %>%
+  filter(propose_date >= as.Date("2020-05-30"),
+         propose_date < as.Date("2024-05-30"))
+
+leads_21 <- props_21 %>% filter(is_lead) %>% select(bill_id, lead = member_id)
+cos_21 <- props_21 %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
+
+ew_21 <- inner_join(leads_21, cos_21, by = "bill_id") %>%
+  filter(!is.na(lead), !is.na(cosponsor), lead != cosponsor) %>%
+  count(lead, cosponsor, name = "weight")
+
+g_21 <- graph_from_data_frame(ew_21, directed = FALSE)
+
+data.frame(
+  Assembly = c("21대", "22대"),
+  Nodes = c(vcount(g_21), vcount(g)),
+  Edges = c(ecount(g_21), ecount(g)),
+  Density = c(round(graph.density(g_21), 4), round(graph.density(g), 4)),
+  Avg_Degree = c(round(mean(degree(g_21)), 1), round(mean(degree(g)), 1))
+)
+```
+</details>
+
+
+## 07. 튜토리얼 7: 기명투표 분석
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 우리 당 의원들은 얼마나 같이 투표하는가?
+
+민주주의에서 입법부의 핵심 기능은 **투표(표결)**입니다. 누가 찬성하고 반대하는지를
+분석하면, 정당의 결속력, 이탈투표 의원, 의원들 사이의 이념적 거리를 파악할 수
+있습니다.
+
+배울 내용:
+
+- 본회의 표결 데이터의 구조와 탐색
+- 정당 결속력 측정: Rice Index
+- 이탈투표 의원 찾기
+- 투표 패턴의 시각화: 히트맵
+- 투표 유사도로 의원 간 거리 측정하기
+
+---
+
+## 1. 표결 데이터 이해하기
+
+`assemblykor`에는 두 가지 표결 데이터가 있습니다:
+
+| 데이터 | 수준 | 범위 | 행 수 |
+|--------|------|------|-------|
+| `votes` | **법안별** 전체 결과 | 20-22대 | 7,997 |
+| `roll_calls` | **의원별** 투표 기록 | 22대만 | 368,210 |
+
+### votes: 법안별 표결 결과
+
+```{r t07-votes-overview-101, eval=FALSE}
+cat("법안 수:", nrow(votes), "\n")
+cat("대수별:\n")
+table(votes$assembly)
+```
+
+```{r t07-votes-example-102, eval=FALSE}
+votes %>%
+  select(bill_name, assembly, voted, yes, no, abstain) %>%
+  head(5)
+```
+
+### 찬성률 분포
+
+대부분의 법안은 압도적 다수로 통과됩니다. 논쟁적인 법안은 소수입니다.
+
+```{r t07-yes-rate-dist-103, eval=FALSE}
+votes <- votes %>%
+  mutate(yes_rate = yes / voted)
+
+ggplot(votes, aes(x = yes_rate)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    x = "찬성률",
+    y = "법안 수",
+    title = "본회의 표결 찬성률 분포 (20-22대)"
+  ) +
+  theme_minimal()
+```
+
+> 오른쪽에 크게 몰린 것은 대부분의 법안이 90% 이상의 찬성으로 통과됨을
+> 의미합니다. 정치적으로 흥미로운 것은 왼쪽의 **논쟁적 법안**들입니다.
+
+### 논쟁적 법안 찾기
+
+```{r t07-contentious-104, eval=FALSE}
+votes %>%
+  filter(yes_rate < 0.7) %>%
+  arrange(yes_rate) %>%
+  select(bill_name, assembly, yes_rate, yes, no) %>%
+  head(10)
+```
+
+---
+
+## 2. roll_calls: 의원별 투표 기록
+
+```{r t07-rc-overview-105, eval=FALSE}
+cat("투표 기록:", nrow(roll_calls), "건\n")
+cat("의원 수:", n_distinct(roll_calls$member_id), "\n")
+cat("법안 수:", n_distinct(roll_calls$bill_id), "\n")
+
+# 투표 종류
+table(roll_calls$vote)
+```
+
+```{r t07-rc-recode-106, eval=FALSE}
+# 투표를 영어로 재코딩 (분석 편의)
+roll_calls <- roll_calls %>%
+  mutate(vote_en = case_match(vote,
+    "찬성" ~ "yes",
+    "반대" ~ "no",
+    "기권" ~ "abstain",
+    .default = "absent"
+  ))
+
+table(roll_calls$vote_en)
+```
+
+---
+
+## 3. 정당 결속력: Rice Index
+
+**Rice Index**는 정당 결속력을 측정하는 고전적 지표입니다.
+
+$$\text{Rice Index} = |찬성비율 - 반대비율|$$
+
+- 1이면: 모든 당원이 같은 방향으로 투표 (완벽한 결속)
+- 0이면: 절반은 찬성, 절반은 반대 (완전한 분열)
+
+### 법안별 Rice Index 계산
+
+```{r t07-rice-calc-107, eval=FALSE}
+# 출석 투표만 (불참 제외)
+rc_voted <- roll_calls %>%
+  filter(vote_en %in% c("yes", "no"))
+
+# 법안별-정당별 Rice Index
+rice_by_bill <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    n_voted = n(),
+    n_yes = sum(vote_en == "yes"),
+    n_no = sum(vote_en == "no"),
+    rice = abs(n_yes - n_no) / n_voted,
+    .groups = "drop"
+  ) %>%
+  filter(n_voted >= 5)  # 충분한 투표자 수
+
+# 주요 정당의 평균 Rice Index
+rice_summary <- rice_by_bill %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  group_by(party) %>%
+  summarise(
+    n_votes = n(),
+    mean_rice = round(mean(rice), 3),
+    median_rice = round(median(rice), 3),
+    min_rice = round(min(rice), 3)
+  )
+
+rice_summary
+```
+
+### Rice Index 분포 시각화
+
+```{r t07-rice-plot-108, eval=FALSE}
+rice_by_bill %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  ggplot(aes(x = rice, fill = party)) +
+  geom_histogram(bins = 30, alpha = 0.7, position = "identity") +
+  scale_fill_manual(values = c(
+    "국민의힘" = "#E61E2B",
+    "더불어민주당" = "#004EA2",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  facet_wrap(~ party, ncol = 1) +
+  labs(
+    x = "Rice Index", y = "법안 수",
+    fill = NULL,
+    title = "정당별 결속력 (Rice Index) 분포"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+대부분의 법안에서 Rice Index가 1에 가까우면, 해당 정당은 거의 항상
+일사불란하게 투표한다는 뜻입니다.
+
+---
+
+## 4. 이탈투표 의원 찾기
+
+**이탈투표(rebel vote)**란 자기 당의 다수 의견과 다르게 투표하는 것입니다.
+
+```{r t07-rebel-calc-109, eval=FALSE}
+# 각 법안에서 정당의 다수 의견 결정
+party_majority <- rc_voted %>%
+  group_by(bill_id, party) %>%
+  summarise(
+    majority_vote = ifelse(sum(vote_en == "yes") >= sum(vote_en == "no"),
+                           "yes", "no"),
+    .groups = "drop"
+  )
+
+# 의원별 이탈투표 식별
+rebel_votes <- rc_voted %>%
+  inner_join(party_majority, by = c("bill_id", "party")) %>%
+  mutate(is_rebel = vote_en != majority_vote)
+
+# 의원별 이탈투표 비율
+rebel_rate <- rebel_votes %>%
+  group_by(member_id, member_name, party) %>%
+  summarise(
+    n_votes = n(),
+    n_rebel = sum(is_rebel),
+    rebel_rate = round(n_rebel / n_votes, 3),
+    .groups = "drop"
+  ) %>%
+  filter(n_votes >= 50)  # 충분한 투표 참여
+
+# 이탈투표 비율 상위 10명
+rebel_rate %>%
+  filter(party %in% c("국민의힘", "더불어민주당")) %>%
+  arrange(desc(rebel_rate)) %>%
+  head(10)
+```
+
+### 정당별 이탈투표 분포
+
+```{r t07-rebel-plot-110, eval=FALSE}
+rebel_rate %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  ggplot(aes(x = party, y = rebel_rate, fill = party)) +
+  geom_boxplot(alpha = 0.7, show.legend = FALSE) +
+  scale_fill_manual(values = c(
+    "국민의힘" = "#E61E2B",
+    "더불어민주당" = "#004EA2",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = NULL, y = "이탈투표 비율",
+    title = "정당별 이탈투표 비율 (22대)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 5. 투표 패턴 히트맵
+
+의원들의 투표 패턴을 시각화하면 정당 구조를 한눈에 볼 수 있습니다.
+모든 법안을 다 그리면 너무 복잡하니, **논쟁적 법안**만 선택합니다.
+
+```{r t07-heatmap-prep-111, eval=FALSE}
+# 논쟁적 법안: 찬성률 50-85% (여야 의견 차이가 큰 법안)
+contentious_bills <- votes %>%
+  filter(assembly == 22, yes_rate >= 0.45, yes_rate <= 0.85) %>%
+  arrange(yes_rate) %>%
+  head(30) %>%  # 상위 30개
+  pull(bill_id)
+
+cat("논쟁적 법안:", length(contentious_bills), "건\n")
+
+# 해당 법안의 의원별 투표 (양대 정당만)
+rc_heat <- roll_calls %>%
+  filter(bill_id %in% contentious_bills,
+         party %in% c("국민의힘", "더불어민주당")) %>%
+  mutate(vote_num = case_match(vote_en,
+    "yes" ~ 1,
+    "no" ~ -1,
+    "abstain" ~ 0,
+    .default = NA_real_
+  )) %>%
+  filter(!is.na(vote_num))
+```
+
+```{r t07-heatmap-112, fig.height=8, eval=FALSE}
+# 투표 행렬 (의원 x 법안)
+vote_matrix <- rc_heat %>%
+  select(member_name, bill_id, vote_num, party) %>%
+  pivot_wider(names_from = bill_id, values_from = vote_num, values_fill = 0)
+
+# 의원을 정당별로 정렬
+vote_matrix <- vote_matrix %>%
+  arrange(party, member_name)
+
+# 긴 형식으로 다시 변환 (ggplot용)
+heat_data <- vote_matrix %>%
+  pivot_longer(cols = -c(member_name, party),
+               names_to = "bill_id", values_to = "vote_num") %>%
+  mutate(
+    vote_label = case_match(vote_num,
+      1 ~ "찬성", -1 ~ "반대", 0 ~ "기권/불참"
+    ),
+    member_name = factor(member_name, levels = vote_matrix$member_name)
+  )
+
+ggplot(heat_data, aes(x = bill_id, y = member_name, fill = vote_label)) +
+  geom_tile(color = "white", linewidth = 0.1) +
+  scale_fill_manual(values = c(
+    "찬성" = "#4DAF4A",
+    "반대" = "#E41A1C",
+    "기권/불참" = "#CCCCCC"
+  )) +
+  labs(
+    x = "법안", y = NULL, fill = "투표",
+    title = "논쟁적 법안에 대한 의원별 투표 패턴 (22대)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
+  )
+```
+
+히트맵에서 정당별로 색이 뚜렷하게 구분되면 (한쪽은 초록, 다른 쪽은 빨강),
+여야 대립이 강한 것입니다.
+
+---
+
+## 6. 의원 간 투표 유사도
+
+두 의원이 얼마나 비슷하게 투표하는지 측정할 수 있습니다.
+같은 방향으로 투표한 비율이 **일치율(agreement rate)**입니다.
+
+```{r t07-agreement-113, eval=FALSE}
+# 논쟁적 법안에서 투표 행렬 만들기 (숫자)
+vote_mat <- vote_matrix %>%
+  select(-member_name, -party) %>%
+  as.matrix()
+rownames(vote_mat) <- vote_matrix$member_name
+
+# 샘플: 상위 20명만 (계산 효율)
+set.seed(42)
+sample_names <- vote_matrix %>%
+  group_by(party) %>%
+  slice_sample(n = 10) %>%
+  pull(member_name)
+
+vote_small <- vote_mat[rownames(vote_mat) %in% sample_names, ]
+
+# 일치율 행렬 계산
+n_bills_mat <- ncol(vote_small)
+agreement <- matrix(0, nrow(vote_small), nrow(vote_small))
+for (i in 1:nrow(vote_small)) {
+  for (j in 1:nrow(vote_small)) {
+    agreement[i, j] <- sum(vote_small[i, ] == vote_small[j, ]) / n_bills_mat
+  }
+}
+rownames(agreement) <- rownames(vote_small)
+colnames(agreement) <- rownames(vote_small)
+```
+
+### 투표 유사도 히트맵
+
+```{r t07-agreement-heatmap-114, eval=FALSE}
+# 정당 정보 추가
+party_info <- vote_matrix %>%
+  filter(member_name %in% sample_names) %>%
+  select(member_name, party)
+
+agree_df <- as.data.frame(as.table(agreement)) %>%
+  rename(member1 = Var1, member2 = Var2, agreement = Freq) %>%
+  left_join(party_info, by = c("member1" = "member_name")) %>%
+  rename(party1 = party)
+
+ggplot(agree_df, aes(x = member1, y = member2, fill = agreement)) +
+  geom_tile() +
+  scale_fill_gradient2(
+    low = "#E41A1C", mid = "white", high = "#4DAF4A",
+    midpoint = 0.5, labels = scales::percent
+  ) +
+  labs(
+    x = NULL, y = NULL, fill = "일치율",
+    title = "의원 간 투표 일치율 (22대 논쟁적 법안)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 7),
+    axis.text.y = element_text(size = 7)
+  )
+```
+
+같은 정당 의원끼리 일치율이 높고(초록), 다른 정당 의원과는
+일치율이 낮으면(빨강), 정당이 투표의 핵심 결정 요인임을 보여줍니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 개념 | 의미 | 측정 |
+|------|------|------|
+| 찬성률 | 법안의 논쟁성 | `yes / voted` |
+| Rice Index | 정당 결속력 | `|찬성비율 - 반대비율|` |
+| 이탈투표 | 당론과 다른 투표 | 다수 의견과 불일치 |
+| 투표 유사도 | 의원 간 행태 유사성 | 일치율 행렬 |
+
+이 분석들은 정치학에서 **입법 행태(legislative behavior)** 연구의 기초입니다.
+더 발전시키면 이념 스케일링(ideal point estimation)으로 의원의 이념 위치를
+추정할 수 있습니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+22대 국회에서 **불참률**이 가장 높은 의원 10명을 찾으시오.
+(힌트: `vote_en`이 "absent"인 비율)
+
+```{r t07c115, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+roll_calls %>%
+  group_by(member_name, party) %>%
+  summarise(
+    n_total = n(),
+    n_absent = sum(vote_en == "absent"),
+    absent_rate = round(n_absent / n_total, 3),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(absent_rate)) %>%
+  head(10)
+```
+</details>
+
+### 문제 2 (응용)
+
+논쟁적 법안(찬성률 50-85%)에서의 Rice Index와 비논쟁적 법안(찬성률 90% 이상)에서의
+Rice Index를 비교하시오. 어떤 차이가 있으며, 왜 그런지 설명하시오.
+
+```{r t07c116, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+# 법안별 찬성률 구하기
+bill_yes_rate <- votes %>%
+  filter(assembly == 22) %>%
+  select(bill_id, yes_rate)
+
+rice_with_type <- rice_by_bill %>%
+  inner_join(bill_yes_rate, by = "bill_id") %>%
+  mutate(bill_type = ifelse(yes_rate >= 0.9, "비논쟁", "논쟁"))
+
+rice_with_type %>%
+  filter(party %in% c("국민의힘", "더불어민주당")) %>%
+  group_by(party, bill_type) %>%
+  summarise(
+    n = n(),
+    mean_rice = round(mean(rice), 3),
+    .groups = "drop"
+  )
+```
+비논쟁적 법안에서는 모든 정당이 찬성하므로 Rice Index가 자연히 높습니다.
+논쟁적 법안에서 Rice Index가 낮아지면, 당내 이견이 존재한다는 뜻입니다.
+</details>
+
+### 문제 3 (도전)
+
+특정 상임위원회(예: 국토교통위원회) 소관 법안에서의 정당 결속력과
+다른 위원회 법안에서의 결속력을 비교하시오. 위원회에 따라 결속력이
+달라지는 패턴이 있는가?
+
+```{r t07c117, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+# votes에서 위원회 정보 가져오기
+rice_committee <- rice_by_bill %>%
+  inner_join(votes %>% select(bill_id, committee), by = "bill_id") %>%
+  filter(party %in% c("국민의힘", "더불어민주당"),
+         !is.na(committee))
+
+rice_committee %>%
+  group_by(party, committee) %>%
+  summarise(
+    n = n(),
+    mean_rice = round(mean(rice), 3),
+    .groups = "drop"
+  ) %>%
+  filter(n >= 10) %>%
+  arrange(party, mean_rice) %>%
+  group_by(party) %>%
+  slice(c(1:3, (n()-2):n()))
+```
+위원회별로 결속력이 다르다면, 특정 정책 영역에서 당내 이견이 더 크다는
+증거입니다.
+</details>
+
+
+## 08. 튜토리얼 8: 법안 성공 요인 분석
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 어떤 법안이 국회를 통과하는가?
+
+한국 국회에서 발의되는 수만 건의 법안 중 실제로 통과되는 것은 극히 일부입니다.
+어떤 요인이 법안의 성패를 결정할까요? 발의자의 선수? 정당? 위원회?
+
+이 질문은 종속변수가 "통과/불통과"라는 **이진(binary)** 변수이므로,
+일반적인 OLS 회귀분석 대신 **로지스틱 회귀분석**을 사용합니다.
+
+배울 내용:
+
+- 법안 처리 결과의 패턴 탐색
+- 이진 종속변수와 로지스틱 회귀의 필요성
+- `glm()`으로 로지스틱 회귀 실행하기
+- 오즈비(odds ratio)의 해석
+- 예측 확률 시각화
+
+---
+
+## 1. 법안 처리 결과 탐색
+
+```{r t08-result-overview-118, eval=FALSE}
+# 처리 결과 분포
+bills %>%
+  count(result, sort = TRUE) %>%
+  mutate(pct = round(n / sum(n) * 100, 1)) %>%
+  head(10)
+```
+
+대부분의 법안이 "임기만료폐기" (국회 임기가 끝나면서 자동 폐기)됩니다.
+이것은 한국 국회의 특징입니다: 한 대에 2만 건 이상 발의되지만, 실제로
+통과되는 것은 극히 일부입니다.
+
+### 이진 변수 만들기
+
+분석을 위해 "통과 여부"를 이진 변수로 만듭니다.
+
+```{r t08-binary-119, eval=FALSE}
+bill_analysis <- bills %>%
+  mutate(
+    passed = as.integer(result %in% c("원안가결", "수정가결", "대안반영폐기")),
+    year = as.integer(format(propose_date, "%Y"))
+  )
+
+cat("전체 법안:", nrow(bill_analysis), "\n")
+cat("통과:", sum(bill_analysis$passed), "\n")
+cat("통과율:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
+```
+
+> **"대안반영폐기"를 통과로 분류한 이유**: 이것은 법안의 내용이 다른 대안 법안에
+> 포함(반영)되어 통과된 것입니다. 원래 법안 자체는 폐기되지만, 실질적으로는
+> 입법에 성공한 것입니다.
+
+### 대수별 통과율
+
+```{r t08-pass-rate-assembly-120, eval=FALSE}
+bill_analysis %>%
+  group_by(assembly) %>%
+  summarise(
+    n = n(),
+    n_passed = sum(passed),
+    pass_rate = round(mean(passed) * 100, 1)
+  )
+```
+
+---
+
+## 2. 발의자 특성과 법안 성공
+
+발의자의 정보를 법안 데이터에 결합합니다.
+
+```{r t08-merge-legislator-121, eval=FALSE}
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+cat("분석 대상:", nrow(bill_leg), "건 (발의자 정보 매칭)\n")
+```
+
+### 선수별 통과율
+
+```{r t08-pass-by-seniority-122, eval=FALSE}
+pass_senior <- bill_leg %>%
+  group_by(seniority) %>%
+  summarise(
+    n = n(),
+    pass_rate = mean(passed)
+  ) %>%
+  filter(n >= 50)  # 충분한 표본
+
+ggplot(pass_senior, aes(x = seniority, y = pass_rate)) +
+  geom_col(fill = "steelblue", width = 0.6) +
+  geom_text(aes(label = paste0(round(pass_rate * 100, 1), "%")),
+            vjust = -0.5, size = 3.5) +
+  scale_y_continuous(labels = scales::percent,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "법안 통과율",
+    title = "선수별 법안 통과율"
+  ) +
+  theme_minimal()
+```
+
+경험이 많은 의원의 법안이 더 잘 통과되는 경향이 있나요?
+
+### 위원회별 통과율
+
+```{r t08-pass-by-committee-123, eval=FALSE}
+pass_committee <- bill_leg %>%
+  group_by(committee) %>%
+  summarise(
+    n = n(),
+    pass_rate = mean(passed)
+  ) %>%
+  filter(n >= 100) %>%
+  arrange(desc(pass_rate))
+
+ggplot(pass_committee %>% head(15),
+       aes(x = reorder(committee, pass_rate), y = pass_rate)) +
+  geom_col(fill = "coral") +
+  geom_text(aes(label = paste0(round(pass_rate * 100, 1), "%")),
+            hjust = -0.1, size = 3) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    x = NULL,
+    y = "통과율",
+    title = "위원회별 법안 통과율 (상위 15개)"
+  ) +
+  theme_minimal()
+```
+
+위원회에 따라 통과율이 크게 다릅니다. 왜 그럴까요?
+
+---
+
+## 3. 왜 로지스틱 회귀인가?
+
+종속변수가 0 또는 1(통과/불통과)인 경우, 일반 OLS를 쓰면 문제가 생깁니다.
+
+```{r t08-ols-problem-124, eval=FALSE}
+# OLS로 확률 예측
+m_ols <- lm(passed ~ seniority, data = bill_leg)
+
+ggplot(bill_leg, aes(x = seniority, y = passed)) +
+  geom_jitter(height = 0.05, alpha = 0.05, color = "gray50") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"),
+              color = "blue", se = FALSE) +
+  labs(
+    x = "선수", y = "통과 여부 (0 = 불통과, 1 = 통과)",
+    title = "OLS (빨강) vs 로지스틱 (파랑) 비교"
+  ) +
+  theme_minimal()
+```
+
+- **빨간 선 (OLS)**: 직선이므로 선수가 매우 높으면 확률이 1을 넘을 수 있음
+- **파란 선 (로지스틱)**: S자 곡선으로, 항상 0-1 사이에 있음
+
+**로지스틱 회귀**는 결과가 0/1인 데이터에 적합한 모형입니다.
+확률을 직접 예측하는 대신, **로그 오즈(log-odds)**를 예측합니다.
+
+$$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots$$
+
+- $p$: 통과 확률
+- $\frac{p}{1-p}$: 오즈(odds) - "통과할 확률 / 통과하지 않을 확률"
+
+---
+
+## 4. 로지스틱 회귀 실행
+
+R에서는 `glm()`에 `family = binomial`을 지정합니다.
+
+```{r t08-logit-simple-125, eval=FALSE}
+m1 <- glm(passed ~ seniority, data = bill_leg, family = binomial)
+summary(m1)
+```
+
+### 계수 해석: 오즈비 (Odds Ratio)
+
+로지스틱 회귀의 계수는 **로그 오즈** 단위입니다.
+직관적으로 해석하려면 `exp()`를 취해 **오즈비(odds ratio)**로 변환합니다.
+
+```{r t08-odds-ratio-126, eval=FALSE}
+exp(coef(m1))
+```
+
+> **오즈비 해석**: 선수가 1 증가할 때, 법안이 통과할 오즈가 몇 **배**
+> 변하는가를 나타냅니다.
+> - 오즈비 = 1: 효과 없음
+> - 오즈비 > 1: 통과 가능성 증가
+> - 오즈비 < 1: 통과 가능성 감소
+
+---
+
+## 5. 다중 로지스틱 회귀
+
+여러 요인을 동시에 통제합니다.
+
+```{r t08-logit-multiple-127, eval=FALSE}
+bill_leg_model <- bill_leg %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  mutate(party = relevel(factor(party), ref = "더불어민주당"))
+
+m2 <- glm(passed ~ seniority + gender + district_type + party,
+           data = bill_leg_model, family = binomial)
+summary(m2)
+```
+
+### 오즈비 테이블
+
+```{r t08-or-table-128, eval=FALSE}
+or_df <- broom::tidy(m2, conf.int = TRUE, exponentiate = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term = case_match(term,
+      "seniority" ~ "선수",
+      "genderM" ~ "남성 (vs 여성)",
+      "district_typeproportional" ~ "비례대표 (vs 지역구)",
+      "party국민의힘" ~ "국민의힘 (vs 민주당)",
+      "party조국혁신당" ~ "조국혁신당 (vs 민주당)"
+    )
+  )
+
+or_df %>%
+  select(term, estimate, conf.low, conf.high, p.value) %>%
+  mutate(across(c(estimate, conf.low, conf.high), \(x) round(x, 3)),
+         p.value = round(p.value, 4))
+```
+
+### 오즈비 시각화
+
+```{r t08-or-plot-129, eval=FALSE}
+ggplot(or_df, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "gray50") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high),
+                  color = "steelblue", size = 0.8) +
+  labs(
+    x = "오즈비 (95% 신뢰구간)",
+    y = NULL,
+    title = "법안 통과의 결정 요인 (로지스틱 회귀)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+- 점이 1의 오른쪽: 통과 가능성을 **높이는** 요인
+- 점이 1의 왼쪽: 통과 가능성을 **낮추는** 요인
+- 신뢰구간이 1을 포함: 통계적으로 유의하지 않음
+
+---
+
+## 6. 예측 확률 시각화
+
+로지스틱 회귀의 결과를 **예측 확률**로 변환하면 더 직관적입니다.
+
+```{r t08-predicted-prob-130, eval=FALSE}
+# 선수별 예측 통과 확률 (다른 변수는 기준값으로 고정)
+new_data <- expand.grid(
+  seniority = 1:7,
+  gender = "M",
+  district_type = "constituency",
+  party = factor("더불어민주당",
+                 levels = levels(bill_leg_model$party))
+)
+
+new_data$pred_prob <- predict(m2, newdata = new_data, type = "response")
+
+ggplot(new_data, aes(x = seniority, y = pred_prob)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 3) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = c(0, NA)) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "예측 통과 확률",
+    title = "선수에 따른 법안 통과 예측 확률",
+    subtitle = "남성, 지역구, 더불어민주당 기준"
+  ) +
+  theme_minimal()
+```
+
+### 정당별 예측 확률 비교
+
+```{r t08-predicted-party-131, eval=FALSE}
+new_party <- expand.grid(
+  seniority = 1:5,
+  gender = "M",
+  district_type = "constituency",
+  party = factor(c("더불어민주당", "국민의힘", "조국혁신당"),
+                 levels = levels(bill_leg_model$party))
+)
+
+new_party$pred_prob <- predict(m2, newdata = new_party, type = "response")
+
+ggplot(new_party, aes(x = seniority, y = pred_prob, color = party)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(
+    "더불어민주당" = "#004EA2",
+    "국민의힘" = "#E61E2B",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "선수",
+    y = "예측 통과 확률",
+    color = "정당",
+    title = "정당별 법안 통과 예측 확률"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. 모형 비교
+
+```{r t08-model-compare-132, eval=FALSE}
+# 기본 모형 vs 확장 모형
+m3 <- glm(passed ~ seniority + gender + district_type + party + assembly,
+           data = bill_leg_model, family = binomial)
+
+data.frame(
+  Model = c("M1: 선수만", "M2: 개인 특성", "M3: + 대수"),
+  AIC = c(round(AIC(m1)), round(AIC(m2)), round(AIC(m3))),
+  Pseudo_R2 = c(
+    round(1 - m1$deviance / m1$null.deviance, 4),
+    round(1 - m2$deviance / m2$null.deviance, 4),
+    round(1 - m3$deviance / m3$null.deviance, 4)
+  )
+)
+```
+
+> **AIC (Akaike Information Criterion)**: 모형의 적합도와 복잡성을
+> 동시에 고려합니다. **낮을수록** 좋은 모형입니다.
+
+> **Pseudo R-squared**: OLS의 R-squared와 유사한 해석을 합니다.
+> 0에서 1 사이이며, 높을수록 모형의 설명력이 좋습니다.
+> 다만 OLS의 R-squared보다 일반적으로 낮은 값을 보입니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 개념 | 설명 |
+|------|------|
+| 이진 종속변수 | 결과가 0/1인 변수 (통과/불통과) |
+| 로지스틱 회귀 | 이진 변수를 위한 회귀 모형 (`glm(..., family = binomial)`) |
+| 오즈비 (OR) | `exp(계수)`, >1이면 확률 증가 |
+| 예측 확률 | `predict(..., type = "response")`로 확률 변환 |
+| AIC | 모형 비교 지표 (낮을수록 좋음) |
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+성별(`gender`)만으로 법안 통과를 예측하는 로지스틱 회귀를 실행하고,
+남성 vs 여성의 오즈비를 구하시오.
+
+```{r t08c133, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+m_gender <- glm(passed ~ gender, data = bill_leg, family = binomial)
+exp(coef(m_gender))
+```
+</details>
+
+### 문제 2 (응용)
+
+위원회(`committee`)를 독립변수로 추가한 모형을 추정하시오.
+어떤 위원회의 법안이 통과될 가능성이 높은가? 상위 3개 위원회를 보고하시오.
+(힌트: 위원회가 많으므로 주요 10개 위원회만 사용)
+
+```{r t08c134, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+top_committees <- bill_leg %>%
+  count(committee, sort = TRUE) %>%
+  head(10) %>%
+  pull(committee)
+
+bill_top <- bill_leg %>%
+  filter(committee %in% top_committees) %>%
+  mutate(committee = factor(committee))
+
+m_comm <- glm(passed ~ seniority + committee, data = bill_top, family = binomial)
+broom::tidy(m_comm, exponentiate = TRUE) %>%
+  filter(grepl("committee", term)) %>%
+  arrange(desc(estimate)) %>%
+  head(3) %>%
+  select(term, estimate, p.value)
+```
+</details>
+
+### 문제 3 (도전)
+
+공동발의자 수(`get_proposers()`에서 계산)가 법안 통과에 영향을 미치는지
+분석하시오. 공동발의자가 많을수록 통과 확률이 높아지는가?
+
+```{r t08c135, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>예시 접근법</summary>
+```{r t08c136, eval=FALSE}
+proposers <- get_proposers()
+
+# 법안별 공동발의자 수
+n_cosponsors <- proposers %>%
+  filter(!is_lead) %>%
+  count(bill_id, name = "n_cosponsors")
+
+bill_cosponsor <- bill_analysis %>%
+  inner_join(n_cosponsors, by = "bill_id")
+
+m_cosponsor <- glm(passed ~ n_cosponsors, data = bill_cosponsor,
+                    family = binomial)
+summary(m_cosponsor)
+exp(coef(m_cosponsor))
+```
+</details>
+
+
+## 09. 튜토리얼 9: 국회 발언 패턴 분석
+
+
+
+
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 국회 위원회에서 누가, 얼마나, 어떻게 발언하는가?
+
+국회 상임위원회는 법안 심사의 핵심 무대입니다. 의원들은 질의를 통해
+정부를 견제하고, 관료들은 답변을 통해 정책을 설명합니다.
+이 발언 데이터에는 참여 패턴, 의제 설정, 질의-응답 구조 등
+풍부한 정보가 담겨 있습니다.
+
+이 튜토리얼은 주로 **기술통계와 시각화**를 활용합니다.
+복잡한 모형 없이도, 데이터를 꼼꼼히 들여다보는 것만으로
+의미 있는 패턴을 발견할 수 있습니다.
+
+배울 내용:
+
+- 발언 데이터의 구조와 발언자 역할 분류
+- 참여도 측정: 누가 많이, 길게 발언하는가?
+- 질의-응답 구조 분석
+- 의제별 발언 패턴
+- 시간에 따른 발언 주제 변화
+
+---
+
+## 1. 데이터 구조 파악
+
+`speeches` 데이터는 22대 과학기술정보방송통신위원회의 발언 전문입니다.
+
+```{r t09-overview-137, eval=FALSE}
+cat("총 발언 수:", nrow(speeches), "\n")
+cat("회의 날짜:", n_distinct(speeches$date), "일\n")
+cat("발언자:", n_distinct(speeches$speaker_name), "명\n")
+```
+
+### 발언자 역할
+
+위원회에는 다양한 역할의 발언자가 참여합니다.
+
+```{r t09-roles-138, eval=FALSE}
+speeches %>%
+  count(role, sort = TRUE) %>%
+  mutate(pct = round(n / sum(n) * 100, 1))
+```
+
+```{r t09-role-plot-139, eval=FALSE}
+role_summary <- speeches %>%
+  mutate(role_kr = case_match(role,
+    "legislator"       ~ "의원",
+    "chair"            ~ "위원장",
+    "minister"         ~ "장관",
+    "vice_minister"    ~ "차관",
+    "senior_bureaucrat" ~ "고위관료",
+    "agency_head"      ~ "기관장",
+    "committee_staff"  ~ "전문위원",
+    .default = "기타"
+  )) %>%
+  count(role_kr, sort = TRUE)
+
+ggplot(role_summary, aes(x = reorder(role_kr, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "발언 횟수",
+    title = "발언자 역할별 발언 횟수 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 2. 참여도 분석: 누가 많이 발언하는가?
+
+### 발언 횟수
+
+```{r t09-freq-top-140, eval=FALSE}
+leg_speeches <- speeches %>%
+  filter(role == "legislator")
+
+top_speakers <- leg_speeches %>%
+  count(speaker_name, sort = TRUE) %>%
+  head(15)
+
+ggplot(top_speakers, aes(x = reorder(speaker_name, n), y = n)) +
+  geom_col(fill = "coral") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "발언 횟수",
+    title = "가장 많이 발언한 의원 (22대 과방위, 상위 15명)"
+  ) +
+  theme_minimal()
+```
+
+### 발언 길이
+
+발언 횟수만큼 중요한 것이 **발언 길이**입니다.
+짧은 질문을 자주 하는 의원과 긴 질의를 하는 의원의 패턴이 다릅니다.
+
+```{r t09-length-analysis-141, eval=FALSE}
+leg_speeches <- leg_speeches %>%
+  mutate(speech_length = nchar(speech))
+
+# 의원별 발언 통계
+speaker_stats <- leg_speeches %>%
+  group_by(speaker_name) %>%
+  summarise(
+    n_speeches = n(),
+    total_chars = sum(speech_length),
+    avg_length = round(mean(speech_length)),
+    median_length = median(speech_length)
+  ) %>%
+  filter(n_speeches >= 10) %>%
+  arrange(desc(total_chars))
+
+head(speaker_stats, 10)
+```
+
+### 발언 횟수 vs 평균 길이
+
+```{r t09-freq-vs-length-142, eval=FALSE}
+ggplot(speaker_stats, aes(x = n_speeches, y = avg_length)) +
+  geom_point(alpha = 0.6, color = "steelblue", size = 2) +
+  labs(
+    x = "발언 횟수",
+    y = "평균 발언 길이 (글자 수)",
+    title = "발언 횟수와 평균 발언 길이의 관계"
+  ) +
+  theme_minimal()
+```
+
+많이 발언하는 의원이 더 길게도 발언하나요, 아니면 짧게 자주 발언하나요?
+이 그래프에서 두 가지 패턴의 의원을 구분할 수 있습니다.
+
+---
+
+## 3. 역할별 발언 패턴
+
+위원회의 질의-응답 구조를 분석합니다.
+
+```{r t09-role-length-143, eval=FALSE}
+speeches %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_group = case_match(role,
+      "legislator" ~ "의원",
+      "chair" ~ "위원장",
+      c("minister", "vice_minister", "senior_bureaucrat") ~ "정부측",
+      "committee_staff" ~ "전문위원",
+      .default = "기타"
+    )
+  ) %>%
+  group_by(role_group) %>%
+  summarise(
+    n = n(),
+    avg_length = round(mean(speech_length)),
+    median_length = round(median(speech_length)),
+    total_chars = sum(speech_length)
+  ) %>%
+  arrange(desc(total_chars))
+```
+
+### 발언 길이 분포 비교
+
+```{r t09-role-density-144, eval=FALSE}
+speeches %>%
+  mutate(
+    speech_length = nchar(speech),
+    role_group = case_match(role,
+      "legislator" ~ "의원",
+      c("minister", "vice_minister", "senior_bureaucrat") ~ "정부측",
+      .default = NA_character_
+    )
+  ) %>%
+  filter(!is.na(role_group)) %>%
+  ggplot(aes(x = speech_length, fill = role_group)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("의원" = "steelblue", "정부측" = "coral")) +
+  labs(
+    x = "발언 길이 (글자 수, 로그 스케일)",
+    y = "밀도",
+    fill = NULL,
+    title = "의원 vs 정부측 발언 길이 분포"
+  ) +
+  theme_minimal()
+```
+
+의원은 주로 **짧은 질문**을 하고, 정부측은 **긴 답변**을 합니다.
+이 차이는 위원회의 질의-응답 구조를 반영합니다.
+
+---
+
+## 4. 질의-응답 턴 구조
+
+`speech_order` 변수를 활용하면 회의 내 발언 순서를 추적할 수 있습니다.
+의원 질문 후 정부 답변이 이어지는 패턴을 확인해봅시다.
+
+```{r t09-turn-structure-145, eval=FALSE}
+# 특정 날짜의 발언 순서 추적
+sample_date <- speeches %>%
+  count(date, sort = TRUE) %>%
+  head(1) %>%
+  pull(date)
+
+turns <- speeches %>%
+  filter(date == sample_date) %>%
+  arrange(speech_order) %>%
+  mutate(
+    role_group = case_match(role,
+      "legislator" ~ "의원",
+      "chair" ~ "위원장",
+      c("minister", "vice_minister", "senior_bureaucrat",
+        "agency_head") ~ "정부측",
+      .default = "기타"
+    ),
+    speech_length = nchar(speech)
+  ) %>%
+  head(40)  # 처음 40턴
+
+ggplot(turns, aes(x = speech_order, y = speech_length, fill = role_group)) +
+  geom_col(width = 0.8) +
+  scale_fill_manual(values = c(
+    "의원" = "steelblue", "정부측" = "coral",
+    "위원장" = "gray70", "기타" = "gray90"
+  )) +
+  labs(
+    x = "발언 순서",
+    y = "발언 길이 (글자 수)",
+    fill = "역할",
+    title = paste("회의 발언 턴 구조 (", sample_date, ")")
+  ) +
+  theme_minimal()
+```
+
+의원(파랑)과 정부측(빨강)이 번갈아 나타나는 패턴을 확인할 수 있습니다.
+
+---
+
+## 5. 의제별 발언 분석
+
+특정 의제에 대한 발언을 키워드로 필터링하여 분석합니다.
+
+```{r t09-agenda-keywords-146, eval=FALSE}
+# 의제별 발언 수 비교
+agendas <- list(
+  "AI/인공지능"  = "인공지능|AI|에이아이",
+  "반도체"       = "반도체|칩|파운드리",
+  "방송/미디어"  = "방송|미디어|OTT|넷플릭스",
+  "통신/5G"      = "통신|5G|이동통신|주파수",
+  "개인정보"     = "개인정보|프라이버시|데이터보호"
+)
+
+agenda_counts <- do.call(rbind, lapply(names(agendas), function(topic) {
+  n <- sum(str_detect(speeches$speech, agendas[[topic]]))
+  data.frame(topic = topic, n_mentions = n)
+}))
+
+ggplot(agenda_counts, aes(x = reorder(topic, n_mentions), y = n_mentions)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "관련 발언 수",
+    title = "의제별 발언 빈도 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+### 의제별 시간 추이
+
+```{r t09-agenda-trend-147, eval=FALSE}
+agenda_trend <- do.call(rbind, lapply(names(agendas), function(topic) {
+  speeches %>%
+    mutate(month = format(date, "%Y-%m")) %>%
+    group_by(month) %>%
+    summarise(
+      mentions = sum(str_detect(speech, agendas[[topic]])),
+      total = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(topic = topic, pct = mentions / total * 100)
+}))
+
+agenda_trend %>%
+  mutate(month_date = as.Date(paste0(month, "-01"))) %>%
+  ggplot(aes(x = month_date, y = pct, color = topic)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.5) +
+  labs(
+    x = NULL, y = "관련 발언 비율 (%)",
+    color = "의제",
+    title = "의제별 발언 추이 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+특정 시기에 급증하는 의제가 있나요? 해당 시기에 어떤 사건이 있었는지
+검색해보세요.
+
+---
+
+## 6. 의원별 관심 의제
+
+같은 위원회 의원이라도 관심 분야가 다릅니다.
+
+```{r t09-member-agenda-148, eval=FALSE}
+# 의원별-의제별 발언 비율
+member_agenda <- do.call(rbind, lapply(names(agendas), function(topic) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n_total = n(),
+      n_topic = sum(str_detect(speech, agendas[[topic]])),
+      .groups = "drop"
+    ) %>%
+    filter(n_total >= 20) %>%
+    mutate(topic = topic, pct = n_topic / n_total * 100)
+}))
+
+# 각 의제에서 가장 활발한 의원
+member_agenda %>%
+  group_by(topic) %>%
+  slice_max(pct, n = 3) %>%
+  select(topic, speaker_name, n_total, n_topic, pct) %>%
+  arrange(topic, desc(pct))
+```
+
+### 의원별 의제 프로필 히트맵
+
+```{r t09-member-heatmap-149, fig.height=7, eval=FALSE}
+# 발언 20회 이상인 의원
+active_members <- leg_speeches %>%
+  count(speaker_name) %>%
+  filter(n >= 30) %>%
+  pull(speaker_name)
+
+heatmap_data <- member_agenda %>%
+  filter(speaker_name %in% active_members) %>%
+  select(speaker_name, topic, pct)
+
+ggplot(heatmap_data, aes(x = topic, y = speaker_name, fill = pct)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(pct, 1)), size = 2.5) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  labs(
+    x = NULL, y = NULL, fill = "발언 비율(%)",
+    title = "의원별 의제 관심도 (22대 과방위)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+---
+
+## 7. 발언 다양성 측정
+
+의원이 얼마나 다양한 주제에 대해 발언하는지도 분석할 수 있습니다.
+여러 의제에 골고루 발언하는 의원과, 한 의제에 집중하는 의원이 있을 것입니다.
+
+```{r t09-diversity-150, eval=FALSE}
+# 의제 집중도: 가장 많이 발언한 의제의 비율
+member_concentration <- member_agenda %>%
+  filter(speaker_name %in% active_members) %>%
+  group_by(speaker_name) %>%
+  summarise(
+    max_pct = max(pct),
+    n_topics_active = sum(pct > 5)  # 5% 이상 발언한 의제 수
+  )
+
+ggplot(member_concentration, aes(x = n_topics_active, y = max_pct)) +
+  geom_jitter(width = 0.2, alpha = 0.6, color = "steelblue", size = 3) +
+  labs(
+    x = "활발한 의제 수 (5% 이상 발언)",
+    y = "최대 의제 발언 비율 (%)",
+    title = "의원별 발언 집중도 vs 다양성"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 정리: 오늘 배운 것
+
+이 튜토리얼에서는 복잡한 모형 없이, **기술통계와 시각화**만으로
+발언 데이터에서 의미 있는 패턴을 발견했습니다.
+
+| 분석 | 발견할 수 있는 것 |
+|------|-------------------|
+| 발언 빈도 | 활발한 의원과 소극적 의원 |
+| 발언 길이 | 질문 스타일 (짧은 질의 vs 긴 연설) |
+| 역할별 비교 | 위원회의 질의-응답 구조 |
+| 의제 추적 | 시간에 따른 관심사 변화 |
+| 의원별 의제 | 개인별 전문 분야와 관심사 |
+
+> **데이터 분석의 핵심**: 모형은 도구일 뿐이고, 정말 중요한 것은
+> **데이터를 이해하는 것**입니다. 잘 만든 기술통계와 시각화가
+> 복잡한 모형보다 더 많은 것을 알려줄 때가 많습니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+위원장(`role == "chair"`)의 발언 패턴을 분석하시오.
+위원장은 주로 어떤 길이의 발언을 하며, 다른 역할과 어떻게 다른가?
+
+```{r t09c151, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+speeches %>%
+  mutate(speech_length = nchar(speech)) %>%
+  filter(role %in% c("legislator", "chair", "minister")) %>%
+  mutate(role_kr = case_match(role,
+    "legislator" ~ "의원", "chair" ~ "위원장", "minister" ~ "장관"
+  )) %>%
+  group_by(role_kr) %>%
+  summarise(
+    n = n(),
+    avg = round(mean(speech_length)),
+    median = median(speech_length)
+  )
+```
+위원장의 발언은 대체로 매우 짧습니다. "의사진행" 발언 (발언권 부여,
+안건 소개 등)이 대부분이기 때문입니다.
+</details>
+
+### 문제 2 (응용)
+
+의원의 `member_id`를 활용하여 `legislators` 데이터와 결합하고,
+**선수(seniority)별 발언 패턴** (발언 횟수, 평균 길이)을 비교하시오.
+경험 많은 의원이 더 많이, 더 길게 발언하는가?
+
+```{r t09c152, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r eval=FALSE}
+leg_22 <- legislators %>%
+  filter(assembly == 22) %>%
+  select(member_id, seniority)
+
+leg_speeches %>%
+  inner_join(leg_22, by = "member_id") %>%
+  mutate(speech_length = nchar(speech)) %>%
+  group_by(seniority) %>%
+  summarise(
+    n_members = n_distinct(member_id),
+    avg_speeches = round(n() / n_members),
+    avg_length = round(mean(speech_length))
+  )
+```
+</details>
+
+### 문제 3 (도전)
+
+자신만의 키워드 사전을 만들어 의제 분석을 수행하시오.
+예를 들어, "규제", "혁신", "산업", "보호" 같은 정책 프레이밍 키워드를
+선택하고, 의원별/시기별 사용 패턴을 분석하시오.
+
+```{r t09c153, eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>예시 접근법</summary>
+```{r eval=FALSE}
+frames <- list(
+  "규제" = "규제|규정|제한|금지",
+  "혁신" = "혁신|발전|성장|촉진",
+  "보호" = "보호|안전|피해|방지"
+)
+
+frame_by_member <- do.call(rbind, lapply(names(frames), function(fr) {
+  leg_speeches %>%
+    group_by(speaker_name) %>%
+    summarise(
+      n = n(),
+      mentions = sum(str_detect(speech, frames[[fr]])),
+      .groups = "drop"
+    ) %>%
+    filter(n >= 20) %>%
+    mutate(frame = fr, pct = mentions / n * 100)
+}))
+
+frame_by_member %>%
+  group_by(frame) %>%
+  summarise(avg_pct = round(mean(pct), 1))
+```
+</details>
+

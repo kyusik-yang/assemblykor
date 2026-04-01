@@ -14,5 +14,8 @@ data-raw/speeches_full.parquet
 data-raw/roll_calls_raw.csv
 data-raw/votes_raw.csv
 
+# rsconnect deployment metadata
+**/rsconnect/
+
 # pkgdown generated site
 docs/

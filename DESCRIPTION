@@ -11,8 +11,7 @@ Description: Provides ready-to-use datasets from the Korean National Assembly
     practice regression, panel data analysis, text analysis, and network analysis
     with real legislative data. Roll call vote data and spatial voting models are
     described in Poole and Rosenthal (1985) <doi:10.2307/2111172>. Legislative
-    data is sourced from the Korean National Assembly Open API
-    <https://open.assembly.go.kr/>.
+    data is sourced from the Korean National Assembly Open API.
 License: MIT + file LICENSE
 URL: https://kyusik-yang.github.io/assemblykor/,
     https://github.com/kyusik-yang/assemblykor

@@ -74,12 +74,12 @@ list_tutorials <- function() {
 #' @seealso \code{\link{run_tutorial}} for the interactive browser version.
 #'
 #' @examples
-#' \dontrun{
-#' # Copy by name
-#' open_tutorial("01-tidyverse-basics")
+#' if (interactive()) {
+#'   # Copy by name
+#'   open_tutorial("01-tidyverse-basics")
 #'
-#' # Copy by number
-#' open_tutorial(1)
+#'   # Copy by number
+#'   open_tutorial(1)
 #' }
 #'
 #' @export
@@ -130,8 +130,8 @@ open_tutorial <- function(name, dest_dir = getwd()) {
 #' @seealso \code{\link{open_tutorial}} for the plain Rmd version.
 #'
 #' @examples
-#' \dontrun{
-#' run_tutorial(1)  # Launch tutorial 1 in browser
+#' if (interactive()) {
+#'   run_tutorial(1)
 #' }
 #'
 #' @export
@@ -167,14 +167,14 @@ run_tutorial <- function(name) {
 #' @return The font family name used (invisibly).
 #'
 #' @examples
-#' \dontrun{
-#' library(ggplot2)
-#' set_ko_font()
+#' if (interactive()) {
+#'   library(ggplot2)
+#'   set_ko_font()
 #'
-#' # Now Korean text renders correctly
-#' ggplot(data.frame(x = 1), aes(x, x)) +
-#'   geom_point() +
-#'   labs(title = "Korean Title Test")
+#'   # Now Korean text renders correctly
+#'   ggplot(data.frame(x = 1), aes(x, x)) +
+#'     geom_point() +
+#'     labs(title = "Korean Title Test")
 #' }
 #'
 #' @export

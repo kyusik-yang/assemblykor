@@ -164,7 +164,7 @@
 #' Not all legislators appear in every year, as the panel is unbalanced
 #' (entries correspond to active service periods).
 #'
-#' @source OpenWatch (OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly})), CC BY-SA 4.0 license.
+#' @source OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly}), CC BY-SA 4.0 license.
 #'
 #' @examples
 #' data(wealth)
@@ -282,9 +282,8 @@
 #' policy, and R&D governance, making it suitable for keyword analysis,
 #' topic modeling, and other text analysis exercises.
 #'
-#' @source National Assembly committee minutes, derived from the
-#'   \href{https://github.com/kyusik-yang/speech-assembly-korea}{speech-assembly-korea}
-#'   project (all_speeches_16_22.parquet).
+#' @source National Assembly committee minutes via the
+#'   Open National Assembly Information API.
 #'
 #' @examples
 #' data(speeches)

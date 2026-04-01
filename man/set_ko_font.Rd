@@ -19,14 +19,14 @@ to all ggplot2 plots via \code{theme_set()}. Call this once at the top
 of your script to avoid broken Korean text in plot titles and labels.
 }
 \examples{
-\dontrun{
-library(ggplot2)
-set_ko_font()
+if (interactive()) {
+  library(ggplot2)
+  set_ko_font()
 
-# Now Korean text renders correctly
-ggplot(data.frame(x = 1), aes(x, x)) +
-  geom_point() +
-  labs(title = "Korean Title Test")
+  # Now Korean text renders correctly
+  ggplot(data.frame(x = 1), aes(x, x)) +
+    geom_point() +
+    labs(title = "Korean Title Test")
 }
 
 }

@@ -1,0 +1,595 @@
+---
+title: "튜토리얼 2: ggplot2로 국회 데이터 시각화"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+set_ko_font()
+data(legislators)
+data(bills)
+data(wealth)
+data(seminars)
+```
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 데이터로 보는 한국 국회 - 누가, 얼마나, 어떻게 활동하는가?
+
+지난 튜토리얼에서 숫자 표로 데이터를 요약했습니다. 하지만 표만으로는
+분포의 형태, 시간적 추이, 그룹 간 차이를 한눈에 파악하기 어렵습니다.
+이 튜토리얼에서는 `ggplot2`로 데이터를 시각적으로 탐색합니다.
+
+배울 내용:
+
+- `ggplot2`의 기본 구조: **데이터 + 매핑(aes) + 기하(geom)**
+- 6가지 핵심 그래프: 막대, 히스토그램, 박스플롯, 산점도, 꺾은선, 면분할
+- 그래프를 읽기 좋게 다듬는 방법 (제목, 색상, 테마)
+
+---
+
+## 1. ggplot2의 기본 구조
+
+`ggplot2`는 **레이어를 쌓아 올리는** 방식으로 그래프를 만듭니다.
+모든 ggplot은 세 가지 요소로 시작합니다:
+
+1. **데이터** (`data`): 어떤 데이터프레임을 쓸 것인가?
+2. **매핑** (`aes`): 어떤 변수를 x축, y축, 색상 등에 대응시킬 것인가?
+3. **기하** (`geom_*`): 점, 선, 막대 등 어떤 형태로 그릴 것인가?
+
+```{r eval=FALSE}
+# ggplot의 기본 구조 (이것은 실행하지 않아도 됩니다)
+ggplot(data = 데이터, aes(x = x변수, y = y변수)) +
+  geom_xxx()
+```
+
+`+` 기호로 레이어를 추가합니다.
+파이프(`%>%`)와 비슷하지만, ggplot 내부에서는 `+`를 씁니다.
+
+---
+
+## 2. 막대 그래프: 범주 비교
+
+**질문**: 22대 국회의 정당별 의석 분포는 어떠한가?
+
+```{r bar-basic}
+legislators %>%
+  filter(assembly == 22) %>%
+  count(party) %>%
+  filter(n >= 3) %>%
+  ggplot(aes(x = reorder(party, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL,
+    y = "의원 수",
+    title = "22대 국회 정당별 의석 수"
+  )
+```
+
+코드를 한 줄씩 읽어봅시다:
+
+- `count(party)`: 정당별 의원 수를 세고
+- `filter(n >= 3)`: 3명 미만인 소수 정당은 제외
+- `aes(x = reorder(party, n), y = n)`: 의원 수 기준으로 정당을 정렬
+- `geom_col()`: 막대 그래프
+- `coord_flip()`: 가로 방향으로 뒤집기 (긴 정당명이 잘 보이도록)
+- `labs()`: 축 라벨과 제목
+
+### 쌓은 막대: 비율 비교
+
+정당별 성별 구성을 비교해봅시다.
+
+```{r bar-stacked}
+legislators %>%
+  filter(assembly == 22,
+         party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  count(party, gender) %>%
+  ggplot(aes(x = party, y = n, fill = gender)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(
+    values = c("F" = "#E66101", "M" = "#5E3C99"),
+    labels = c("여성", "남성")
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = NULL, y = "비율", fill = "성별",
+    title = "주요 정당의 성별 구성 (22대)"
+  ) +
+  theme_minimal()
+```
+
+`position = "fill"`은 각 막대의 높이를 100%로 맞춰서 비율을 비교하기 좋게 합니다.
+`position = "dodge"`로 바꾸면 막대가 나란히 놓입니다. 직접 바꿔보세요.
+
+> **색상 선택 팁**: 범주가 2-3개일 때는 직접 색을 지정하는 것이 좋습니다.
+> 색각 이상(색맹)이 있는 사람도 구별할 수 있도록 주황-보라 같은 조합을
+> 사용합니다. 빨강-초록 조합은 피하세요.
+
+---
+
+## 3. 히스토그램: 분포 살펴보기
+
+**질문**: 국회의원의 재산은 어떻게 분포하는가?
+
+히스토그램은 연속형 변수의 **분포 형태**를 보여줍니다.
+데이터가 어디에 몰려 있는지, 극단값이 있는지 파악할 수 있습니다.
+
+```{r hist-basic}
+ggplot(wealth, aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 50, fill = "coral", color = "white") +
+  labs(
+    x = "순자산 (10억 원)",
+    y = "빈도",
+    title = "국회의원 순자산 분포"
+  ) +
+  theme_minimal()
+```
+
+오른쪽으로 긴 꼬리가 보입니다. 대부분의 의원은 순자산이 낮은 쪽에 몰려 있지만,
+극소수의 매우 부유한 의원이 있어 분포를 오른쪽으로 끌어당깁니다.
+
+### 로그 변환: 치우친 분포를 다루는 방법
+
+이렇게 치우친 분포는 로그 스케일로 보면 구조가 더 잘 보입니다.
+
+```{r hist-log}
+wealth %>%
+  filter(net_worth > 0) %>%
+  ggplot(aes(x = net_worth / 1e6)) +
+  geom_histogram(bins = 40, fill = "darkgreen", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    x = "순자산 (10억 원, 로그 스케일)",
+    y = "빈도",
+    title = "순자산의 로그 스케일 분포"
+  ) +
+  theme_minimal()
+```
+
+> **`scale_x_log10()`**: x축을 로그 스케일로 바꿉니다.
+> 로그 스케일에서 한 칸의 차이는 "몇 배"의 차이를 의미합니다.
+> 치우친 재산/소득 데이터에서 자주 쓰이는 기법입니다.
+
+### 밀도 곡선: 두 그룹 비교
+
+히스토그램을 겹치면 읽기 어렵습니다. 밀도 곡선은 그룹 비교에 더 적합합니다.
+
+```{r density-compare}
+wealth %>%
+  filter(net_worth > 0) %>%
+  mutate(gangnam = ifelse(has_gangnam_property, "강남 보유", "미보유")) %>%
+  ggplot(aes(x = net_worth / 1e6, fill = gangnam)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("강남 보유" = "#D95F02", "미보유" = "#7570B3")) +
+  labs(
+    x = "순자산 (10억 원, 로그 스케일)",
+    y = "밀도",
+    fill = NULL,
+    title = "강남 부동산 보유 여부에 따른 순자산 분포"
+  ) +
+  theme_minimal()
+```
+
+두 분포의 위치가 다르다면, 강남 부동산을 가진 의원이 전반적으로 더 부유한
+경향이 있다는 것을 시각적으로 확인할 수 있습니다.
+
+---
+
+## 4. 박스플롯: 그룹 간 비교
+
+**질문**: 선수(당선 횟수)에 따라 재산 수준이 다른가?
+
+박스플롯은 중앙값, 사분위, 이상값을 한 눈에 보여주는 그래프입니다.
+
+```{r boxplot-anatomy, echo=FALSE, fig.height=3}
+# 박스플롯 구조 설명용 그래프
+set.seed(42)
+df_box <- data.frame(x = "예시", y = rnorm(100, 50, 15))
+ggplot(df_box, aes(x, y)) +
+  geom_boxplot(fill = "lightblue", width = 0.4) +
+  annotate("text", x = 1.35, y = median(df_box$y), label = "중앙값 (50%)", size = 3.5) +
+  annotate("text", x = 1.35, y = quantile(df_box$y, 0.75), label = "3사분위 (75%)", size = 3.5) +
+  annotate("text", x = 1.35, y = quantile(df_box$y, 0.25), label = "1사분위 (25%)", size = 3.5) +
+  labs(x = NULL, y = "값", title = "박스플롯 읽는 법") +
+  theme_minimal()
+```
+
+- **상자**: 데이터의 중간 50%가 이 안에 있습니다 (1사분위 ~ 3사분위)
+- **가운데 선**: 중앙값
+- **수염**: 상자 밖으로 1.5배 IQR까지
+- **점**: 그보다 바깥에 있는 이상값
+
+```{r boxplot-seniority}
+leg_w <- legislators %>%
+  filter(assembly == 22) %>%
+  inner_join(wealth %>% filter(year == 2024), by = "member_id")
+
+ggplot(leg_w, aes(x = factor(seniority), y = net_worth / 1e6)) +
+  geom_boxplot(fill = "lightblue", outlier.alpha = 0.3) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "순자산 (10억 원)",
+    title = "선수별 국회의원 순자산 분포 (22대)"
+  ) +
+  theme_minimal()
+```
+
+선수가 높을수록 재산이 많은 경향이 있나요?
+상자의 위치와 이상값의 분포를 비교해보세요.
+
+---
+
+## 5. 산점도: 두 변수의 관계
+
+**질문**: 선수와 입법 생산성 사이에는 어떤 관계가 있는가?
+
+산점도는 두 연속형 변수 사이의 관계를 보여줍니다.
+
+```{r scatter-basic}
+legislators %>%
+  filter(assembly == 22) %>%
+  ggplot(aes(x = seniority, y = n_bills_lead)) +
+  geom_jitter(width = 0.2, alpha = 0.5, color = "steelblue") +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "대표발의 건수",
+    title = "선수와 입법 생산성 (22대)"
+  ) +
+  theme_minimal()
+```
+
+> **`geom_jitter()`**: `geom_point()` 대신 사용하면 같은 위치에 겹치는 점들을
+> 살짝 흔들어 놓아 분포를 더 잘 볼 수 있습니다. `width`로 흔들림 정도를 조절합니다.
+> **`alpha`**: 투명도 (0 = 완전 투명, 1 = 불투명). 점이 겹치는 영역을 확인하는 데 유용합니다.
+
+### 추세선과 그룹 구분 추가하기
+
+```{r scatter-groups}
+legislators %>%
+  filter(assembly == 22) %>%
+  ggplot(aes(x = seniority, y = n_bills_lead, color = gender)) +
+  geom_jitter(width = 0.2, alpha = 0.5, size = 2) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  scale_color_manual(
+    values = c("F" = "#E66101", "M" = "#5E3C99"),
+    labels = c("여성", "남성")
+  ) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "대표발의 건수",
+    color = "성별",
+    title = "선수와 입법 생산성: 성별 비교 (22대)"
+  ) +
+  theme_minimal()
+```
+
+`geom_smooth(method = "lm")`은 직선 추세선을 추가합니다.
+두 선의 기울기가 다르다면, 선수의 효과가 성별에 따라 다를 수 있다는
+신호입니다 (이것을 **상호작용 효과**라고 하며, 튜토리얼 3에서 다룹니다).
+
+---
+
+## 6. 꺾은선 그래프: 시간에 따른 변화
+
+**질문**: 법안 발의 추이는 어떻게 변해왔는가?
+
+시간 축이 있는 데이터에서 추이(trend)를 보여줄 때 사용합니다.
+
+```{r line-bills}
+bills %>%
+  mutate(month = as.Date(format(propose_date, "%Y-%m-01"))) %>%
+  count(month) %>%
+  filter(!is.na(month)) %>%
+  ggplot(aes(x = month, y = n)) +
+  geom_line(color = "steelblue", linewidth = 0.8) +
+  geom_point(size = 0.8, color = "steelblue") +
+  labs(
+    x = NULL,
+    y = "월별 발의 건수",
+    title = "월별 법안 발의 건수 (20-22대)"
+  ) +
+  theme_minimal()
+```
+
+대수가 바뀌는 시점(4년마다)에 급격한 변화가 보이나요?
+국회 임기 시작과 끝 무렵에 발의 패턴이 어떻게 달라지는지 관찰해보세요.
+
+### 여당-야당 비교: 초당적 협력 추이
+
+```{r line-seminar}
+seminars %>%
+  filter(year >= 2016) %>%
+  group_by(year, is_governing) %>%
+  summarise(avg_cross = mean(cross_party_ratio, na.rm = TRUE),
+            .groups = "drop") %>%
+  mutate(status = ifelse(is_governing, "여당", "야당")) %>%
+  ggplot(aes(x = year, y = avg_cross, color = status)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = c("여당" = "tomato", "야당" = "dodgerblue")) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "연도",
+    y = "초당적 세미나 비율",
+    color = NULL,
+    title = "여당 vs 야당의 초당적 협력 추이"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. facet_wrap(): 소그룹 나란히 비교
+
+**질문**: 대수별로 의원들의 발의 활동 분포가 어떻게 다른가?
+
+같은 유형의 그래프를 여러 그룹으로 나눠서 나란히 보여주는 것을
+**면분할(faceting)**이라 합니다. 그룹 간 패턴을 비교하기에 매우 효과적입니다.
+
+```{r facet-bills}
+legislators %>%
+  ggplot(aes(x = n_bills_lead)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ assembly, ncol = 3) +
+  labs(
+    x = "대표발의 건수",
+    y = "빈도",
+    title = "대수별 의원 대표발의 건수 분포"
+  ) +
+  theme_minimal()
+```
+
+### 자산 구성의 시간 변화
+
+```{r facet-wealth}
+wealth %>%
+  select(year, real_estate, deposits, stocks) %>%
+  group_by(year) %>%
+  summarise(across(everything(), \(x) median(x / 1e6, na.rm = TRUE))) %>%
+  pivot_longer(-year, names_to = "asset_type", values_to = "median_bn") %>%
+  mutate(asset_type = case_match(asset_type,
+    "real_estate" ~ "부동산",
+    "deposits"    ~ "예금",
+    "stocks"      ~ "주식"
+  )) %>%
+  ggplot(aes(x = year, y = median_bn, color = asset_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "연도",
+    y = "중앙값 (10억 원)",
+    color = "자산 유형",
+    title = "국회의원 자산 구성 변화"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 8. 그래프 다듬기: 기본에서 완성으로
+
+같은 데이터라도 그래프를 어떻게 다듬느냐에 따라 전달력이 크게 달라집니다.
+기본 그래프에서 출발해 단계적으로 개선해봅시다.
+
+### Step 1: 기본 (최소한의 코드)
+
+```{r polish-step1}
+df_party <- legislators %>%
+  filter(assembly == 22,
+         party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  group_by(party) %>%
+  summarise(median_bills = median(n_bills_lead))
+
+ggplot(df_party, aes(x = party, y = median_bills)) +
+  geom_col()
+```
+
+읽을 수는 있지만, 제목도 없고 색도 없어서 어떤 이야기를 하려는지 불분명합니다.
+
+### Step 2: 정보 추가 (제목, 색상, 라벨)
+
+```{r polish-step2}
+party_colors <- c(
+  "국민의힘" = "#E61E2B",
+  "더불어민주당" = "#004EA2",
+  "조국혁신당" = "#00B0F0"
+)
+
+ggplot(df_party, aes(x = reorder(party, -median_bills),
+                     y = median_bills, fill = party)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  scale_fill_manual(values = party_colors) +
+  labs(
+    x = NULL,
+    y = "대표발의 건수 (중앙값)",
+    title = "22대 국회 주요 정당별 입법 생산성",
+    caption = "출처: assemblykor 패키지 (국회 공공데이터)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+### Step 3: 값 표시 추가
+
+```{r polish-step3}
+ggplot(df_party, aes(x = reorder(party, -median_bills),
+                     y = median_bills, fill = party)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = median_bills), vjust = -0.5, size = 4.5) +
+  scale_fill_manual(values = party_colors) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    x = NULL,
+    y = "대표발의 건수 (중앙값)",
+    title = "22대 국회 주요 정당별 입법 생산성",
+    caption = "출처: assemblykor 패키지 (국회 공공데이터)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+> **핵심**: 좋은 그래프는 (1) 무엇을 보여주는지 제목으로 명확히 하고,
+> (2) 축과 범례가 직관적이며, (3) 불필요한 요소를 제거합니다.
+
+---
+
+## 9. 유용한 테마 비교
+
+ggplot2에는 여러 기본 테마가 있습니다. 같은 그래프에 다른 테마를 적용해봅시다.
+
+```{r themes, fig.height=8}
+base_plot <- legislators %>%
+  filter(assembly == 22) %>%
+  ggplot(aes(x = seniority, y = n_bills_lead)) +
+  geom_jitter(width = 0.2, alpha = 0.4, color = "steelblue") +
+  labs(x = "선수", y = "대표발의 건수")
+
+library(patchwork)
+
+(base_plot + ggtitle("theme_gray() (기본)")) +
+(base_plot + theme_minimal() + ggtitle("theme_minimal()")) +
+(base_plot + theme_classic() + ggtitle("theme_classic()")) +
+(base_plot + theme_bw() + ggtitle("theme_bw()")) +
+  plot_layout(ncol = 2)
+```
+
+> **`patchwork` 패키지**: 여러 그래프를 `+`로 합쳐서 하나의 그림으로 만듭니다.
+> `plot_layout()`으로 배치를 조정합니다.
+> 설치: `install.packages("patchwork")`
+
+---
+
+## 그래프 선택 가이드
+
+어떤 상황에 어떤 그래프가 적합한지 정리합니다.
+
+| 알고 싶은 것 | 추천 그래프 | geom |
+|-------------|------------|------|
+| 범주별 크기 비교 | 막대 그래프 | `geom_col()` |
+| 연속 변수의 분포 | 히스토그램 / 밀도 | `geom_histogram()` / `geom_density()` |
+| 그룹 간 분포 비교 | 박스플롯 | `geom_boxplot()` |
+| 두 변수의 관계 | 산점도 | `geom_point()` / `geom_jitter()` |
+| 시간에 따른 변화 | 꺾은선 | `geom_line()` |
+| 소그룹 패턴 비교 | 면분할 | `facet_wrap()` |
+| 비율 구성 | 쌓은 막대 | `geom_col(position = "fill")` |
+
+다음 튜토리얼에서는 이 시각화 기법을 **회귀분석** 결과를 표현하는 데 활용합니다.
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+22대 국회 상임위원회별 법안 수를 막대그래프로 그리시오 (상위 10개만).
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+bills %>%
+  filter(assembly == 22) %>%
+  count(committee, sort = TRUE) %>%
+  head(10) %>%
+  ggplot(aes(x = reorder(committee, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "법안 수",
+       title = "22대 국회 상임위원회별 법안 수 (상위 10개)") +
+  theme_minimal()
+```
+</details>
+
+### 문제 2 (기초)
+
+`wealth` 데이터에서 서울 부동산 보유 여부(`has_seoul_property`)에 따른
+부동산 자산(`real_estate`) 분포를 박스플롯으로 비교하시오.
+(힌트: x축을 `has_seoul_property`, y축을 `real_estate / 1e6`으로)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+wealth %>%
+  filter(year == 2024) %>%
+  mutate(seoul = ifelse(has_seoul_property, "보유", "미보유")) %>%
+  ggplot(aes(x = seoul, y = real_estate / 1e6)) +
+  geom_boxplot(fill = c("lightblue", "salmon")) +
+  labs(x = "서울 부동산", y = "부동산 자산 (10억 원)",
+       title = "서울 부동산 보유 여부별 부동산 자산 분포") +
+  theme_minimal()
+```
+</details>
+
+### 문제 3 (응용)
+
+`seminars` 데이터에서 선수(`seniority`)별 세미나 개최 건수의 산점도를 그리고,
+추세선을 추가하시오. 어떤 경향이 보이는가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+seminars %>%
+  ggplot(aes(x = seniority, y = n_seminars)) +
+  geom_jitter(width = 0.2, alpha = 0.3, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "선수", y = "세미나 개최 건수",
+       title = "선수와 세미나 활동의 관계") +
+  theme_minimal()
+```
+</details>
+
+### 문제 4 (응용)
+
+대수(`assembly`)별로 `facet_wrap()`을 사용하여 의원들의 대표발의 건수
+히스토그램을 나란히 그리시오. 대수에 따라 분포의 형태가 달라지는가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+legislators %>%
+  ggplot(aes(x = n_bills_lead)) +
+  geom_histogram(bins = 30, fill = "coral", color = "white") +
+  facet_wrap(~ assembly) +
+  labs(x = "대표발의 건수", y = "빈도",
+       title = "대수별 대표발의 분포") +
+  theme_minimal()
+```
+</details>
+
+### 문제 5 (도전)
+
+오늘 배운 시각화 기법 중 **두 가지 이상**을 조합하여 흥미로운 패턴을 발견하고,
+제목과 축 라벨을 포함한 완성된 그래프를 만드시오.
+예를 들어: 정당별 + 성별 산점도를 `facet_wrap`으로 나누거나,
+시계열에 강조 영역(`annotate`)을 추가하는 등.
+
+그래프 아래에 발견한 패턴을 1-2문장으로 설명하시오.

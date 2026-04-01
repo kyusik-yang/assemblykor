@@ -8,3 +8,5 @@
 ^LICENSE\.md$
 ^HANDOVER.*\.md$
 ^cran-comments\.md$
+rsconnect
+^CRAN-SUBMISSION$

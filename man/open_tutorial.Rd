@@ -21,12 +21,12 @@ Copies a tutorial R Markdown file to the specified directory (default:
 current working directory) so students can edit and run it in RStudio.
 }
 \examples{
-\dontrun{
-# Copy by name
-open_tutorial("01-tidyverse-basics")
+if (interactive()) {
+  # Copy by name
+  open_tutorial("01-tidyverse-basics")
 
-# Copy by number
-open_tutorial(1)
+  # Copy by number
+  open_tutorial(1)
 }
 
 }

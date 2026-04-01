@@ -1,0 +1,461 @@
+---
+title: "튜토리얼 8: 법안 성공 요인 분석"
+subtitle: "assemblykor 패키지로 배우는 데이터 분석"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 8, fig.height = 5)
+library(assemblykor)
+library(dplyr)
+library(ggplot2)
+set_ko_font()
+data(bills)
+data(legislators)
+```
+
+## 이 튜토리얼에서 배울 것
+
+**연구 질문**: 어떤 법안이 국회를 통과하는가?
+
+한국 국회에서 발의되는 수만 건의 법안 중 실제로 통과되는 것은 극히 일부입니다.
+어떤 요인이 법안의 성패를 결정할까요? 발의자의 선수? 정당? 위원회?
+
+이 질문은 종속변수가 "통과/불통과"라는 **이진(binary)** 변수이므로,
+일반적인 OLS 회귀분석 대신 **로지스틱 회귀분석**을 사용합니다.
+
+배울 내용:
+
+- 법안 처리 결과의 패턴 탐색
+- 이진 종속변수와 로지스틱 회귀의 필요성
+- `glm()`으로 로지스틱 회귀 실행하기
+- 오즈비(odds ratio)의 해석
+- 예측 확률 시각화
+
+---
+
+## 1. 법안 처리 결과 탐색
+
+```{r result-overview}
+# 처리 결과 분포
+bills %>%
+  count(result, sort = TRUE) %>%
+  mutate(pct = round(n / sum(n) * 100, 1)) %>%
+  head(10)
+```
+
+대부분의 법안이 "임기만료폐기" (국회 임기가 끝나면서 자동 폐기)됩니다.
+이것은 한국 국회의 특징입니다: 한 대에 2만 건 이상 발의되지만, 실제로
+통과되는 것은 극히 일부입니다.
+
+### 이진 변수 만들기
+
+분석을 위해 "통과 여부"를 이진 변수로 만듭니다.
+
+```{r binary}
+bill_analysis <- bills %>%
+  mutate(
+    passed = as.integer(result %in% c("원안가결", "수정가결", "대안반영폐기")),
+    year = as.integer(format(propose_date, "%Y"))
+  )
+
+cat("전체 법안:", nrow(bill_analysis), "\n")
+cat("통과:", sum(bill_analysis$passed), "\n")
+cat("통과율:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
+```
+
+> **"대안반영폐기"를 통과로 분류한 이유**: 이것은 법안의 내용이 다른 대안 법안에
+> 포함(반영)되어 통과된 것입니다. 원래 법안 자체는 폐기되지만, 실질적으로는
+> 입법에 성공한 것입니다.
+
+### 대수별 통과율
+
+```{r pass-rate-assembly}
+bill_analysis %>%
+  group_by(assembly) %>%
+  summarise(
+    n = n(),
+    n_passed = sum(passed),
+    pass_rate = round(mean(passed) * 100, 1)
+  )
+```
+
+---
+
+## 2. 발의자 특성과 법안 성공
+
+발의자의 정보를 법안 데이터에 결합합니다.
+
+```{r merge-legislator}
+bill_leg <- bill_analysis %>%
+  inner_join(
+    legislators %>% select(member_id, assembly, party, gender,
+                           seniority, district_type),
+    by = c("proposer_id" = "member_id", "assembly")
+  )
+
+cat("분석 대상:", nrow(bill_leg), "건 (발의자 정보 매칭)\n")
+```
+
+### 선수별 통과율
+
+```{r pass-by-seniority}
+pass_senior <- bill_leg %>%
+  group_by(seniority) %>%
+  summarise(
+    n = n(),
+    pass_rate = mean(passed)
+  ) %>%
+  filter(n >= 50)  # 충분한 표본
+
+ggplot(pass_senior, aes(x = seniority, y = pass_rate)) +
+  geom_col(fill = "steelblue", width = 0.6) +
+  geom_text(aes(label = paste0(round(pass_rate * 100, 1), "%")),
+            vjust = -0.5, size = 3.5) +
+  scale_y_continuous(labels = scales::percent,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "법안 통과율",
+    title = "선수별 법안 통과율"
+  ) +
+  theme_minimal()
+```
+
+경험이 많은 의원의 법안이 더 잘 통과되는 경향이 있나요?
+
+### 위원회별 통과율
+
+```{r pass-by-committee}
+pass_committee <- bill_leg %>%
+  group_by(committee) %>%
+  summarise(
+    n = n(),
+    pass_rate = mean(passed)
+  ) %>%
+  filter(n >= 100) %>%
+  arrange(desc(pass_rate))
+
+ggplot(pass_committee %>% head(15),
+       aes(x = reorder(committee, pass_rate), y = pass_rate)) +
+  geom_col(fill = "coral") +
+  geom_text(aes(label = paste0(round(pass_rate * 100, 1), "%")),
+            hjust = -0.1, size = 3) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent,
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    x = NULL,
+    y = "통과율",
+    title = "위원회별 법안 통과율 (상위 15개)"
+  ) +
+  theme_minimal()
+```
+
+위원회에 따라 통과율이 크게 다릅니다. 왜 그럴까요?
+
+---
+
+## 3. 왜 로지스틱 회귀인가?
+
+종속변수가 0 또는 1(통과/불통과)인 경우, 일반 OLS를 쓰면 문제가 생깁니다.
+
+```{r ols-problem}
+# OLS로 확률 예측
+m_ols <- lm(passed ~ seniority, data = bill_leg)
+
+ggplot(bill_leg, aes(x = seniority, y = passed)) +
+  geom_jitter(height = 0.05, alpha = 0.05, color = "gray50") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"),
+              color = "blue", se = FALSE) +
+  labs(
+    x = "선수", y = "통과 여부 (0 = 불통과, 1 = 통과)",
+    title = "OLS (빨강) vs 로지스틱 (파랑) 비교"
+  ) +
+  theme_minimal()
+```
+
+- **빨간 선 (OLS)**: 직선이므로 선수가 매우 높으면 확률이 1을 넘을 수 있음
+- **파란 선 (로지스틱)**: S자 곡선으로, 항상 0-1 사이에 있음
+
+**로지스틱 회귀**는 결과가 0/1인 데이터에 적합한 모형입니다.
+확률을 직접 예측하는 대신, **로그 오즈(log-odds)**를 예측합니다.
+
+$$\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots$$
+
+- $p$: 통과 확률
+- $\frac{p}{1-p}$: 오즈(odds) - "통과할 확률 / 통과하지 않을 확률"
+
+---
+
+## 4. 로지스틱 회귀 실행
+
+R에서는 `glm()`에 `family = binomial`을 지정합니다.
+
+```{r logit-simple}
+m1 <- glm(passed ~ seniority, data = bill_leg, family = binomial)
+summary(m1)
+```
+
+### 계수 해석: 오즈비 (Odds Ratio)
+
+로지스틱 회귀의 계수는 **로그 오즈** 단위입니다.
+직관적으로 해석하려면 `exp()`를 취해 **오즈비(odds ratio)**로 변환합니다.
+
+```{r odds-ratio}
+exp(coef(m1))
+```
+
+> **오즈비 해석**: 선수가 1 증가할 때, 법안이 통과할 오즈가 몇 **배**
+> 변하는가를 나타냅니다.
+> - 오즈비 = 1: 효과 없음
+> - 오즈비 > 1: 통과 가능성 증가
+> - 오즈비 < 1: 통과 가능성 감소
+
+---
+
+## 5. 다중 로지스틱 회귀
+
+여러 요인을 동시에 통제합니다.
+
+```{r logit-multiple}
+bill_leg_model <- bill_leg %>%
+  filter(party %in% c("국민의힘", "더불어민주당", "조국혁신당")) %>%
+  mutate(party = relevel(factor(party), ref = "더불어민주당"))
+
+m2 <- glm(passed ~ seniority + gender + district_type + party,
+           data = bill_leg_model, family = binomial)
+summary(m2)
+```
+
+### 오즈비 테이블
+
+```{r or-table}
+or_df <- broom::tidy(m2, conf.int = TRUE, exponentiate = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term = case_match(term,
+      "seniority" ~ "선수",
+      "genderM" ~ "남성 (vs 여성)",
+      "district_typeproportional" ~ "비례대표 (vs 지역구)",
+      "party국민의힘" ~ "국민의힘 (vs 민주당)",
+      "party조국혁신당" ~ "조국혁신당 (vs 민주당)"
+    )
+  )
+
+or_df %>%
+  select(term, estimate, conf.low, conf.high, p.value) %>%
+  mutate(across(c(estimate, conf.low, conf.high), \(x) round(x, 3)),
+         p.value = round(p.value, 4))
+```
+
+### 오즈비 시각화
+
+```{r or-plot}
+ggplot(or_df, aes(x = estimate, y = reorder(term, estimate))) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "gray50") +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high),
+                  color = "steelblue", size = 0.8) +
+  labs(
+    x = "오즈비 (95% 신뢰구간)",
+    y = NULL,
+    title = "법안 통과의 결정 요인 (로지스틱 회귀)"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+- 점이 1의 오른쪽: 통과 가능성을 **높이는** 요인
+- 점이 1의 왼쪽: 통과 가능성을 **낮추는** 요인
+- 신뢰구간이 1을 포함: 통계적으로 유의하지 않음
+
+---
+
+## 6. 예측 확률 시각화
+
+로지스틱 회귀의 결과를 **예측 확률**로 변환하면 더 직관적입니다.
+
+```{r predicted-prob}
+# 선수별 예측 통과 확률 (다른 변수는 기준값으로 고정)
+new_data <- expand.grid(
+  seniority = 1:7,
+  gender = "M",
+  district_type = "constituency",
+  party = factor("더불어민주당",
+                 levels = levels(bill_leg_model$party))
+)
+
+new_data$pred_prob <- predict(m2, newdata = new_data, type = "response")
+
+ggplot(new_data, aes(x = seniority, y = pred_prob)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 3) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = c(0, NA)) +
+  labs(
+    x = "선수 (당선 횟수)",
+    y = "예측 통과 확률",
+    title = "선수에 따른 법안 통과 예측 확률",
+    subtitle = "남성, 지역구, 더불어민주당 기준"
+  ) +
+  theme_minimal()
+```
+
+### 정당별 예측 확률 비교
+
+```{r predicted-party}
+new_party <- expand.grid(
+  seniority = 1:5,
+  gender = "M",
+  district_type = "constituency",
+  party = factor(c("더불어민주당", "국민의힘", "조국혁신당"),
+                 levels = levels(bill_leg_model$party))
+)
+
+new_party$pred_prob <- predict(m2, newdata = new_party, type = "response")
+
+ggplot(new_party, aes(x = seniority, y = pred_prob, color = party)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(
+    "더불어민주당" = "#004EA2",
+    "국민의힘" = "#E61E2B",
+    "조국혁신당" = "#00B0F0"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = "선수",
+    y = "예측 통과 확률",
+    color = "정당",
+    title = "정당별 법안 통과 예측 확률"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 7. 모형 비교
+
+```{r model-compare}
+# 기본 모형 vs 확장 모형
+m3 <- glm(passed ~ seniority + gender + district_type + party + assembly,
+           data = bill_leg_model, family = binomial)
+
+data.frame(
+  Model = c("M1: 선수만", "M2: 개인 특성", "M3: + 대수"),
+  AIC = c(round(AIC(m1)), round(AIC(m2)), round(AIC(m3))),
+  Pseudo_R2 = c(
+    round(1 - m1$deviance / m1$null.deviance, 4),
+    round(1 - m2$deviance / m2$null.deviance, 4),
+    round(1 - m3$deviance / m3$null.deviance, 4)
+  )
+)
+```
+
+> **AIC (Akaike Information Criterion)**: 모형의 적합도와 복잡성을
+> 동시에 고려합니다. **낮을수록** 좋은 모형입니다.
+
+> **Pseudo R-squared**: OLS의 R-squared와 유사한 해석을 합니다.
+> 0에서 1 사이이며, 높을수록 모형의 설명력이 좋습니다.
+> 다만 OLS의 R-squared보다 일반적으로 낮은 값을 보입니다.
+
+---
+
+## 정리: 오늘 배운 것
+
+| 개념 | 설명 |
+|------|------|
+| 이진 종속변수 | 결과가 0/1인 변수 (통과/불통과) |
+| 로지스틱 회귀 | 이진 변수를 위한 회귀 모형 (`glm(..., family = binomial)`) |
+| 오즈비 (OR) | `exp(계수)`, >1이면 확률 증가 |
+| 예측 확률 | `predict(..., type = "response")`로 확률 변환 |
+| AIC | 모형 비교 지표 (낮을수록 좋음) |
+
+---
+
+## 연습 문제
+
+### 문제 1 (기초)
+
+성별(`gender`)만으로 법안 통과를 예측하는 로지스틱 회귀를 실행하고,
+남성 vs 여성의 오즈비를 구하시오.
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+m_gender <- glm(passed ~ gender, data = bill_leg, family = binomial)
+exp(coef(m_gender))
+```
+</details>
+
+### 문제 2 (응용)
+
+위원회(`committee`)를 독립변수로 추가한 모형을 추정하시오.
+어떤 위원회의 법안이 통과될 가능성이 높은가? 상위 3개 위원회를 보고하시오.
+(힌트: 위원회가 많으므로 주요 10개 위원회만 사용)
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>정답 보기</summary>
+```{r}
+top_committees <- bill_leg %>%
+  count(committee, sort = TRUE) %>%
+  head(10) %>%
+  pull(committee)
+
+bill_top <- bill_leg %>%
+  filter(committee %in% top_committees) %>%
+  mutate(committee = factor(committee))
+
+m_comm <- glm(passed ~ seniority + committee, data = bill_top, family = binomial)
+broom::tidy(m_comm, exponentiate = TRUE) %>%
+  filter(grepl("committee", term)) %>%
+  arrange(desc(estimate)) %>%
+  head(3) %>%
+  select(term, estimate, p.value)
+```
+</details>
+
+### 문제 3 (도전)
+
+공동발의자 수(`get_proposers()`에서 계산)가 법안 통과에 영향을 미치는지
+분석하시오. 공동발의자가 많을수록 통과 확률이 높아지는가?
+
+```{r eval=FALSE}
+# 여기에 코드를 작성하세요
+
+```
+
+<details>
+<summary>예시 접근법</summary>
+```{r eval=FALSE}
+proposers <- get_proposers()
+
+# 법안별 공동발의자 수
+n_cosponsors <- proposers %>%
+  filter(!is_lead) %>%
+  count(bill_id, name = "n_cosponsors")
+
+bill_cosponsor <- bill_analysis %>%
+  inner_join(n_cosponsors, by = "bill_id")
+
+m_cosponsor <- glm(passed ~ n_cosponsors, data = bill_cosponsor,
+                    family = binomial)
+summary(m_cosponsor)
+exp(coef(m_cosponsor))
+```
+</details>
