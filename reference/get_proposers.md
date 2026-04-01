@@ -59,13 +59,28 @@ A data frame with 769,773 rows and 8 variables:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 props <- get_proposers()
+#> Downloading proposer records (~25 MB)...
+#> Cached at: /home/runner/.cache/R/assemblykor/proposers.parquet
 
 # Build co-sponsorship edgelist
 library(dplyr)
+#> 
+#> Attaching package: ‘dplyr’
+#> The following objects are masked from ‘package:stats’:
+#> 
+#>     filter, lag
+#> The following objects are masked from ‘package:base’:
+#> 
+#>     intersect, setdiff, setequal, union
 leads <- props %>% filter(is_lead) %>% select(bill_id, lead = member_id)
 cosponsors <- props %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
 edges <- inner_join(leads, cosponsors, by = "bill_id")
-} # }
+#> Warning: Detected an unexpected many-to-many relationship between `x` and `y`.
+#> ℹ Row 1 of `x` matches multiple rows in `y`.
+#> ℹ Row 246619 of `y` matches multiple rows in `x`.
+#> ℹ If a many-to-many relationship is expected, set `relationship =
+#>   "many-to-many"` to silence this warning.
+# }
 ```

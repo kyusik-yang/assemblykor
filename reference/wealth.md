@@ -72,9 +72,8 @@ A data frame with 2,928 rows and 14 variables:
 
 ## Source
 
-OpenWatch (OpenWatch
-(<https://docs.openwatch.kr/data/national-assembly>)), CC BY-SA 4.0
-license.
+OpenWatch (<https://docs.openwatch.kr/data/national-assembly>), CC BY-SA
+4.0 license.
 
 ## Details
 

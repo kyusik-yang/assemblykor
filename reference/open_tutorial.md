@@ -33,11 +33,11 @@ for the interactive browser version.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Copy by name
-open_tutorial("01-tidyverse-basics")
+if (interactive()) {
+  # Copy by name
+  open_tutorial("01-tidyverse-basics")
 
-# Copy by number
-open_tutorial(1)
-} # }
+  # Copy by number
+  open_tutorial(1)
+}
 ```

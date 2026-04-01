@@ -57,9 +57,8 @@ A data frame with 15,843 rows and 9 variables:
 
 ## Source
 
-National Assembly committee minutes, derived from the
-[speech-assembly-korea](https://github.com/kyusik-yang/speech-assembly-korea)
-project (all_speeches_16_22.parquet).
+National Assembly committee minutes via the Open National Assembly
+Information API.
 
 ## Details
 

@@ -40,9 +40,12 @@ A data frame with 60,925 rows and 3 variables:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 texts <- get_bill_texts()
+#> Downloading bill texts (~40 MB)...
+#> Cached at: /home/runner/.cache/R/assemblykor/bill_texts.parquet
 nchar_dist <- nchar(texts$propose_reason)
 hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
-} # }
+
+# }
 ```

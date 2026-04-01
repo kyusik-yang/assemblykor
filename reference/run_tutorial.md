@@ -31,7 +31,7 @@ for the plain Rmd version.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-run_tutorial(1)  # Launch tutorial 1 in browser
-} # }
+if (interactive()) {
+  run_tutorial(1)
+}
 ```

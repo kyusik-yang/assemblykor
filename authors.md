@@ -10,7 +10,7 @@ Source:
 [`inst/CITATION`](https://github.com/kyusik-yang/assemblykor/blob/main/inst/CITATION)
 
 Yang K (2026). *assemblykor: Korean National Assembly Data for Political
-Science Education*. R package version 0.1.0,
+Science Education*. R package version 0.1.1,
 <https://github.com/kyusik-yang/assemblykor>.
 
     @Manual{,
@@ -18,5 +18,5 @@ Science Education*. R package version 0.1.0,
       author = {Kyusik Yang},
       year = {2026},
       url = {https://github.com/kyusik-yang/assemblykor},
-      note = {R package version 0.1.0},
+      note = {R package version 0.1.1},
     }

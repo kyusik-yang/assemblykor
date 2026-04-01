@@ -1,5 +1,17 @@
 # Changelog
 
+## assemblykor 0.1.1
+
+- Replaced all `\dontrun{}` in examples per CRAN reviewer request:
+  - [`get_bill_texts()`](https://kyusik-yang.github.io/assemblykor/reference/get_bill_texts.md),
+    [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md):
+    changed to `\donttest{}` (download functions).
+  - [`open_tutorial()`](https://kyusik-yang.github.io/assemblykor/reference/open_tutorial.md),
+    [`run_tutorial()`](https://kyusik-yang.github.io/assemblykor/reference/run_tutorial.md),
+    [`set_ko_font()`](https://kyusik-yang.github.io/assemblykor/reference/set_ko_font.md):
+    changed to `if (interactive()) {}` (interactive or system-dependent
+    functions).
+
 ## assemblykor 0.1.0
 
 - Initial CRAN release.
