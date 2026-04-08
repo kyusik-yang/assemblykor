@@ -1,4 +1,4 @@
-# assemblykor ![](reference/figures/logo.png)
+# assemblykor
 
 Korean National Assembly data for political science education.
 
