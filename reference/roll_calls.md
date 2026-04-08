@@ -1,6 +1,6 @@
 # Member-Level Roll Call Votes (22nd Assembly)
 
-Individual legislator voting records for all 1,233 bills that went to a
+Individual legislator voting records for all 1,286 bills that went to a
 recorded plenary vote in the 22nd Korean National Assembly (2024-2026).
 Each row represents one legislator's vote on one bill.
 
@@ -12,7 +12,7 @@ roll_calls
 
 ## Format
 
-A data frame with 368,210 rows and 8 variables:
+A data frame with 383,739 rows and 8 variables:
 
 - bill_id:
 

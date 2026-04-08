@@ -50,8 +50,12 @@ Why tidyverse-first for teaching?
 ## Installation
 
 ``` r
+# Install from CRAN
+install.packages("assemblykor")
+
+# Or install the development version from GitHub
 # install.packages("remotes")
-remotes::install_github("kyusik-yang/assemblykor")
+# remotes::install_github("kyusik-yang/assemblykor")
 ```
 
 ## Usage
@@ -231,7 +235,7 @@ citation("assemblykor")
 
     Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
     Political Science Education. R package version 0.1.1.
-    https://github.com/kyusik-yang/assemblykor
+    https://CRAN.R-project.org/package=assemblykor
 
 ## License
 

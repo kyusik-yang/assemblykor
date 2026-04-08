@@ -23,10 +23,10 @@ declarations, policy seminars, and committee speeches.
   15,843 speech records (22nd, Science & ICT Committee)
 
 - [`votes`](https://kyusik-yang.github.io/assemblykor/reference/votes.md):
-  7,997 plenary vote tallies (20th-22nd assemblies)
+  8,050 plenary vote tallies (20th-22nd assemblies)
 
 - [`roll_calls`](https://kyusik-yang.github.io/assemblykor/reference/roll_calls.md):
-  368,210 member-level roll call votes (22nd assembly)
+  383,739 member-level roll call votes (22nd assembly)
 
 ## Download functions
 

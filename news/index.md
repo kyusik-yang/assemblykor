@@ -2,6 +2,8 @@
 
 ## assemblykor 0.1.1
 
+CRAN release: 2026-04-07
+
 - Replaced all `\dontrun{}` in examples per CRAN reviewer request:
   - [`get_bill_texts()`](https://kyusik-yang.github.io/assemblykor/reference/get_bill_texts.md),
     [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md):

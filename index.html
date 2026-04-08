@@ -120,14 +120,14 @@
 <p>22대 과학기술정보방송통신위원회 상임위 회의록 전수 (발언 전문, 화자 역할 포함)</p>
 </td>
 <td>
-<p><strong><code>votes</code></strong> 7,997 records</p>
+<p><strong><code>votes</code></strong> 8,050 records</p>
 <p>본회의 표결 결과 (20-22대, 찬성/반대/기권 수, 의결 결과)</p>
 </td>
 </tr>
 <tr>
 <td colspan="2">
-<p><strong><code>roll_calls</code></strong> 368,210 records</p>
-<p>22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,233개 법안)</p>
+<p><strong><code>roll_calls</code></strong> 383,739 records</p>
+<p>22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,286개 법안)</p>
 </td>
 </tr>
 </table>
@@ -136,8 +136,12 @@
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"kyusik-yang/assemblykor"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Install from CRAN</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"assemblykor"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or install the development version from GitHub</span></span>
+<span><span class="co"># install.packages("remotes")</span></span>
+<span><span class="co"># remotes::install_github("kyusik-yang/assemblykor")</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
@@ -372,7 +376,7 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"assemblykor"</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
 Political Science Education. R package version 0.1.1.
-https://github.com/kyusik-yang/assemblykor</code></pre>
+https://CRAN.R-project.org/package=assemblykor</code></pre>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -383,6 +387,7 @@ https://github.com/kyusik-yang/assemblykor</code></pre>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=assemblykor" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/kyusik-yang/assemblykor/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/kyusik-yang/assemblykor/issues" class="external-link">Report a bug</a></li>
 </ul>
@@ -414,6 +419,8 @@ https://github.com/kyusik-yang/assemblykor</code></pre>
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
+<li><a href="https://CRAN.R-project.org/package=assemblykor" class="external-link"><img src="https://www.r-pkg.org/badges/version/assemblykor" alt="CRAN status"></a></li>
+<li><a href="https://CRAN.R-project.org/package=assemblykor" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/assemblykor" alt="CRAN downloads"></a></li>
 <li><a href="https://github.com/kyusik-yang/assemblykor/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/kyusik-yang/assemblykor/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 </ul>
 </div>

@@ -147,7 +147,7 @@ and ICT Committee (22nd assembly, 2024).
 
 ## votes
 
-**7,997 rows, 13 variables.** Plenary vote tallies (20th-22nd assembly).
+**8,050 rows, 13 variables.** Plenary vote tallies (20th-22nd assembly).
 
 - **Unit of observation**: bill vote
 - **Key**: `bill_id` (unique)
@@ -175,8 +175,8 @@ and ICT Committee (22nd assembly, 2024).
 
 ## roll_calls
 
-**368,210 rows, 8 variables.** Member-level roll call votes (22nd
-assembly, 1,233 bills).
+**383,739 rows, 8 variables.** Member-level roll call votes (22nd
+assembly, 1,286 bills).
 
 - **Unit of observation**: legislator-bill vote
 - **Key**: `member_id` + `bill_id` (unique)

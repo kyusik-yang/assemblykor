@@ -10,8 +10,8 @@ Assembly for teaching quantitative methods in political science:
 - **`wealth`**: 2,928 legislator-year asset declarations
 - **`seminars`**: 5,962 legislator-year seminar activity records
 - **`speeches`**: 15,843 committee speech records (22nd, Science & ICT)
-- **`votes`**: 7,997 plenary vote tallies (20th-22nd)
-- **`roll_calls`**: 368,210 member-level roll call votes (22nd)
+- **`votes`**: 8,050 plenary vote tallies (20th-22nd)
+- **`roll_calls`**: 383,739 member-level roll call votes (22nd)
 
 ``` r
 library(assemblykor)
@@ -27,8 +27,8 @@ library(assemblykor)
 #>     wealth       2,928 recs   Asset declarations
 #>     seminars     5,962 recs   Policy seminars
 #>     speeches    15,843 recs   Committee speeches (22nd, Sci & ICT)
-#>     votes        7,997 recs   Plenary vote tallies
-#>     roll_calls 368,210 recs   Member-level votes (22nd)
+#>     votes        8,050 recs   Plenary vote tallies
+#>     roll_calls 383,739 recs   Member-level votes (22nd)
 #> 
 #>   Downloadable:
 #>     get_bill_texts()           Bill propose-reason texts
@@ -41,7 +41,7 @@ library(assemblykor)
 #> 
 #>   Korean font for ggplot2:     set_ko_font()
 #> 
-#>   https://github.com/kyusik-yang/assemblykor
+#>   https://CRAN.R-project.org/package=assemblykor
 ```
 
 ## 1. Exploring legislator data
