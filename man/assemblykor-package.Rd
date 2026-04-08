@@ -19,8 +19,8 @@ declarations, policy seminars, and committee speeches.
 \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
 \item \code{\link{seminars}}: 5,962 legislator-year seminar records
 \item \code{\link{speeches}}: 15,843 speech records (22nd, Science & ICT Committee)
-\item \code{\link{votes}}: 7,997 plenary vote tallies (20th-22nd assemblies)
-\item \code{\link{roll_calls}}: 368,210 member-level roll call votes (22nd assembly)
+\item \code{\link{votes}}: 8,050 plenary vote tallies (20th-22nd assemblies)
+\item \code{\link{roll_calls}}: 383,739 member-level roll call votes (22nd assembly)
 }
 }
 

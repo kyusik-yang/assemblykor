@@ -5,7 +5,7 @@
 \alias{roll_calls}
 \title{Member-Level Roll Call Votes (22nd Assembly)}
 \format{
-A data frame with 368,210 rows and 8 variables:
+A data frame with 383,739 rows and 8 variables:
 \describe{
 \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
 \code{bills$bill_id})}
@@ -28,7 +28,7 @@ endpoint \code{nojepdqqaweusdfbi}.
 roll_calls
 }
 \description{
-Individual legislator voting records for all 1,233 bills that went
+Individual legislator voting records for all 1,286 bills that went
 to a recorded plenary vote in the 22nd Korean National Assembly
 (2024-2026). Each row represents one legislator's vote on one bill.
 }

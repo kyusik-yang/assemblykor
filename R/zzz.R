@@ -38,8 +38,8 @@
     "    wealth       2,928 recs   Asset declarations\n",
     "    seminars     5,962 recs   Policy seminars\n",
     "    speeches    15,843 recs   Committee speeches (22nd, Sci & ICT)\n",
-    "    votes        7,997 recs   Plenary vote tallies\n",
-    "    roll_calls 368,210 recs   Member-level votes (22nd)\n",
+    "    votes        8,050 recs   Plenary vote tallies\n",
+    "    roll_calls 383,739 recs   Member-level votes (22nd)\n",
     "\n",
     "  Downloadable:\n",
     "    get_bill_texts()           Bill propose-reason texts\n",
@@ -52,7 +52,7 @@
     "\n",
     "  Korean font for ggplot2:     set_ko_font()\n",
     "\n",
-    "  https://github.com/kyusik-yang/assemblykor\n"
+    "  https://CRAN.R-project.org/package=assemblykor\n"
   )
 
   packageStartupMessage(msg)

@@ -1,6 +1,8 @@
 # assemblykor <img src="man/figures/logo.png" align="right" height="138" />
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/assemblykor)](https://CRAN.R-project.org/package=assemblykor)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/assemblykor)](https://CRAN.R-project.org/package=assemblykor)
 [![R-CMD-check](https://github.com/kyusik-yang/assemblykor/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/kyusik-yang/assemblykor/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
@@ -84,16 +86,16 @@ Why tidyverse-first for teaching?
 
 </td><td>
 
-**`votes`** 7,997 records
+**`votes`** 8,050 records
 
 본회의 표결 결과 (20-22대, 찬성/반대/기권 수, 의결 결과)
 
 </td></tr>
 <tr><td colspan="2">
 
-**`roll_calls`** 368,210 records
+**`roll_calls`** 383,739 records
 
-22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,233개 법안)
+22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,286개 법안)
 
 </td></tr>
 </table>
@@ -101,8 +103,12 @@ Why tidyverse-first for teaching?
 ## Installation
 
 ```r
+# Install from CRAN
+install.packages("assemblykor")
+
+# Or install the development version from GitHub
 # install.packages("remotes")
-remotes::install_github("kyusik-yang/assemblykor")
+# remotes::install_github("kyusik-yang/assemblykor")
 ```
 
 ## Usage
@@ -279,7 +285,7 @@ citation("assemblykor")
 ```
 Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
 Political Science Education. R package version 0.1.1.
-https://github.com/kyusik-yang/assemblykor
+https://CRAN.R-project.org/package=assemblykor
 ```
 
 ## License

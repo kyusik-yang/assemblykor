@@ -14,8 +14,8 @@
 #'   \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
 #'   \item \code{\link{seminars}}: 5,962 legislator-year seminar records
 #'   \item \code{\link{speeches}}: 15,843 speech records (22nd, Science & ICT Committee)
-#'   \item \code{\link{votes}}: 7,997 plenary vote tallies (20th-22nd assemblies)
-#'   \item \code{\link{roll_calls}}: 368,210 member-level roll call votes (22nd assembly)
+#'   \item \code{\link{votes}}: 8,050 plenary vote tallies (20th-22nd assemblies)
+#'   \item \code{\link{roll_calls}}: 383,739 member-level roll call votes (22nd assembly)
 #' }
 #'
 #' @section Download functions:
@@ -311,7 +311,7 @@
 #' 22nd Korean National Assembly (2016-2026). Each row represents one
 #' bill that went to a recorded floor vote.
 #'
-#' @format A data frame with 7,997 rows and 13 variables:
+#' @format A data frame with 8,050 rows and 13 variables:
 #' \describe{
 #'   \item{bill_id}{Unique bill identifier (links to \code{bills$bill_id})}
 #'   \item{bill_no}{Numeric bill number}
@@ -368,11 +368,11 @@
 
 #' Member-Level Roll Call Votes (22nd Assembly)
 #'
-#' Individual legislator voting records for all 1,233 bills that went
+#' Individual legislator voting records for all 1,286 bills that went
 #' to a recorded plenary vote in the 22nd Korean National Assembly
 #' (2024-2026). Each row represents one legislator's vote on one bill.
 #'
-#' @format A data frame with 368,210 rows and 8 variables:
+#' @format A data frame with 383,739 rows and 8 variables:
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
 #'     \code{bills$bill_id})}

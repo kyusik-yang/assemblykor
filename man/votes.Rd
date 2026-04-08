@@ -5,7 +5,7 @@
 \alias{votes}
 \title{Plenary Vote Results in the Korean National Assembly (20th-22nd)}
 \format{
-A data frame with 7,997 rows and 13 variables:
+A data frame with 8,050 rows and 13 variables:
 \describe{
 \item{bill_id}{Unique bill identifier (links to \code{bills$bill_id})}
 \item{bill_no}{Numeric bill number}

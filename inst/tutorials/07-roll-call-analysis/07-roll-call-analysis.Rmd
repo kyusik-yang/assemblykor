@@ -45,8 +45,8 @@ You will learn:
 
 | Dataset | Level | Scope | Rows |
 |---------|-------|-------|------|
-| `votes` | **bill-level** aggregate | 20th-22nd | 7,997 |
-| `roll_calls` | **member-level** record | 22nd only | 368,210 |
+| `votes` | **bill-level** aggregate | 20th-22nd | 8,050 |
+| `roll_calls` | **member-level** record | 22nd only | 383,739 |
 
 ### votes: Bill-level results
 
