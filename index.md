@@ -129,10 +129,10 @@ Larger datasets are available via download functions (requires the
 `arrow` package):
 
 ``` r
-# Bill propose-reason texts (60,925 texts, ~40 MB download)
+# Bill propose-reason texts (60,925 texts, ~25 MB download)
 texts <- get_bill_texts()
 
-# Co-sponsorship records (769,773 rows, ~25 MB download)
+# Co-sponsorship records (769,773 rows, ~6 MB download)
 proposers <- get_proposers()
 ```
 
@@ -234,7 +234,7 @@ citation("assemblykor")
 ```
 
     Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
-    Political Science Education. R package version 0.1.1.
+    Political Science Education. R package version 0.1.2.
     https://CRAN.R-project.org/package=assemblykor
 
 ## License
