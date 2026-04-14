@@ -136,10 +136,10 @@ rc_leg <- roll_calls %>%
 
 ### Download extra data
 ```r
-# Bill proposal texts (~40 MB)
+# Bill proposal texts (~25 MB)
 texts <- get_bill_texts()
 
-# Co-sponsorship records (~25 MB)
+# Co-sponsorship records (~6 MB)
 props <- get_proposers()
 ```
 
@@ -169,5 +169,5 @@ open_tutorial(1)     # Copy Rmd file
 </div>
 
 <div style="text-align:center; font-size:9px; color:#999; margin-top:4px;">
-assemblykor v0.1.1 | Kyusik Yang | https://github.com/kyusik-yang/assemblykor
+assemblykor v0.1.2 | Kyusik Yang | https://github.com/kyusik-yang/assemblykor
 </div>

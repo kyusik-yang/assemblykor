@@ -51,7 +51,7 @@ Raw text -> Tokenization (split words) -> Stopword removal -> Frequency count ->
 
 ## 2. Downloading Bill Texts
 
-`get_bill_texts()` downloads rationale text for 60,925 bills (~40MB on first run).
+`get_bill_texts()` downloads rationale text for 60,925 bills (~25MB on first run).
 
 ```{r download, exercise=TRUE, exercise.eval=FALSE}
 texts <- get_bill_texts()

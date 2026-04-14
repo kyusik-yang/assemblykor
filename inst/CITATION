@@ -4,5 +4,5 @@ bibentry(
   author   = person("Kyusik", "Yang"),
   year     = "2026",
   url      = "https://CRAN.R-project.org/package=assemblykor",
-  note     = "R package version 0.1.1"
+  note     = "R package version 0.1.2"
 )
