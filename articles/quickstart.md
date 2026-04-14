@@ -10,7 +10,7 @@ install.packages("assemblykor")
 library(assemblykor)
 #> 
 #>   ┌───────────────────────────────────────────────────────────────┐
-#>   │ assemblykor 0.1.1                                             │
+#>   │ assemblykor 0.1.2                                             │
 #>   │ Korean National Assembly Data for Political Science Education │
 #>   └───────────────────────────────────────────────────────────────┘
 #> 

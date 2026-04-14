@@ -1,7 +1,7 @@
 # Download bill propose-reason texts
 
 Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
-The file is approximately 40 MB and is cached locally after the first
+The file is approximately 25 MB and is cached locally after the first
 download. Requires the arrow package to read parquet files.
 
 ## Usage
@@ -41,11 +41,13 @@ A data frame with 60,925 rows and 3 variables:
 
 ``` r
 # \donttest{
-texts <- get_bill_texts()
-#> Downloading bill texts (~40 MB)...
-#> Cached at: /home/runner/.cache/R/assemblykor/bill_texts.parquet
-nchar_dist <- nchar(texts$propose_reason)
-hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+if (requireNamespace("arrow", quietly = TRUE)) {
+  texts <- get_bill_texts(cache_dir = tempdir())
+  nchar_dist <- nchar(texts$propose_reason)
+  hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+}
+#> Downloading bill texts (~25 MB)...
+#> Cached at: /tmp/RtmpsR5ryo/bill_texts.parquet
 
 # }
 ```
