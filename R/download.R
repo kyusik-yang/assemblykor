@@ -1,7 +1,7 @@
 #' Download bill propose-reason texts
 #'
 #' Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
-#' The file is approximately 40 MB and is cached locally after the first
+#' The file is approximately 25 MB and is cached locally after the first
 #' download. Requires the \pkg{arrow} package to read parquet files.
 #'
 #' @param cache_dir Directory to cache downloaded files. Defaults to
@@ -17,9 +17,11 @@
 #'
 #' @examples
 #' \donttest{
-#' texts <- get_bill_texts()
-#' nchar_dist <- nchar(texts$propose_reason)
-#' hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+#' if (requireNamespace("arrow", quietly = TRUE)) {
+#'   texts <- get_bill_texts(cache_dir = tempdir())
+#'   nchar_dist <- nchar(texts$propose_reason)
+#'   hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+#' }
 #' }
 #'
 #' @export
@@ -37,7 +39,7 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 
   if (!file.exists(dest) || force_download) {
     url <- "https://github.com/kyusik-yang/korean-assembly-bills/raw/main/data/bill_texts.parquet"
-    message("Downloading bill texts (~40 MB)...")
+    message("Downloading bill texts (~25 MB)...")
     utils::download.file(url, dest, mode = "wb", quiet = FALSE)
     message("Cached at: ", dest)
   } else {
@@ -71,13 +73,22 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #'
 #' @examples
 #' \donttest{
-#' props <- get_proposers()
+#' if (requireNamespace("arrow", quietly = TRUE) &&
+#'     requireNamespace("dplyr", quietly = TRUE)) {
+#'   props <- get_proposers(cache_dir = tempdir())
 #'
-#' # Build co-sponsorship edgelist
-#' library(dplyr)
-#' leads <- props %>% filter(is_lead) %>% select(bill_id, lead = member_id)
-#' cosponsors <- props %>% filter(!is_lead) %>% select(bill_id, cosponsor = member_id)
-#' edges <- inner_join(leads, cosponsors, by = "bill_id")
+#'   # Build co-sponsorship edgelist
+#'   leads <- dplyr::select(
+#'     dplyr::filter(props, is_lead), bill_id, lead = member_id
+#'   )
+#'   cosponsors <- dplyr::select(
+#'     dplyr::filter(props, !is_lead), bill_id, cosponsor = member_id
+#'   )
+#'   edges <- dplyr::inner_join(
+#'     leads, cosponsors,
+#'     by = "bill_id", relationship = "many-to-many"
+#'   )
+#' }
 #' }
 #'
 #' @export
@@ -95,7 +106,7 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
 
   if (!file.exists(dest) || force_download) {
     url <- "https://github.com/kyusik-yang/korean-assembly-bills/raw/main/data/proposers.parquet"
-    message("Downloading proposer records (~25 MB)...")
+    message("Downloading proposer records (~6 MB)...")
     utils::download.file(url, dest, mode = "wb", quiet = FALSE)
     message("Cached at: ", dest)
   } else {

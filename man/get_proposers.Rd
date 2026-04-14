@@ -31,13 +31,22 @@ legislator who co-sponsored each bill. Requires the \pkg{arrow} package.
 }
 \examples{
 \donttest{
-props <- get_proposers()
+if (requireNamespace("arrow", quietly = TRUE) &&
+    requireNamespace("dplyr", quietly = TRUE)) {
+  props <- get_proposers(cache_dir = tempdir())
 
-# Build co-sponsorship edgelist
-library(dplyr)
-leads <- props \%>\% filter(is_lead) \%>\% select(bill_id, lead = member_id)
-cosponsors <- props \%>\% filter(!is_lead) \%>\% select(bill_id, cosponsor = member_id)
-edges <- inner_join(leads, cosponsors, by = "bill_id")
+  # Build co-sponsorship edgelist
+  leads <- dplyr::select(
+    dplyr::filter(props, is_lead), bill_id, lead = member_id
+  )
+  cosponsors <- dplyr::select(
+    dplyr::filter(props, !is_lead), bill_id, cosponsor = member_id
+  )
+  edges <- dplyr::inner_join(
+    leads, cosponsors,
+    by = "bill_id", relationship = "many-to-many"
+  )
+}
 }
 
 }

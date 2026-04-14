@@ -1,27 +1,32 @@
-## Resubmission
+## Resubmission (v0.1.2)
 
-This is a resubmission. In this version I have:
+This resubmission addresses the donttest failure reported in the CRAN
+'Additional issues' check for v0.1.1:
+
+> Error: NotImplemented: Support for codec 'zstd' not built
+
+The remote parquet files served by `get_bill_texts()` and
+`get_proposers()` were re-encoded from ZSTD to GZIP compression, which
+is supported by every arrow build. The `\donttest{}` examples now run
+without error on the CRAN donttest checker.
+
+Additional changes in v0.1.2:
+
+* Examples for both download functions pass `cache_dir = tempdir()` so
+  that R CMD check runs no longer leave cache files in the user's home
+  directory.
+* File size descriptions in the Rd docs and `message()` calls updated
+  to match the actual GZIP-compressed file sizes.
+
+### Previous resubmission history (v0.1.1)
 
 * Replaced all `\dontrun{}` in examples per reviewer request:
-  - Download functions (`get_bill_texts()`, `get_proposers()`): changed to
-    `\donttest{}`.
-  - Interactive/system-dependent functions (`open_tutorial()`,
-    `run_tutorial()`, `set_ko_font()`): changed to `if (interactive()) {}`.
-
-### Previous resubmission changes
-
-* Removed all `rsconnect/` deployment metadata directories from `inst/`
-  (and added to `.Rbuildignore`) to fix the non-portable file paths NOTE.
-* Removed the `https://open.assembly.go.kr/` URL from DESCRIPTION,
-  `@source` fields, and README to fix the invalid URL NOTE (the API root
-  returns HTTP 400 to automated checkers). The source is still identified
-  by name.
-* Fixed invalid URL in `speeches` documentation: replaced the 404 GitHub
-  link with a text reference to the Open National Assembly Information API.
-* Removed all Korean (hangul) Unicode characters from Rd files to fix
-  the LaTeX PDF manual generation error.
-* Replaced ordinals in DESCRIPTION ("20th-22nd") with
-  "assemblies 20 through 22" to avoid the misspelled-word NOTE.
+  - Download functions: `\donttest{}`.
+  - Interactive/system-dependent functions: `if (interactive()) {}`.
+* Removed `rsconnect/` deployment metadata from `inst/`.
+* Removed the `https://open.assembly.go.kr/` URL from DESCRIPTION.
+* Removed Korean Unicode from Rd files (LaTeX manual generation).
+* Replaced ordinals in DESCRIPTION with "assemblies 20 through 22".
 
 ## R CMD check results
 
@@ -29,7 +34,6 @@ This is a resubmission. In this version I have:
 
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'Kyusik Yang <kyusik.yang@nyu.edu>'
-  New submission
   Possibly misspelled words in DESCRIPTION:
     Rosenthal (13:28)
 
@@ -55,7 +59,8 @@ This is a resubmission. In this version I have:
 * Ubuntu (latest, R release) - GitHub Actions
 * Ubuntu (latest, R devel) - GitHub Actions
 * Ubuntu (latest, R oldrel-1) - GitHub Actions
+* local macOS (R 4.4.1): R CMD check --as-cran --run-donttest
 
 ## Downstream dependencies
 
-None. This is a new package.
+None.

@@ -22,14 +22,16 @@ A data frame with 60,925 rows and 3 variables:
 }
 \description{
 Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
-The file is approximately 40 MB and is cached locally after the first
+The file is approximately 25 MB and is cached locally after the first
 download. Requires the \pkg{arrow} package to read parquet files.
 }
 \examples{
 \donttest{
-texts <- get_bill_texts()
-nchar_dist <- nchar(texts$propose_reason)
-hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+if (requireNamespace("arrow", quietly = TRUE)) {
+  texts <- get_bill_texts(cache_dir = tempdir())
+  nchar_dist <- nchar(texts$propose_reason)
+  hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+}
 }
 
 }

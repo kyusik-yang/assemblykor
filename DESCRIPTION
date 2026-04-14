@@ -1,6 +1,6 @@
 Package: assemblykor
 Title: Korean National Assembly Data for Political Science Education
-Version: 0.1.1
+Version: 0.1.2
 Authors@R:
     person("Kyusik", "Yang", , "kyusik.yang@nyu.edu", role = c("aut", "cre"))
 Description: Provides ready-to-use datasets from the Korean National Assembly
