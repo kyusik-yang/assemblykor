@@ -85,7 +85,7 @@ if (requireNamespace("arrow", quietly = TRUE)) {
   head(sort(table(nouns$token), decreasing = TRUE), 20)
 }
 #> Downloading speech tokens (~1.3 MB)...
-#> Cached at: /tmp/RtmpiljPNv/speech_tokens.parquet
+#> Cached at: /tmp/Rtmp6oUb4D/speech_tokens.parquet
 #> 
 #>   위원   방송   말씀   생각 위원장   부분   얘기     때   국민 후보자   문제 
 #>   6412   5476   5451   4659   3657   3115   2989   2939   2878   2686   2659 
