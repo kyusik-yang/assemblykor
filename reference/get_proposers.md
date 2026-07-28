@@ -22,7 +22,8 @@ get_proposers(cache_dir = NULL, force_download = FALSE)
 
 ## Value
 
-A data frame with 769,773 rows and 8 variables:
+A data frame with 769,773 rows and 8 variables, or `NULL` (invisibly) if
+the download fails (e.g., no internet connection):
 
 - bill_id:
 
@@ -77,6 +78,6 @@ if (requireNamespace("arrow", quietly = TRUE) &&
   )
 }
 #> Downloading proposer records (~6 MB)...
-#> Cached at: /tmp/RtmphB8v02/proposers.parquet
+#> Cached at: /tmp/RtmpZwGEdV/proposers.parquet
 # }
 ```

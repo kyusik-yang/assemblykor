@@ -1,11 +1,11 @@
-pandoc: 3.1.11
-pkgdown: 2.2.0
+pandoc: 3.8.3
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   codebook: codebook.html
   introduction: introduction.html
   quickstart: quickstart.html
-last_built: 2026-04-14T19:15Z
+last_built: 2026-07-28T05:02Z
 urls:
   reference: https://kyusik-yang.github.io/assemblykor/reference
   article: https://kyusik-yang.github.io/assemblykor/articles

@@ -23,7 +23,8 @@ get_bill_texts(cache_dir = NULL, force_download = FALSE)
 
 ## Value
 
-A data frame with 60,925 rows and 3 variables:
+A data frame with 60,925 rows and 3 variables, or `NULL` (invisibly) if
+the download fails (e.g., no internet connection):
 
 - bill_id:
 
@@ -47,7 +48,7 @@ if (requireNamespace("arrow", quietly = TRUE)) {
   hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
 }
 #> Downloading bill texts (~25 MB)...
-#> Cached at: /tmp/RtmphB8v02/bill_texts.parquet
+#> Cached at: /tmp/RtmpZwGEdV/bill_texts.parquet
 
 # }
 ```

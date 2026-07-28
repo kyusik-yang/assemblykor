@@ -14,7 +14,7 @@ political science. Think of it as a Korean politics counterpart to
 The package includes seven built-in datasets covering legislators,
 bills, asset declarations, policy seminars, committee speeches, plenary
 votes, and roll call records, all drawn from public data of the Korean
-National Assembly (2000-2026).
+National Assembly (2004-2026).
 
 ## Why tidyverse?
 
@@ -50,6 +50,7 @@ Why tidyverse-first for teaching?
 ## Installation
 
 ``` r
+
 # Install from CRAN
 install.packages("assemblykor")
 
@@ -61,6 +62,7 @@ install.packages("assemblykor")
 ## Usage
 
 ``` r
+
 library(assemblykor)
 
 data(legislators)
@@ -75,6 +77,7 @@ data(roll_calls)
 ### Example: party composition by gender
 
 ``` r
+
 library(dplyr)
 
 legislators %>%
@@ -86,6 +89,7 @@ legislators %>%
 ### Example: wealth distribution
 
 ``` r
+
 library(ggplot2)
 
 ggplot(wealth, aes(x = net_worth / 1e6)) +
@@ -97,6 +101,7 @@ ggplot(wealth, aes(x = net_worth / 1e6)) +
 ### Example: bill outcomes
 
 ``` r
+
 bills %>%
   count(result, sort = TRUE) %>%
   head(5)
@@ -114,6 +119,7 @@ ggplot2 plots with Korean text (axis labels, titles) may show broken
 characters. Run this once per session to fix it:
 
 ``` r
+
 set_ko_font()
 #> Korean font set: Apple SD Gothic Neo
 ```
@@ -129,6 +135,7 @@ Larger datasets are available via download functions (requires the
 `arrow` package):
 
 ``` r
+
 # Bill propose-reason texts (60,925 texts, ~25 MB download)
 texts <- get_bill_texts()
 
@@ -141,23 +148,24 @@ proposers <- get_proposers()
 The package includes nine Korean-language tutorials designed for
 classroom use in political science methods courses:
 
-| \#  | Tutorial               | Topic                                                 | Level        |
-|-----|------------------------|-------------------------------------------------------|--------------|
-| 1   | R 기초와 tidyverse     | `dplyr` 핵심 함수, 파이프, 데이터 결합                | Beginner     |
-| 2   | ggplot2 시각화         | 막대, 히스토그램, 산점도, 박스플롯, facet             | Beginner     |
-| 3   | 회귀분석               | OLS, 다중회귀, 로그 변환, 상호작용, 계수 시각화       | Intermediate |
-| 4   | 패널 데이터와 고정효과 | 합동 OLS vs FE, 양방향 FE, DiD, 군집 표준오차         | Intermediate |
-| 5   | 텍스트 분석 입문       | 키워드 빈도, TF-IDF, 발언 분석, 위원회별 비교         | Intermediate |
-| 6   | 네트워크 분석          | 공동발의 네트워크, 중심성, 커뮤니티 탐지, 초당적 분석 | Advanced     |
-| 7   | 기명투표 분석          | Rice Index, 이탈투표, 투표 히트맵, 정당 응집력        | Advanced     |
-| 8   | 법안 가결 요인         | 이항 변수, 로지스틱 회귀, 승산비, 예측 확률           | Intermediate |
-| 9   | 발언 패턴 분석         | 발언 빈도/길이, 발언 순서, 의제 키워드, 다양성        | Advanced     |
+| \# | Tutorial | Topic | Level |
+|----|----|----|----|
+| 1 | R 기초와 tidyverse | `dplyr` 핵심 함수, 파이프, 데이터 결합 | Beginner |
+| 2 | ggplot2 시각화 | 막대, 히스토그램, 산점도, 박스플롯, facet | Beginner |
+| 3 | 회귀분석 | OLS, 다중회귀, 로그 변환, 상호작용, 계수 시각화 | Intermediate |
+| 4 | 패널 데이터와 고정효과 | 합동 OLS vs FE, 양방향 FE, DiD, 군집 표준오차 | Intermediate |
+| 5 | 텍스트 분석 입문 | 키워드 빈도, TF-IDF, 발언 분석, 위원회별 비교 | Intermediate |
+| 6 | 네트워크 분석 | 공동발의 네트워크, 중심성, 커뮤니티 탐지, 초당적 분석 | Advanced |
+| 7 | 기명투표 분석 | Rice Index, 이탈투표, 투표 히트맵, 정당 응집력 | Advanced |
+| 8 | 법안 가결 요인 | 이항 변수, 로지스틱 회귀, 승산비, 예측 확률 | Intermediate |
+| 9 | 발언 패턴 분석 | 발언 빈도/길이, 발언 순서, 의제 키워드, 다양성 | Advanced |
 
 Each tutorial is available in two formats:
 
 **Option A: Interactive browser** (recommended for self-study)
 
 ``` r
+
 # Launch an interactive tutorial with exercises in the browser
 run_tutorial(1)  # or run_tutorial("01-tidyverse-basics")
 ```
@@ -168,6 +176,7 @@ can type and run code directly in the browser with hints and solutions.
 **Option B: Plain R Markdown** (for editing in RStudio)
 
 ``` r
+
 # List available tutorials
 list_tutorials()
 
@@ -183,6 +192,7 @@ All datasets share the `member_id` and/or `assembly` columns for easy
 joining:
 
 ``` r
+
 # Merge legislators with wealth data
 leg_wealth <- legislators %>%
   inner_join(wealth, by = "member_id", relationship = "many-to-many")
@@ -194,6 +204,7 @@ CSV versions of the smaller datasets are available for teaching file
 I/O:
 
 ``` r
+
 # Find the file path
 path_to_file("legislators.csv")
 
@@ -205,12 +216,12 @@ legislators_csv <- read.csv(path_to_file("legislators.csv"), fileEncoding = "UTF
 
 All data in this package are derived from publicly available sources.
 
-| Dataset                                          | Source                                                        | License                                     |
-|--------------------------------------------------|---------------------------------------------------------------|---------------------------------------------|
-| Legislators, bills, proposers, votes, roll calls | Open National Assembly Information API (open.assembly.go.kr)  | Public domain (Korean government open data) |
-| Speeches (committee minutes)                     | Open National Assembly Information API (open.assembly.go.kr)  | Public domain (Korean government open data) |
-| Asset declarations                               | [OpenWatch](https://docs.openwatch.kr/data/national-assembly) | CC BY-SA 4.0                                |
-| Policy seminars                                  | National Assembly Seminar Database                            | Public data                                 |
+| Dataset | Source | License |
+|----|----|----|
+| Legislators, bills, proposers, votes, roll calls | Open National Assembly Information API (open.assembly.go.kr) | Public domain (Korean government open data) |
+| Speeches (committee minutes) | Open National Assembly Information API (open.assembly.go.kr) | Public domain (Korean government open data) |
+| Asset declarations | [OpenWatch](https://docs.openwatch.kr/data/national-assembly) | CC BY-SA 4.0 |
+| Policy seminars | National Assembly Seminar Database | Public data |
 
 **Inspired by**:
 [palmerpenguins](https://allisonhorst.github.io/palmerpenguins/) (Horst,
@@ -230,11 +241,12 @@ sources listed above and verify the data independently.
 ## Citation
 
 ``` r
+
 citation("assemblykor")
 ```
 
     Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
-    Political Science Education. R package version 0.1.2.
+    Political Science Education. R package version 0.1.3.
     https://CRAN.R-project.org/package=assemblykor
 
 ## License

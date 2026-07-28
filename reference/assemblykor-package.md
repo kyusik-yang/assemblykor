@@ -1,9 +1,10 @@
 # assemblykor: Korean National Assembly Data for Political Science Education
 
 Provides ready-to-use datasets from the Korean National Assembly for
-teaching quantitative methods in political science. Includes five
+teaching quantitative methods in political science. Includes seven
 built-in datasets covering legislator metadata, bills, asset
-declarations, policy seminars, and committee speeches.
+declarations, policy seminars, committee speeches, plenary vote tallies,
+and member-level roll call votes.
 
 ## Built-in datasets
 

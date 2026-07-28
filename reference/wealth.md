@@ -1,7 +1,7 @@
-# Legislator Asset Declarations (2015-2025)
+# Legislator Asset Declarations (2015-2024)
 
-Panel data of asset declarations for 773 Korean National Assembly
-members across 13 reporting periods (2015-2025). Derived from mandatory
+Panel data of asset declarations for 772 Korean National Assembly
+members across 10 disclosure years (2015-2024). Derived from mandatory
 public disclosures via the OpenWatch project.
 
 ## Usage
@@ -20,7 +20,7 @@ A data frame with 2,928 rows and 14 variables:
 
 - year:
 
-  Disclosure year (2015-2025)
+  Disclosure year (2015-2024)
 
 - name:
 

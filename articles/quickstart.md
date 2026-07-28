@@ -3,14 +3,16 @@
 ## Install and load
 
 ``` r
+
 install.packages("assemblykor")
 ```
 
 ``` r
+
 library(assemblykor)
 #> 
 #>   ┌───────────────────────────────────────────────────────────────┐
-#>   │ assemblykor 0.1.2                                             │
+#>   │ assemblykor 0.1.3                                             │
 #>   │ Korean National Assembly Data for Political Science Education │
 #>   └───────────────────────────────────────────────────────────────┘
 #> 
@@ -34,12 +36,15 @@ library(assemblykor)
 #> 
 #>   Korean font for ggplot2:     set_ko_font()
 #> 
-#>   https://CRAN.R-project.org/package=assemblykor
+#>   CRAN releases may lag behind. For the latest data and fixes:
+#>     remotes::install_github("kyusik-yang/assemblykor")
+#>     https://github.com/kyusik-yang/assemblykor
 ```
 
 ## Seven datasets, one line each
 
 ``` r
+
 # All datasets load lazily - just call their name
 head(legislators, 3)
 #>   member_id assembly   name name_hanja      name_eng        party party_elected
@@ -85,6 +90,7 @@ head(wealth, 3)
 ## Quick analysis: gender and legislative productivity
 
 ``` r
+
 library(dplyr)
 
 legislators %>%
@@ -104,6 +110,7 @@ legislators %>%
 ## Quick analysis: bill survival rates
 
 ``` r
+
 bills %>%
   count(result, sort = TRUE) %>%
   head(5)
@@ -120,6 +127,7 @@ Only about 5% of bills pass in their original form.
 ## Quick analysis: wealth inequality
 
 ``` r
+
 # Net worth in billion KRW
 hist(wealth$net_worth / 1e6, breaks = 50, col = "steelblue",
      main = "Legislator Net Worth", xlab = "Billion KRW")
@@ -130,6 +138,7 @@ hist(wealth$net_worth / 1e6, breaks = 50, col = "steelblue",
 ## Quick analysis: voting consensus
 
 ``` r
+
 votes$yes_rate <- votes$yes / votes$voted
 hist(votes$yes_rate, breaks = 40, col = "coral",
      main = "Distribution of Yes-Vote Share", xlab = "Proportion yes")
@@ -144,6 +153,7 @@ Most bills pass near-unanimously; a handful are fiercely contested.
 All datasets share `member_id` for easy merging:
 
 ``` r
+
 # Do wealthier legislators propose more bills?
 leg_wealth <- legislators %>%
   filter(assembly == 22) %>%
@@ -160,6 +170,7 @@ cor(leg_wealth$n_bills_lead, leg_wealth$net_worth,
 Nine Korean-language tutorials cover the full methods sequence:
 
 ``` r
+
 list_tutorials()           # See all 9
 run_tutorial(1)            # Interactive in browser
 open_tutorial(1)           # Copy Rmd to your directory

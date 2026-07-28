@@ -14,10 +14,11 @@ Assembly for teaching quantitative methods in political science:
 - **`roll_calls`**: 383,739 member-level roll call votes (22nd)
 
 ``` r
+
 library(assemblykor)
 #> 
 #>   ┌───────────────────────────────────────────────────────────────┐
-#>   │ assemblykor 0.1.2                                             │
+#>   │ assemblykor 0.1.3                                             │
 #>   │ Korean National Assembly Data for Political Science Education │
 #>   └───────────────────────────────────────────────────────────────┘
 #> 
@@ -41,12 +42,15 @@ library(assemblykor)
 #> 
 #>   Korean font for ggplot2:     set_ko_font()
 #> 
-#>   https://CRAN.R-project.org/package=assemblykor
+#>   CRAN releases may lag behind. For the latest data and fixes:
+#>     remotes::install_github("kyusik-yang/assemblykor")
+#>     https://github.com/kyusik-yang/assemblykor
 ```
 
 ## 1. Exploring legislator data
 
 ``` r
+
 data(legislators)
 str(legislators)
 #> 'data.frame':    947 obs. of  15 variables:
@@ -70,6 +74,7 @@ str(legislators)
 ### Gender composition by assembly
 
 ``` r
+
 gender_tab <- table(legislators$assembly, legislators$gender)
 gender_tab
 #>     
@@ -88,6 +93,7 @@ prop.table(gender_tab, margin = 1)
 ### Legislative productivity by seniority
 
 ``` r
+
 boxplot(n_bills_lead ~ seniority, data = legislators,
         xlab = "Terms served", ylab = "Bills proposed (as lead)",
         main = "Seniority and Legislative Productivity",
@@ -101,6 +107,7 @@ Senior legislators produce more bills, but with high variance.
 ## 2. Bill outcomes
 
 ``` r
+
 data(bills)
 
 # Top 5 outcomes
@@ -117,6 +124,7 @@ small fraction pass in their original form (원안가결).
 ### Bills per month
 
 ``` r
+
 bills$month <- format(bills$propose_date, "%Y-%m")
 monthly <- aggregate(bill_id ~ month, data = bills, FUN = length)
 names(monthly) <- c("month", "count")
@@ -135,6 +143,7 @@ The `wealth` dataset is a legislator-year panel ideal for practicing
 fixed-effects regression.
 
 ``` r
+
 data(wealth)
 
 # Distribution of net worth
@@ -148,6 +157,7 @@ hist(wealth$net_worth / 1e6, breaks = 50, col = "coral",
 ### Real estate concentration
 
 ``` r
+
 wealth$re_share <- ifelse(wealth$total_assets > 0,
                           wealth$real_estate / wealth$total_assets, NA)
 
@@ -165,6 +175,7 @@ reflecting broader patterns in Korean household wealth.
 ## 4. Policy seminars and cross-party cooperation
 
 ``` r
+
 data(seminars)
 
 # Governing vs opposition party
@@ -186,6 +197,7 @@ hypothesis.
 All datasets share the `member_id` and/or `assembly` columns:
 
 ``` r
+
 library(dplyr)
 
 # Merge legislators with wealth
@@ -210,6 +222,7 @@ leg_wealth %>%
 ## 6. Plenary votes
 
 ``` r
+
 data(votes)
 
 # Yes-vote share distribution
@@ -227,6 +240,7 @@ contested legislation where party discipline breaks down.
 ## 7. Roll call analysis
 
 ``` r
+
 data(roll_calls)
 library(dplyr)
 
@@ -257,6 +271,7 @@ party_votes %>%
 ## 8. Speech patterns
 
 ``` r
+
 data(speeches)
 
 # Who speaks most in committee?
@@ -273,12 +288,14 @@ barplot(speaker_counts[1:10], las = 2, col = "plum",
 For text analysis, download the bill propose-reason texts:
 
 ``` r
+
 texts <- get_bill_texts()
 ```
 
 For network analysis, download the full co-sponsorship records:
 
 ``` r
+
 proposers <- get_proposers()
 ```
 
