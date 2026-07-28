@@ -23,6 +23,8 @@
 #' \itemize{
 #'   \item \code{\link{get_bill_texts}}: 60,925 bill propose-reason texts
 #'   \item \code{\link{get_proposers}}: 769,773 co-sponsorship records
+#'   \item \code{\link{get_speech_tokens}}: 665,055 morpheme tokens for
+#'     the \code{speeches} dataset (Kiwi morphological analyzer)
 #' }
 #'
 #' @section Tutorials:

@@ -10,3 +10,6 @@
 ^cran-comments\.md$
 rsconnect
 ^CRAN-SUBMISSION$
+^hosted-data$
+^assemblykor_.*\.tar\.gz$
+^assemblykor\.Rcheck$

@@ -162,3 +162,86 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
   )
   df
 }
+
+
+#' Download morpheme tokens for committee speeches
+#'
+#' Downloads a pre-tokenized version of the \code{\link{speeches}} dataset,
+#' produced with the Kiwi morphological analyzer (via \code{kiwipiepy}).
+#' Korean is an agglutinative language, so whitespace tokenization mixes
+#' particles and verb endings into the tokens; morphological analysis
+#' separates them and lemmatizes verbs and adjectives. This dataset lets
+#' students work with proper Korean tokens without installing a
+#' morphological analyzer. The file is approximately 1.3 MB and is cached
+#' locally after the first download. Requires the \pkg{arrow} package.
+#'
+#' @inheritParams get_bill_texts
+#'
+#' @return A data frame with 665,055 rows and 4 variables, or \code{NULL}
+#'   (invisibly) if the download fails (e.g., no internet connection):
+#' \describe{
+#'   \item{date}{Date of the committee meeting (links to
+#'     \code{speeches$date})}
+#'   \item{speech_order}{Speech turn within the meeting (links to
+#'     \code{speeches$speech_order}); \code{date} + \code{speech_order}
+#'     identifies one speech}
+#'   \item{token}{Morpheme, in dictionary form. Verbs and adjectives are
+#'     lemmatized (e.g., the stem plus \code{-da})}
+#'   \item{pos}{Part-of-speech tag from the Sejong tagset: "NNG" (common
+#'     noun), "NNP" (proper noun), "VV" (verb), "VA" (adjective),
+#'     "MAG" (adverb), or "SL" (foreign word, e.g., "AI")}
+#' }
+#'
+#' @details
+#' Only content morphemes are included; particles (josa), verb endings
+#' (eomi), and punctuation are removed. Function words carry little
+#' topical meaning, so this is the usual starting point for keyword and
+#' topic analysis. For noun-based analysis, filter to
+#' \code{pos \%in\% c("NNG", "NNP")}.
+#'
+#' Join back to \code{\link{speeches}} with
+#' \code{by = c("date", "speech_order")} to attach speaker metadata.
+#' A small number of speeches (56 of 15,843) yield no content morphemes
+#' and therefore do not appear.
+#'
+#' The tokenization script is in the package source repository under
+#' \code{data-raw/tokenize_speeches.py}.
+#'
+#' @examples
+#' \donttest{
+#' if (requireNamespace("arrow", quietly = TRUE)) {
+#'   tokens <- get_speech_tokens(cache_dir = tempdir())
+#'
+#'   # Most frequent nouns
+#'   nouns <- tokens[tokens$pos %in% c("NNG", "NNP"), ]
+#'   head(sort(table(nouns$token), decreasing = TRUE), 20)
+#' }
+#' }
+#'
+#' @seealso \code{\link{speeches}}
+#'
+#' @export
+get_speech_tokens <- function(cache_dir = NULL, force_download = FALSE) {
+  if (!requireNamespace("arrow", quietly = TRUE)) {
+    stop("Package 'arrow' is required. Install with: install.packages('arrow')")
+  }
+
+  if (is.null(cache_dir)) {
+    cache_dir <- tools::R_user_dir("assemblykor", "cache")
+  }
+  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+
+  dest <- file.path(cache_dir, "speech_tokens.parquet")
+
+  if (!file.exists(dest) || force_download) {
+    url <- "https://github.com/kyusik-yang/assemblykor/raw/main/hosted-data/speech_tokens.parquet"
+    message("Downloading speech tokens (~1.3 MB)...")
+    if (!download_to_cache(url, dest)) return(invisible(NULL))
+    message("Cached at: ", dest)
+  } else {
+    message("Using cached file: ", dest)
+  }
+
+  df <- arrow::read_parquet(dest)
+  as.data.frame(df)
+}

@@ -185,6 +185,11 @@ texts <- get_bill_texts()
 
 # Co-sponsorship records (769,773 rows, ~6 MB download)
 proposers <- get_proposers()
+
+# Morpheme tokens for speeches (665,055 rows, ~1.3 MB download)
+# Pre-tokenized with the Kiwi morphological analyzer - no Korean NLP
+# setup needed on the student side
+tokens <- get_speech_tokens()
 ```
 
 ## Tutorials (한국어 수업 자료)

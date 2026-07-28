@@ -35,6 +35,7 @@
     "  Downloadable:\n",
     "    get_bill_texts()           Bill propose-reason texts\n",
     "    get_proposers()            Co-sponsorship records\n",
+    "    get_speech_tokens()        Morpheme tokens for speeches (Kiwi)\n",
     "\n",
     "  Tutorials:\n",
     "    list_tutorials()           See all 9 tutorials\n",

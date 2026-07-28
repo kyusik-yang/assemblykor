@@ -351,7 +351,64 @@ ggplot(ai_trend, aes(x = month, y = n)) +
   theme_minimal()
 ```
 
-## 7. Temporal Comparison: Text Changes Across Assemblies
+## 7. Morphological Analysis: Beyond Whitespace Tokens
+
+Korean is an agglutinative language: particles attach directly to words, so
+whitespace tokenization counts "국민이", "국민을", and "국민은" as three
+different tokens. **Morphological analysis** splits words into meaningful
+units and separates particles and endings.
+
+Installing a morphological analyzer is hard for beginners, so `assemblykor`
+ships pre-tokenized morphemes for all 15,843 speeches, produced with the
+Kiwi analyzer. Only content morphemes are included: nouns (NNG/NNP), verbs
+(VV), adjectives (VA), adverbs (MAG), and foreign words (SL, e.g., "AI").
+Verbs and adjectives are lemmatized to dictionary form ("-다").
+
+```{r morph-overview, exercise=TRUE}
+tokens_morph <- get_speech_tokens()
+head(tokens_morph)
+table(tokens_morph$pos)
+```
+
+### Top Nouns Without a Stopword List
+
+POS tags replace the hand-made stopword list: filtering to nouns already
+removes particles and function words.
+
+```{r morph-nouns, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
+tokens_morph <- get_speech_tokens()
+
+# Join speaker metadata; date + speech_order identifies one speech
+morph_leg <- tokens_morph %>%
+  inner_join(speeches %>% select(date, speech_order, role),
+             by = c("date", "speech_order")) %>%
+  filter(role == "legislator")
+
+morph_leg %>%
+  filter(pos %in% c("NNG", "NNP")) %>%
+  count(token, sort = TRUE) %>%
+  head(15) %>%
+  ggplot(aes(x = reorder(token, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = NULL, y = "Frequency",
+       title = "Top Nouns in Legislator Speeches (Morpheme-based)") +
+  theme_minimal()
+```
+
+```{r quiz-morph, echo=FALSE}
+quiz(
+  question("With whitespace tokenization, \"말했습니다\", \"말하고\", and \"말하면\" are three different tokens. After lemmatization in get_speech_tokens(), they become:",
+    answer("Three different tokens, unchanged"),
+    answer("One token: 말하다", correct = TRUE),
+    answer("One token: 말"),
+    answer("They are removed as stopwords"),
+    correct = "Correct! Verbs and adjectives are reduced to their dictionary form (stem + 다), so all inflected forms are counted together."
+  )
+)
+```
+
+## 8. Temporal Comparison: Text Changes Across Assemblies
 
 ```{r temporal, exercise=TRUE, exercise.eval=FALSE, fig.height=5}
 library(tidytext)
@@ -411,8 +468,9 @@ You can see how the Assembly's priorities have changed at the word level over si
 | Stopword removal | Filter out function words | `filter(!word %in% ...)` |
 | Word frequency | Most frequently used words | `count(word)` |
 | TF-IDF | Find distinctive words per group | `bind_tf_idf()` |
+| Morphological analysis | Separate particles/endings, lemmatize, filter by POS | `get_speech_tokens()` |
 
-> **Limitation**: Whitespace-based tokenization ignores Korean's agglutinative nature. Words like "citizens-object", "citizens-of", "citizens-to" are treated as different words. More accurate analysis requires morphological analyzers (KoNLPy, MeCab, etc.).
+> **Note**: Whitespace-based tokenization ignores Korean's agglutinative nature and is best for quick exploration. For serious analysis, use the morpheme tokens from Section 7.
 
 ## Exercises
 

@@ -2338,7 +2338,57 @@ ggplot(ai_trend, aes(x = month, y = n)) +
 
 ---
 
-## 7. 시기별 비교: 대수 간 텍스트 변화
+## 7. 형태소 분석: 조사와 어미 넘어서기
+
+지금까지의 공백 토큰화에는 한계가 있습니다. 한국어는 교착어라서
+"국민이", "국민을", "국민은"이 전부 다른 토큰으로 집계됩니다.
+**형태소 분석**은 단어를 의미 단위로 쪼개고 조사와 어미를 분리해서
+이 문제를 해결합니다.
+
+형태소 분석기를 직접 설치하는 것은 초심자에게 쉽지 않으므로,
+`assemblykor`는 Kiwi 형태소 분석기로 미리 처리한 토큰을 제공합니다.
+`speeches`의 15,843개 발언 전체가 분석되어 있습니다. 내용 형태소만
+포함됩니다: 명사(NNG/NNP), 동사(VV), 형용사(VA), 부사(MAG),
+외국어(SL, 예: "AI"). 동사와 형용사는 사전형("-다")으로
+표제어 추출되어 있습니다.
+
+```{r t05-morph-overview-76a, eval=FALSE}
+tokens_morph <- get_speech_tokens()
+head(tokens_morph)
+table(tokens_morph$pos)
+```
+
+### 불용어 사전 없이 명사 상위어 보기
+
+품사 태그가 수작업 불용어 사전을 대체합니다. 명사만 남기면
+조사와 기능어가 이미 제거된 상태입니다.
+
+```{r t05-morph-nouns-76b, eval=FALSE}
+# 발언자 메타데이터 결합: date + speech_order가 발언 식별자
+morph_leg <- tokens_morph %>%
+  inner_join(
+    speeches %>% select(date, speech_order, role),
+    by = c("date", "speech_order")
+  ) %>%
+  filter(role == "legislator")
+
+morph_leg %>%
+  filter(pos %in% c("NNG", "NNP")) %>%
+  count(token, sort = TRUE) %>%
+  head(15) %>%
+  ggplot(aes(x = reorder(token, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = NULL, y = "빈도",
+    title = "의원 발언 상위 명사 (형태소 기반, 22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+---
+
+## 8. 시기별 비교: 대수 간 텍스트 변화
 
 ```{r t05-temporal-77, eval=FALSE}
 era_tokens <- tokens_clean %>%
@@ -2379,10 +2429,11 @@ era_tfidf %>%
 | 불용어 제거 | 의미 없는 기능어 필터링 | `filter(!word %in% ...)` |
 | 단어 빈도 | 가장 많이 쓰이는 단어 | `count(word)` |
 | TF-IDF | 그룹별 특징 단어 발견 | `bind_tf_idf()` |
+| 형태소 분석 | 조사·어미 분리, 표제어 추출, 품사 필터 | `get_speech_tokens()` |
 
-> **한계**: 공백 기반 토큰화는 한국어의 교착어 특성을 무시합니다.
-> "국민들이", "국민의", "국민을"이 다른 단어로 취급됩니다.
-> 더 정확한 분석을 위해서는 형태소 분석기(KoNLPy, MeCab 등)가 필요합니다.
+> **참고**: 공백 기반 토큰화는 한국어의 교착어 특성을 무시하므로
+> 빠른 탐색용으로만 적합합니다. 본격적인 분석에서는 7절처럼 형태소
+> 분석 결과를 사용하세요.
 
 다음 튜토리얼에서는 **공동발의 네트워크**를 분석합니다.
 누가 누구와 함께 법안을 만드는지, 그 관계의 구조를 탐색합니다.

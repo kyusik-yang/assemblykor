@@ -37,6 +37,7 @@ data(speeches)
 - TF-IDF: 특정 그룹의 특징 단어 찾기
 - 키워드 추적: 시간에 따른 의제 변화
 - 발언 데이터(`speeches`)로 위원회 담론 분석
+- 형태소 분석 토큰(`get_speech_tokens()`)으로 공백 토큰화의 한계 넘기
 
 ---
 
@@ -330,7 +331,123 @@ ggplot(ai_trend, aes(x = month, y = n)) +
 
 ---
 
-## 7. 시기별 비교: 대수 간 텍스트 변화
+## 7. 형태소 분석: 조사와 어미 넘어서기
+
+지금까지의 공백 토큰화에는 한계가 있습니다. 한국어는 교착어라서
+"국민이", "국민을", "국민은"이 전부 다른 토큰으로 집계됩니다.
+**형태소 분석**은 단어를 의미 단위로 쪼개고 조사와 어미를 분리해서
+이 문제를 해결합니다.
+
+형태소 분석기를 직접 설치하는 것은 초심자에게 쉽지 않으므로,
+`assemblykor`는 Kiwi 형태소 분석기로 미리 처리한 토큰을 제공합니다.
+`speeches`의 15,843개 발언 전체가 분석되어 있습니다.
+
+```{r download-tokens, eval=FALSE}
+tokens_morph <- get_speech_tokens()
+```
+
+```{r load-tokens, include=FALSE}
+tokens_morph <- get_speech_tokens()
+morph_ok <- !is.null(tokens_morph)
+if (!morph_ok) message("토큰 다운로드 실패. 형태소 섹션을 건너뜁니다.")
+```
+
+```{r morph-overview, eval=morph_ok}
+head(tokens_morph)
+table(tokens_morph$pos)
+```
+
+내용 형태소만 포함되어 있습니다: 명사(NNG/NNP), 동사(VV), 형용사(VA),
+부사(MAG), 외국어(SL, 예: "AI"). 동사와 형용사는 사전형("-다")으로
+**표제어 추출(lemmatization)**되어 있어서, "말했습니다", "말하고",
+"말하면"이 모두 "말하다" 하나로 집계됩니다.
+
+### 공백 토큰화 vs 형태소 분석
+
+같은 의원 발언을 두 방법으로 토큰화해 상위 단어를 비교해 봅시다.
+
+```{r morph-compare, eval=morph_ok, fig.height=6}
+# 발언자 메타데이터 결합: date + speech_order가 발언 식별자
+morph_leg <- tokens_morph %>%
+  inner_join(
+    speeches %>% select(date, speech_order, role),
+    by = c("date", "speech_order")
+  ) %>%
+  filter(role == "legislator")
+
+ws_top <- speeches %>%
+  filter(role == "legislator") %>%
+  unnest_tokens(word, speech, token = "words") %>%
+  filter(!word %in% ko_stopwords, nchar(word) >= 2) %>%
+  count(word, sort = TRUE) %>%
+  head(15) %>%
+  mutate(method = "공백 토큰화")
+
+morph_top <- morph_leg %>%
+  filter(pos %in% c("NNG", "NNP")) %>%
+  count(word = token, sort = TRUE) %>%
+  head(15) %>%
+  mutate(method = "형태소 분석 (명사)")
+
+bind_rows(ws_top, morph_top) %>%
+  ggplot(aes(x = reorder_within(word, n, method), y = n)) +
+  geom_col(fill = "steelblue") +
+  facet_wrap(~ method, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(
+    x = NULL, y = "빈도",
+    title = "의원 발언 상위 단어: 토큰화 방법 비교 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+공백 쪽에는 조사가 붙은 형태와 기능어가 섞여 있지만, 형태소 쪽은
+불용어 사전 없이도 깨끗한 명사 목록이 나옵니다. 수작업 불용어
+사전(`ko_stopwords`)이 품사 정보로 대체된 것입니다.
+
+### 품사를 활용한 분석
+
+품사 태그가 있으면 질문을 더 정교하게 던질 수 있습니다.
+예를 들어, 의원과 장관은 어떤 **동사**를 다르게 쓸까요?
+
+```{r morph-verbs, eval=morph_ok, fig.height=5}
+verb_tfidf <- tokens_morph %>%
+  inner_join(
+    speeches %>% select(date, speech_order, role),
+    by = c("date", "speech_order")
+  ) %>%
+  filter(role %in% c("legislator", "minister"), pos == "VV") %>%
+  mutate(role_kr = ifelse(role == "legislator", "의원", "장관")) %>%
+  count(role_kr, token) %>%
+  bind_tf_idf(token, role_kr, n)
+
+verb_tfidf %>%
+  group_by(role_kr) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ggplot(aes(x = reorder_within(token, tf_idf, role_kr), y = tf_idf)) +
+  geom_col(fill = "coral") +
+  facet_wrap(~ role_kr, scales = "free") +
+  coord_flip() +
+  scale_x_reordered() +
+  labs(
+    x = NULL, y = "TF-IDF",
+    title = "의원 vs 장관: 특징적으로 쓰는 동사 (22대 과방위)"
+  ) +
+  theme_minimal()
+```
+
+질문하는 쪽(의원)과 답변하는 쪽(장관)의 언어가 어떻게 다른지
+동사 수준에서 확인할 수 있습니다.
+
+> **직접 형태소 분석을 하고 싶다면**: 이 토큰은 Python의 `kiwipiepy`
+> 패키지로 생성했습니다 (스크립트: 패키지 저장소의
+> `data-raw/tokenize_speeches.py`). R에서 직접 분석하려면 Kiwi의 R
+> 버전인 `elbird` 패키지가 있지만, 별도 빌드 도구 설치가 필요합니다.
+
+---
+
+## 8. 시기별 비교: 대수 간 텍스트 변화
 
 ```{r temporal}
 era_tokens <- tokens_clean %>%
@@ -371,10 +488,11 @@ era_tfidf %>%
 | 불용어 제거 | 의미 없는 기능어 필터링 | `filter(!word %in% ...)` |
 | 단어 빈도 | 가장 많이 쓰이는 단어 | `count(word)` |
 | TF-IDF | 그룹별 특징 단어 발견 | `bind_tf_idf()` |
+| 형태소 분석 | 조사·어미 분리, 표제어 추출, 품사 필터 | `get_speech_tokens()` |
 
-> **한계**: 공백 기반 토큰화는 한국어의 교착어 특성을 무시합니다.
-> "국민들이", "국민의", "국민을"이 다른 단어로 취급됩니다.
-> 더 정확한 분석을 위해서는 형태소 분석기(KoNLPy, MeCab 등)가 필요합니다.
+> **참고**: 공백 기반 토큰화는 한국어의 교착어 특성을 무시하므로
+> 빠른 탐색용으로만 적합합니다. 본격적인 분석에서는 7절처럼 형태소
+> 분석 결과를 사용하세요.
 
 다음 튜토리얼에서는 **공동발의 네트워크**를 분석합니다.
 누가 누구와 함께 법안을 만드는지, 그 관계의 구조를 탐색합니다.
