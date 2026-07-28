@@ -1,5 +1,7 @@
 # assemblykor 0.1.3
 
+* The startup message now points to the GitHub repository for the
+  latest data and fixes, since CRAN releases may lag behind.
 * Fixed tutorial 04 (panel data): `etable()` was called with an `lm`
   object, which `fixest::etable()` does not accept. The pooled OLS model
   is now re-estimated with `feols()` (identical estimates) before the

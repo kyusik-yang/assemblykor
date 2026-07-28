@@ -43,7 +43,9 @@
     "\n",
     "  Korean font for ggplot2:     set_ko_font()\n",
     "\n",
-    "  https://CRAN.R-project.org/package=assemblykor\n"
+    "  CRAN releases may lag behind. For the latest data and fixes:\n",
+    "    remotes::install_github(\"kyusik-yang/assemblykor\")\n",
+    "    https://github.com/kyusik-yang/assemblykor\n"
   )
 
   packageStartupMessage(msg)
