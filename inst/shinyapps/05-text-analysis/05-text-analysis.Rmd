@@ -166,7 +166,7 @@ ggplot(keyword_df, aes(x = year, y = pct, color = keyword)) +
 # 22대 법안 중 최대 5,000건 표본
 sample_bills <- bill_text %>%
   filter(assembly == 22) %>%
-  slice_sample(n = min(5000, n()))
+  slice_sample(n = 5000)
 
 # 공백 기반 토큰화
 tokens <- sample_bills %>%

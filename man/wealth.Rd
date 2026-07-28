@@ -3,12 +3,12 @@
 \docType{data}
 \name{wealth}
 \alias{wealth}
-\title{Legislator Asset Declarations (2015-2025)}
+\title{Legislator Asset Declarations (2015-2024)}
 \format{
 A data frame with 2,928 rows and 14 variables:
 \describe{
 \item{member_id}{Legislator identifier (links to \code{legislators$member_id})}
-\item{year}{Disclosure year (2015-2025)}
+\item{year}{Disclosure year (2015-2024)}
 \item{name}{Legislator name in Korean}
 \item{total_assets}{Total declared assets, in thousands of KRW}
 \item{total_debt}{Total declared liabilities, in thousands of KRW}
@@ -30,8 +30,8 @@ OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly}), CC BY-SA 4.0
 wealth
 }
 \description{
-Panel data of asset declarations for 773 Korean National Assembly members
-across 13 reporting periods (2015-2025). Derived from mandatory public
+Panel data of asset declarations for 772 Korean National Assembly members
+across 10 disclosure years (2015-2024). Derived from mandatory public
 disclosures via the OpenWatch project.
 }
 \details{

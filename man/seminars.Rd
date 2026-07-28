@@ -3,7 +3,7 @@
 \docType{data}
 \name{seminars}
 \alias{seminars}
-\title{Policy Seminar Activity by Legislator-Year (2000-2025)}
+\title{Policy Seminar Activity by Legislator-Year (2004-2025)}
 \format{
 A data frame with 5,962 rows and 18 variables:
 \describe{
@@ -15,7 +15,7 @@ A data frame with 5,962 rows and 18 variables:
 \item{assembly}{Assembly number (17-22)}
 \item{party}{Party affiliation}
 \item{camp}{Political camp: "liberal", "conservative",
-"progressive", or "other" (values are in Korean)}
+"progressive", "centrist", or "other" (values are in Korean)}
 \item{seniority}{Number of terms served}
 \item{n_seminars}{Number of policy seminars hosted that year}
 \item{n_cross_party}{Number of seminars co-hosted with other-party legislators}
@@ -38,7 +38,7 @@ seminars
 }
 \description{
 Annual panel of policy seminar hosting activity for legislators in the
-16th through 22nd Korean National Assembly. Policy seminars (jeongchaek semina)
+17th through 22nd Korean National Assembly. Policy seminars (jeongchaek semina)
 are informal legislative events where MPs invite experts, stakeholders,
 and colleagues from other parties to discuss policy issues.
 }

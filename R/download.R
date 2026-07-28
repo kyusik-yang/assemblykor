@@ -1,3 +1,34 @@
+# Download a file to a temporary path first, then move it into the cache.
+# Prevents a failed or partial download from being mistaken for a valid
+# cached file on later calls. Returns TRUE on success, FALSE on failure
+# (with a message, per CRAN policy on unavailable internet resources).
+download_to_cache <- function(url, dest) {
+  tmp <- tempfile(fileext = ".parquet")
+  on.exit(unlink(tmp), add = TRUE)
+
+  old_timeout <- getOption("timeout")
+  options(timeout = max(300, old_timeout))
+  on.exit(options(timeout = old_timeout), add = TRUE)
+
+  status <- tryCatch(
+    utils::download.file(url, tmp, mode = "wb", quiet = FALSE),
+    error = function(e) conditionMessage(e),
+    warning = function(w) conditionMessage(w)
+  )
+
+  ok <- is.numeric(status) && status == 0
+  if (!ok || !file.exists(tmp) || file.size(tmp) == 0) {
+    message("Download failed",
+            if (is.character(status)) paste0(": ", status) else "",
+            "\nPlease check your internet connection and try again.")
+    return(FALSE)
+  }
+
+  file.copy(tmp, dest, overwrite = TRUE)
+  TRUE
+}
+
+
 #' Download bill propose-reason texts
 #'
 #' Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
@@ -8,7 +39,8 @@
 #'   \code{tools::R_user_dir("assemblykor", "cache")}.
 #' @param force_download Logical. If \code{TRUE}, re-download even if cached.
 #'
-#' @return A data frame with 60,925 rows and 3 variables:
+#' @return A data frame with 60,925 rows and 3 variables, or \code{NULL}
+#'   (invisibly) if the download fails (e.g., no internet connection):
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
 #'   \item{propose_reason}{Full text of the propose-reason statement (Korean)}
@@ -40,7 +72,7 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
   if (!file.exists(dest) || force_download) {
     url <- "https://github.com/kyusik-yang/korean-assembly-bills/raw/main/data/bill_texts.parquet"
     message("Downloading bill texts (~25 MB)...")
-    utils::download.file(url, dest, mode = "wb", quiet = FALSE)
+    if (!download_to_cache(url, dest)) return(invisible(NULL))
     message("Cached at: ", dest)
   } else {
     message("Using cached file: ", dest)
@@ -59,7 +91,8 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #'
 #' @inheritParams get_bill_texts
 #'
-#' @return A data frame with 769,773 rows and 8 variables:
+#' @return A data frame with 769,773 rows and 8 variables, or \code{NULL}
+#'   (invisibly) if the download fails (e.g., no internet connection):
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
 #'   \item{bill_no}{Numeric bill number}
@@ -107,7 +140,7 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
   if (!file.exists(dest) || force_download) {
     url <- "https://github.com/kyusik-yang/korean-assembly-bills/raw/main/data/proposers.parquet"
     message("Downloading proposer records (~6 MB)...")
-    utils::download.file(url, dest, mode = "wb", quiet = FALSE)
+    if (!download_to_cache(url, dest)) return(invisible(NULL))
     message("Cached at: ", dest)
   } else {
     message("Using cached file: ", dest)

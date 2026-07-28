@@ -134,7 +134,8 @@ quiz(
 
 ```{r compare-pooled-fe, exercise=TRUE}
 library(fixest)
-m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
+# etable() only accepts fixest objects; feols() without FE = pooled OLS
+m_pooled <- feols(deposits ~ real_estate + n_properties, data = wealth)
 m_fe <- feols(deposits ~ real_estate + n_properties | member_id, data = wealth)
 
 etable(m_pooled, m_fe, headers = c("Pooled OLS", "Individual FE"))
@@ -146,7 +147,7 @@ Add year FE to control for common time trends (e.g., housing price booms).
 
 ```{r twfe, exercise=TRUE}
 library(fixest)
-m_pooled <- lm(deposits ~ real_estate + n_properties, data = wealth)
+m_pooled <- feols(deposits ~ real_estate + n_properties, data = wealth)
 m_fe <- feols(deposits ~ real_estate + n_properties | member_id, data = wealth)
 m_twfe <- feols(deposits ~ real_estate + n_properties | member_id + year, data = wealth)
 
@@ -298,7 +299,7 @@ Compare Pooled OLS, Individual FE, and Two-way FE using `etable()`. Which is mos
 
 ```{r ex3-solution}
 library(fixest)
-m1 <- lm(deposits ~ real_estate + stocks, data = wealth)
+m1 <- feols(deposits ~ real_estate + stocks, data = wealth)
 m2 <- feols(deposits ~ real_estate + stocks | member_id, data = wealth)
 m3 <- feols(deposits ~ real_estate + stocks | member_id + year, data = wealth)
 etable(m1, m2, m3, headers = c("Pooled", "Individual FE", "Two-way FE"))

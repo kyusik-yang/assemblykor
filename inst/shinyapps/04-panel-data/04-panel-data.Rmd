@@ -157,7 +157,12 @@ summary(m_fe)
 
 ### 합동 OLS vs 고정효과 비교
 
+`etable()`은 fixest 객체만 비교할 수 있으므로, 합동 OLS도 `feols()`로
+다시 추정합니다. 고정효과 없이 쓰면 `lm()`과 동일한 합동 OLS입니다.
+
 ```{r compare}
+m_pooled <- feols(deposits ~ real_estate + n_properties, data = wealth)
+
 etable(m_pooled, m_fe,
        headers = c("합동 OLS", "개체 FE"),
        notes = "주: 괄호 안은 표준오차")
@@ -384,7 +389,7 @@ wealth %>%
 <details>
 <summary>정답 보기</summary>
 ```{r}
-m1 <- lm(deposits ~ net_worth, data = wealth)
+m1 <- feols(deposits ~ net_worth, data = wealth)
 m2 <- feols(deposits ~ net_worth | member_id, data = wealth)
 m3 <- feols(deposits ~ net_worth | member_id + year, data = wealth)
 etable(m1, m2, m3, headers = c("Pooled", "FE", "TWFE"))

@@ -13,7 +13,8 @@ get_proposers(cache_dir = NULL, force_download = FALSE)
 \item{force_download}{Logical. If \code{TRUE}, re-download even if cached.}
 }
 \value{
-A data frame with 769,773 rows and 8 variables:
+A data frame with 769,773 rows and 8 variables, or \code{NULL}
+(invisibly) if the download fails (e.g., no internet connection):
 \describe{
 \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
 \item{bill_no}{Numeric bill number}

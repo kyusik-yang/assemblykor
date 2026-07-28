@@ -13,7 +13,8 @@ get_bill_texts(cache_dir = NULL, force_download = FALSE)
 \item{force_download}{Logical. If \code{TRUE}, re-download even if cached.}
 }
 \value{
-A data frame with 60,925 rows and 3 variables:
+A data frame with 60,925 rows and 3 variables, or \code{NULL}
+(invisibly) if the download fails (e.g., no internet connection):
 \describe{
 \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
 \item{propose_reason}{Full text of the propose-reason statement (Korean)}

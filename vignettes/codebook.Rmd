@@ -98,7 +98,7 @@ knitr::kable(codebook_table(bills), row.names = FALSE)
 ## wealth
 
 **2,928 rows, 14 variables.** Legislator asset declaration panel
-(2015-2025, 13 disclosure periods).
+(2015-2024, 10 disclosure years).
 
 - **Unit of observation**: legislator-year
 - **Key**: `member_id` + `year` (unique)
@@ -115,7 +115,7 @@ knitr::kable(codebook_table(wealth), row.names = FALSE)
 ## seminars
 
 **5,962 rows, 18 variables.** Legislator-year policy seminar activity
-(17th-22nd assembly, 2000-2025).
+(17th-22nd assembly, 2004-2025).
 
 - **Unit of observation**: legislator-year
 - **Key**: `member_id` + `year` (note: ~5% of `member_id` are `NA`)

@@ -5,15 +5,6 @@
   subtitle <- "Korean National Assembly Data for Political Science Education"
   width <- max(nchar(title), nchar(subtitle)) + 2
 
-  top    <- paste0("
-    \n",
-  "
-     \n")
-  bottom <- paste0("
-     \n",
-  "
-    ")
-
   pad_line <- function(text) {
     padding <- width - nchar(text)
     paste0(

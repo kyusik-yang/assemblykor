@@ -3,9 +3,10 @@
 #' assemblykor: Korean National Assembly Data for Political Science Education
 #'
 #' Provides ready-to-use datasets from the Korean National Assembly for
-#' teaching quantitative methods in political science. Includes five
+#' teaching quantitative methods in political science. Includes seven
 #' built-in datasets covering legislator metadata, bills, asset
-#' declarations, policy seminars, and committee speeches.
+#' declarations, policy seminars, committee speeches, plenary vote
+#' tallies, and member-level roll call votes.
 #'
 #' @section Built-in datasets:
 #' \itemize{
@@ -130,16 +131,16 @@
 "bills"
 
 
-#' Legislator Asset Declarations (2015-2025)
+#' Legislator Asset Declarations (2015-2024)
 #'
-#' Panel data of asset declarations for 773 Korean National Assembly members
-#' across 13 reporting periods (2015-2025). Derived from mandatory public
+#' Panel data of asset declarations for 772 Korean National Assembly members
+#' across 10 disclosure years (2015-2024). Derived from mandatory public
 #' disclosures via the OpenWatch project.
 #'
 #' @format A data frame with 2,928 rows and 14 variables:
 #' \describe{
 #'   \item{member_id}{Legislator identifier (links to \code{legislators$member_id})}
-#'   \item{year}{Disclosure year (2015-2025)}
+#'   \item{year}{Disclosure year (2015-2024)}
 #'   \item{name}{Legislator name in Korean}
 #'   \item{total_assets}{Total declared assets, in thousands of KRW}
 #'   \item{total_debt}{Total declared liabilities, in thousands of KRW}
@@ -182,10 +183,10 @@
 "wealth"
 
 
-#' Policy Seminar Activity by Legislator-Year (2000-2025)
+#' Policy Seminar Activity by Legislator-Year (2004-2025)
 #'
 #' Annual panel of policy seminar hosting activity for legislators in the
-#' 16th through 22nd Korean National Assembly. Policy seminars (jeongchaek semina)
+#' 17th through 22nd Korean National Assembly. Policy seminars (jeongchaek semina)
 #' are informal legislative events where MPs invite experts, stakeholders,
 #' and colleagues from other parties to discuss policy issues.
 #'
@@ -199,7 +200,7 @@
 #'   \item{assembly}{Assembly number (17-22)}
 #'   \item{party}{Party affiliation}
 #'   \item{camp}{Political camp: "liberal", "conservative",
-#'     "progressive", or "other" (values are in Korean)}
+#'     "progressive", "centrist", or "other" (values are in Korean)}
 #'   \item{seniority}{Number of terms served}
 #'   \item{n_seminars}{Number of policy seminars hosted that year}
 #'   \item{n_cross_party}{Number of seminars co-hosted with other-party legislators}

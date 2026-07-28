@@ -158,7 +158,7 @@ bill_text <- bills %>%
 
 # Whitespace tokenization (sample up to 5,000 bills)
 sample_bills <- bill_text %>%
-  slice_sample(n = min(5000, n()))
+  slice_sample(n = 5000)
 
 tokens <- sample_bills %>%
   select(bill_id, committee, propose_reason) %>%
@@ -179,7 +179,7 @@ texts <- get_bill_texts()
 bill_text <- bills %>%
   inner_join(texts, by = "bill_id") %>%
   filter(scrape_status == "ok", assembly == 22) %>%
-  slice_sample(n = min(5000, n()))
+  slice_sample(n = 5000)
 
 tokens <- bill_text %>%
   select(bill_id, committee, propose_reason) %>%
@@ -225,7 +225,7 @@ texts <- get_bill_texts()
 bill_text <- bills %>%
   inner_join(texts, by = "bill_id") %>%
   filter(scrape_status == "ok", assembly == 22) %>%
-  slice_sample(n = min(5000, n()))
+  slice_sample(n = 5000)
 
 ko_stopwords <- c(
   "\uc758", "\uc5d0", "\ub97c", "\uc744", "\uc774", "\uac00", "\uc740", "\ub294", "\ubc0f", "\ub4f1",
@@ -373,7 +373,7 @@ ko_stopwords <- c(
 # Sample from each assembly
 sample_both <- bill_text %>%
   group_by(assembly) %>%
-  slice_sample(n = min(3000, n())) %>%
+  slice_sample(n = 3000) %>%
   ungroup()
 
 era_tokens <- sample_both %>%
