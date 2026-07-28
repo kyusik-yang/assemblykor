@@ -38,6 +38,8 @@ cached locally after the first download.
   : Download bill propose-reason texts
 - [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md)
   : Download bill co-sponsorship records
+- [`get_speech_tokens()`](https://kyusik-yang.github.io/assemblykor/reference/get_speech_tokens.md)
+  : Download morpheme tokens for committee speeches
 
 ## Tutorials
 

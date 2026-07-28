@@ -28,6 +28,7 @@ library(assemblykor)
 #>   Downloadable:
 #>     get_bill_texts()           Bill propose-reason texts
 #>     get_proposers()            Co-sponsorship records
+#>     get_speech_tokens()        Morpheme tokens for speeches (Kiwi)
 #> 
 #>   Tutorials:
 #>     list_tutorials()           See all 9 tutorials

@@ -2,6 +2,15 @@
 
 ## assemblykor 0.1.3
 
+- New download function
+  [`get_speech_tokens()`](https://kyusik-yang.github.io/assemblykor/reference/get_speech_tokens.md):
+  morpheme tokens for the `speeches` dataset, produced with the Kiwi
+  morphological analyzer (kiwipiepy). Content morphemes only
+  (NNG/NNP/VV/VA/MAG/SL), verbs and adjectives lemmatized, keyed by
+  `date` + `speech_order`. Students can do proper Korean tokenization
+  without installing a morphological analyzer. Tutorial 05 gains a
+  section comparing whitespace tokenization against morphological
+  analysis.
 - The startup message now points to the GitHub repository for the latest
   data and fixes, since CRAN releases may lag behind.
 - Fixed tutorial 04 (panel data): `etable()` was called with an `lm`

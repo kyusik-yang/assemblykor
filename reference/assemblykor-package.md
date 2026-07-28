@@ -37,6 +37,10 @@ and member-level roll call votes.
 - [`get_proposers`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md):
   769,773 co-sponsorship records
 
+- [`get_speech_tokens`](https://kyusik-yang.github.io/assemblykor/reference/get_speech_tokens.md):
+  665,055 morpheme tokens for the `speeches` dataset (Kiwi morphological
+  analyzer)
+
 ## Tutorials
 
 Nine Korean-language tutorials covering tidyverse, visualization,
