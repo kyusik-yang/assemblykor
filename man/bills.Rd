@@ -5,7 +5,7 @@
 \alias{bills}
 \title{Bills Proposed in the Korean National Assembly (20th-22nd)}
 \format{
-A data frame with 60,925 rows and 9 variables:
+A data frame with 60,925 rows and 11 variables:
 \describe{
 \item{bill_id}{Unique bill identifier from the National Assembly system}
 \item{bill_no}{Numeric bill number}
@@ -15,13 +15,25 @@ A data frame with 60,925 rows and 9 variables:
 \item{propose_date}{Date the bill was formally proposed}
 \item{result}{Legislative outcome in Korean. Common values include
 passed as-is, expired at term end, and incorporated into
-alternative bill. See \code{table(bills$result)} for all values.}
+alternative bill. \code{NA} for bills pending in March 2026. For a
+vetoed bill, the outcome after the veto (rejected on the re-vote,
+passed again, or expired at the end of the term). See
+\code{table(bills$result)} for all values.}
 \item{proposer}{Name of the lead (primary) proposer}
-\item{proposer_id}{MONA_CD of the lead proposer (links to \code{legislators$member_id})}
+\item{proposer_id}{MONA_CD of the lead proposer (links to
+\code{legislators$member_id}). Comma-separated for the few bills
+with joint lead proposers.}
+\item{vetoed}{Logical: the President returned the bill to the
+Assembly for reconsideration (a presidential veto)}
+\item{alt_vetoed}{Logical: the bill was incorporated into a committee
+alternative (\code{result} "incorporated into alternative bill")
+that was vetoed and not passed again, so its content never became
+law}
 }
 }
 \source{
-Open National Assembly Information API (Republic of Korea).
+Open National Assembly Information API (Republic of Korea),
+as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
 }
 \usage{
 bills
@@ -34,11 +46,18 @@ Metadata for 60,925 legislative bills proposed during the 20th through
 The Korean National Assembly has seen a dramatic increase in bill
 proposals: the 21st Assembly produced 23,655 bills versus 21,594 in the
 20th. Most bills expire at the end of the assembly term
-(term expiry); only about 5\\% pass in their original form.
+(term expiry). Only about 5\\% are passed by the plenary, as proposed or
+with amendments.
+
+Up to version 0.1.3, 11 of the 12 vetoed bills, which were rejected on
+the re-vote or expired at the end of the term, kept the result of their
+first floor vote. Their \code{result} now follows the re-vote, as in
+release 0.7.0 of the kna project. To count bills whose content became
+law, exclude \code{alt_vetoed} bills as well.
 
 Use \code{get_bill_texts()} to download the full propose-reason texts
 for text analysis, and \code{get_proposers()} for the complete
-co-sponsorship records (769,773 rows).
+co-sponsorship records (777,220 rows).
 }
 \examples{
 data(bills)

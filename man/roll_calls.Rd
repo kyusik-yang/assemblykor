@@ -5,7 +5,7 @@
 \alias{roll_calls}
 \title{Member-Level Roll Call Votes (22nd Assembly)}
 \format{
-A data frame with 383,739 rows and 8 variables:
+A data frame with 383,792 rows and 9 variables:
 \describe{
 \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
 \code{bills$bill_id})}
@@ -13,7 +13,15 @@ A data frame with 383,739 rows and 8 variables:
 \item{member_name}{Legislator name in Korean}
 \item{member_id}{Legislator identifier (MONA_CD, links to
 \code{legislators$member_id})}
-\item{party}{Party affiliation at time of vote}
+\item{party}{Party label reported by the API at data collection
+(March 2026). The API writes the member's party at that time onto
+every past vote, so a member who changed party during the term
+appears under the later party on all votes.}
+\item{party_elected}{Party at election, as in
+\code{legislators$party_elected}. Members elected on the lists of
+the satellite parties (e.g., the People Future Party and the
+Democratic Alliance of Korea) carry the list party, although they
+sat with other parties.}
 \item{district}{Electoral district or proportional list position}
 \item{vote}{Vote cast in Korean: one of four values meaning
 yes, no, abstain, or absent}
@@ -22,7 +30,7 @@ yes, no, abstain, or absent}
 }
 \source{
 Open National Assembly Information API (Republic of Korea),
-endpoint \code{nojepdqqaweusdfbi}.
+endpoint \code{nojepdqqaweusdfbi}, with the corrections of kna 0.7.0.
 }
 \usage{
 roll_calls
@@ -30,12 +38,22 @@ roll_calls
 \description{
 Individual legislator voting records for all 1,286 bills that went
 to a recorded plenary vote in the 22nd Korean National Assembly
-(2024-2026). Each row represents one legislator's vote on one bill.
+from July 2024 to March 12, 2026. Each row represents one legislator's
+vote on one bill.
 }
 \details{
-The member-level roll call API is only available for the 22nd
-assembly. For the 20th and 21st assemblies, use the bill-level
-\code{\link{votes}} dataset.
+This dataset covers the 22nd assembly. The same API endpoint also has
+member-level votes of the 20th and 21st assemblies, which are left out
+to keep the package small. Release 0.7.0 of the kna project
+(\url{https://github.com/kyusik-yang/kna}) provides them. For the
+20th and 21st assemblies, use the bill-level \code{\link{votes}}
+dataset.
+
+Neither party column records the party at the time of each vote. Up to
+version 0.1.3, \code{party} was documented as the party at the time of
+the vote. Version 0.1.4 corrects that description, adds
+\code{party_elected}, and restores 53 votes cast on 2026-03-12 by a
+member seated two days earlier, which the March 2026 collection missed.
 
 This dataset enables ideal point estimation (e.g., W-NOMINATE),
 party unity scores, and analysis of legislative coalitions. Use

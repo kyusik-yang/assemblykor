@@ -26,7 +26,7 @@ htmltools::includeCSS(
 
 **Research Question**: How has the composition of the Korean National Assembly changed?
 
-In this tutorial, you will explore data on 947 legislators across the 20th-22nd assemblies while learning essential R tools.
+In this tutorial, you will explore data on 948 legislators across the 20th-22nd assemblies while learning essential R tools.
 
 You will learn:
 
@@ -53,7 +53,7 @@ Always check the structure first. This is the most important first step.
 str(legislators)
 ```
 
-947 rows, 15 columns. Each row = one legislator's record in one assembly term. The same legislator serving in both the 20th and 21st assemblies appears as two rows.
+948 rows, 15 columns. Each row = one legislator's record in one assembly term. The same legislator serving in both the 20th and 21st assemblies appears as two rows.
 
 ### Key Variables
 
@@ -81,7 +81,7 @@ summary(legislators[, c("assembly", "seniority", "n_bills_lead")])
 
 ```{r quiz-nrow, echo=FALSE}
 quiz(
-  question("There are 661 unique legislators but 947 rows. Why?",
+  question("There are 662 unique legislators but 948 rows. Why?",
     answer("Some rows have missing data that got split into separate entries"),
     answer("Some legislators served in multiple assemblies, appearing once per term", correct = TRUE),
     answer("The dataset includes both legislators and their staff members"),

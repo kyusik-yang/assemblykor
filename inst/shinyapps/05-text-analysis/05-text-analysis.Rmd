@@ -340,7 +340,7 @@ ggplot(ai_trend, aes(x = month, y = n)) +
 
 형태소 분석기를 직접 설치하는 것은 초심자에게 쉽지 않으므로,
 `assemblykor`는 Kiwi 형태소 분석기로 미리 처리한 토큰을 제공합니다.
-`speeches`의 15,843개 발언 전체가 분석되어 있습니다.
+`speeches`의 15,795개 발언 전체가 분석되어 있습니다.
 
 ```{r download-tokens, eval=FALSE}
 tokens_morph <- get_speech_tokens()

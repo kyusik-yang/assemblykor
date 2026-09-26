@@ -52,13 +52,13 @@ set_ko_font()
 
 | Dataset | Rows | Unit | Key |
 |---------|------|------|-----|
-| `legislators` | 947 | MP-assembly | `member_id` + `assembly` |
+| `legislators` | 948 | MP-assembly | `member_id` + `assembly` |
 | `bills` | 60,925 | bill | `bill_id` |
 | `wealth` | 2,928 | MP-year | `member_id` + `year` |
 | `seminars` | 5,962 | MP-year | `member_id` + `year` |
-| `speeches` | 15,843 | speech turn | `date` + `speech_order` |
+| `speeches` | 15,795 | speech turn | `date` + `speech_order` |
 | `votes` | 8,050 | bill vote | `bill_id` |
-| `roll_calls` | 383,739 | MP-bill vote | `member_id` + `bill_id` |
+| `roll_calls` | 383,792 | MP-bill vote | `member_id` + `bill_id` |
 
 ## Dataset Relationships
 
@@ -84,7 +84,7 @@ legislators (member_id)
 
 ### bills
 `bill_id` `assembly` `bill_name` `committee` `propose_date`
-`result` `proposer` `proposer_id`
+`result` `proposer` `proposer_id` `vetoed` `alt_vetoed`
 
 ### wealth
 `member_id` `year` `total_assets` `net_worth` `real_estate`
@@ -103,7 +103,7 @@ legislators (member_id)
 `bill_id` `assembly` `vote_date` `result` `voted` `yes` `no` `abstain`
 
 ### roll_calls
-`bill_id` `member_id` `party` `vote` `vote_date`
+`bill_id` `member_id` `party` `party_elected` `vote` `vote_date`
 *22nd assembly only (1,286 bills)*
 
 </div>

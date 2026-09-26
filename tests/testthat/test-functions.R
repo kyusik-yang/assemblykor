@@ -70,3 +70,31 @@ test_that("CSV files in extdata are valid", {
     expect_true(ncol(df) > 0)
   }
 })
+
+# -- get_proposers (offline, from a cached file) ------------------------
+
+test_that("get_proposers reads the cached file layout", {
+  skip_if_not_installed("arrow")
+  cache <- file.path(tempdir(), "assemblykor-test-proposers")
+  dir.create(cache, showWarnings = FALSE)
+  on.exit(unlink(cache, recursive = TRUE), add = TRUE)
+
+  # lead proposer, co-proposer, supporter
+  roles <- c("\ub300\ud45c\ubc1c\uc758", "\uacf5\ub3d9\ubc1c\uc758",
+             "\ucc2c\uc131")
+  fake <- data.frame(
+    bill_id = "PRC_TEST", bill_no = 2100001L, bill_name = "test bill",
+    propose_date = as.Date("2020-06-01"),
+    proposer_name = c("A", "B", "C"), proposer_party = "P",
+    member_id = c("AAAAAAA1", "AAAAAAA2", "AAAAAAA3"), role = roles
+  )
+  arrow::write_parquet(fake, file.path(cache, "proposers_v2.parquet"))
+
+  expect_message(props <- get_proposers(cache_dir = cache), "cached")
+  expect_named(props, c("bill_id", "bill_no", "bill_name", "propose_date",
+                        "proposer_name", "proposer_party", "member_id",
+                        "is_lead", "role"))
+  expect_equal(props$is_lead, c(TRUE, FALSE, FALSE))
+  expect_equal(props$role, roles)
+  expect_s3_class(props$propose_date, "Date")
+})

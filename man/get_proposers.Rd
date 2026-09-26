@@ -13,7 +13,7 @@ get_proposers(cache_dir = NULL, force_download = FALSE)
 \item{force_download}{Logical. If \code{TRUE}, re-download even if cached.}
 }
 \value{
-A data frame with 769,773 rows and 8 variables, or \code{NULL}
+A data frame with 777,220 rows and 9 variables, or \code{NULL}
 (invisibly) if the download fails (e.g., no internet connection):
 \describe{
 \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
@@ -21,14 +21,31 @@ A data frame with 769,773 rows and 8 variables, or \code{NULL}
 \item{bill_name}{Bill title in Korean}
 \item{propose_date}{Proposal date}
 \item{proposer_name}{Legislator name}
-\item{proposer_party}{Party affiliation at the time of co-sponsorship}
+\item{proposer_party}{Party affiliation at the time of proposal}
 \item{member_id}{Legislator identifier (links to \code{legislators$member_id})}
-\item{is_lead}{Logical: \code{TRUE} if lead (primary) proposer, \code{FALSE} if co-sponsor}
+\item{is_lead}{Logical: \code{TRUE} if lead (primary) proposer,
+\code{FALSE} if co-proposer or supporter (see \code{role})}
+\item{role}{Role on the bill in Korean, one of lead proposer
+(daepyo balui), co-proposer (gongdong balui) or supporter (chanseong).
+Supporters are the members counted in the "oe M in" part of the
+proposer text.}
 }
 }
 \description{
-Downloads the complete proposer records (769,773 rows) listing every
-legislator who co-sponsored each bill. Requires the \pkg{arrow} package.
+Downloads the complete proposer records (777,220 rows) listing every
+legislator who proposed, co-proposed or supported each of the 60,925
+bills in \code{\link{bills}}. Requires the \pkg{arrow} package.
+}
+\details{
+The records come from the official proposer list of each bill
+(BILLINFOPPSR endpoint), as rebuilt in release 0.7.0 of the kna
+project (\url{https://github.com/kyusik-yang/kna}). Releases up to
+0.1.3 of this package served an earlier file that stopped at 100 names
+per bill, which left out 7,447 records of the 208 bills with more than
+100 proposers and supporters, and whose \code{is_lead} was
+\code{FALSE} for the lead proposer of 36 single-proposer bills. Bills
+with joint lead proposers have more than one row with
+\code{is_lead = TRUE}.
 }
 \examples{
 \donttest{
@@ -36,17 +53,19 @@ if (requireNamespace("arrow", quietly = TRUE) &&
     requireNamespace("dplyr", quietly = TRUE)) {
   props <- get_proposers(cache_dir = tempdir())
 
-  # Build co-sponsorship edgelist
-  leads <- dplyr::select(
-    dplyr::filter(props, is_lead), bill_id, lead = member_id
-  )
-  cosponsors <- dplyr::select(
-    dplyr::filter(props, !is_lead), bill_id, cosponsor = member_id
-  )
-  edges <- dplyr::inner_join(
-    leads, cosponsors,
-    by = "bill_id", relationship = "many-to-many"
-  )
+  if (!is.null(props)) {
+    # Build co-sponsorship edgelist
+    leads <- dplyr::select(
+      dplyr::filter(props, is_lead), bill_id, lead = member_id
+    )
+    cosponsors <- dplyr::select(
+      dplyr::filter(props, !is_lead), bill_id, cosponsor = member_id
+    )
+    edges <- dplyr::inner_join(
+      leads, cosponsors,
+      by = "bill_id", relationship = "many-to-many"
+    )
+  }
 }
 }
 

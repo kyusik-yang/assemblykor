@@ -37,17 +37,32 @@ test_that("legislators key columns are valid", {
                     c("constituency", "proportional")))
 })
 
+test_that("legislators seniority is seniority at that assembly", {
+  data(legislators, envir = environment())
+  # First-term members equal the official counts (150 and 168)
+  expect_equal(sum(legislators$assembly == 20 & legislators$seniority == 1), 150)
+  expect_equal(sum(legislators$assembly == 21 & legislators$seniority == 1), 168)
+
+  # A member who served in consecutive assemblies gains one term
+  s20 <- legislators[legislators$assembly == 20, c("member_id", "seniority")]
+  s21 <- legislators[legislators$assembly == 21, c("member_id", "seniority")]
+  both <- merge(s20, s21, by = "member_id", suffixes = c("_20", "_21"))
+  expect_true(nrow(both) > 100)
+  expect_equal(both$seniority_21, both$seniority_20 + 1L)
+})
+
 # -- bills -------------------------------------------------------------
 
 test_that("bills has expected structure", {
   data(bills, envir = environment())
   expect_s3_class(bills, "data.frame")
-  expect_equal(ncol(bills), 9)
+  expect_equal(ncol(bills), 11)
   expect_true(nrow(bills) > 60000)
 
   expected_cols <- c(
     "bill_id", "bill_no", "assembly", "bill_name", "committee",
-    "propose_date", "result", "proposer", "proposer_id"
+    "propose_date", "result", "proposer", "proposer_id",
+    "vetoed", "alt_vetoed"
   )
   expect_named(bills, expected_cols)
 })
@@ -57,6 +72,18 @@ test_that("bills key columns are valid", {
   expect_equal(length(bills$bill_id), length(unique(bills$bill_id)))
   expect_true(all(bills$assembly %in% c(20, 21, 22)))
   expect_s3_class(bills$propose_date, "Date")
+  expect_type(bills$vetoed, "logical")
+  expect_type(bills$alt_vetoed, "logical")
+  expect_false(anyNA(bills$vetoed))
+
+  # A vetoed bill never keeps its first result "passed as-is"
+  # ("\uc6d0\uc548\uac00\uacb0")
+  expect_false(any(bills$result[bills$vetoed] == "\uc6d0\uc548\uac00\uacb0",
+                   na.rm = TRUE))
+  # alt_vetoed bills were incorporated into an alternative
+  # ("\ub300\uc548\ubc18\uc601\ud3d0\uae30")
+  expect_true(all(bills$result[bills$alt_vetoed] ==
+                    "\ub300\uc548\ubc18\uc601\ud3d0\uae30"))
 })
 
 # -- wealth ------------------------------------------------------------
@@ -107,6 +134,10 @@ test_that("seminars key columns are valid", {
   data(seminars, envir = environment())
   expect_true(all(seminars$assembly %in% 17:22))
   expect_type(seminars$is_governing, "logical")
+  expect_true(all(seminars$seniority >= 1 &
+                    seminars$seniority <= seminars$total_terms, na.rm = TRUE))
+  # Member attributes need a member_id
+  expect_true(all(is.na(seminars$seniority[is.na(seminars$member_id)])))
   expect_true(all(seminars$cross_party_ratio >= 0 &
                     seminars$cross_party_ratio <= 1, na.rm = TRUE))
 })
@@ -116,12 +147,12 @@ test_that("seminars key columns are valid", {
 test_that("speeches has expected structure", {
   data(speeches, envir = environment())
   expect_s3_class(speeches, "data.frame")
-  expect_equal(ncol(speeches), 9)
+  expect_equal(ncol(speeches), 10)
   expect_true(nrow(speeches) > 15000)
 
   expected_cols <- c(
     "assembly", "date", "committee", "speaker", "role",
-    "speaker_name", "member_id", "speech_order", "speech"
+    "speaker_name", "member_id", "speaker_id", "speech_order", "speech"
   )
   expect_named(speeches, expected_cols)
 })
@@ -137,6 +168,17 @@ test_that("speeches key columns are valid", {
     "broadcasting", "committee_staff"
   )
   expect_true(all(speeches$role %in% valid_roles))
+
+  # member_id is a MONA_CD for members of the Assembly, NA otherwise
+  expect_true(all(is.na(speeches$member_id) |
+                    grepl("^[0-9A-Z]{8}$", speeches$member_id)))
+  expect_true(all(!is.na(speeches$member_id[speeches$role == "legislator"])))
+  expect_identical(is.na(speeches$member_id), is.na(speeches$speaker_id))
+
+  # No duplicated speeches
+  expect_false(anyDuplicated(
+    speeches[c("date", "speech_order", "speaker", "speech")]
+  ) > 0)
 })
 
 # -- votes -------------------------------------------------------------
@@ -169,12 +211,12 @@ test_that("votes key columns are valid", {
 test_that("roll_calls has expected structure", {
   data(roll_calls, envir = environment())
   expect_s3_class(roll_calls, "data.frame")
-  expect_equal(ncol(roll_calls), 8)
+  expect_equal(ncol(roll_calls), 9)
   expect_true(nrow(roll_calls) > 360000)
 
   expected_cols <- c(
     "bill_id", "assembly", "member_name", "member_id",
-    "party", "district", "vote", "vote_date"
+    "party", "party_elected", "district", "vote", "vote_date"
   )
   expect_named(roll_calls, expected_cols)
 })
@@ -186,6 +228,15 @@ test_that("roll_calls key columns are valid", {
   # member_id + bill_id should be unique
   key <- paste(roll_calls$member_id, roll_calls$bill_id)
   expect_equal(length(key), length(unique(key)))
+  expect_false(anyNA(roll_calls$party_elected))
+
+  # party_elected is constant within a member and matches legislators
+  data(legislators, envir = environment())
+  leg22 <- legislators[legislators$assembly == 22, ]
+  expect_equal(
+    roll_calls$party_elected,
+    leg22$party_elected[match(roll_calls$member_id, leg22$member_id)]
+  )
 })
 
 # -- Cross-dataset join keys -------------------------------------------
@@ -196,6 +247,12 @@ test_that("join keys are compatible across datasets", {
   data(bills, envir = environment())
   data(votes, envir = environment())
   data(roll_calls, envir = environment())
+  data(speeches, envir = environment())
+
+  # every member_id of speeches and roll_calls is a 22nd-assembly member
+  leg22 <- legislators$member_id[legislators$assembly == 22]
+  expect_true(all(stats::na.omit(speeches$member_id) %in% leg22))
+  expect_true(all(roll_calls$member_id %in% leg22))
 
   # wealth member_ids should largely exist in legislators
   overlap <- mean(wealth$member_id %in% legislators$member_id, na.rm = TRUE)

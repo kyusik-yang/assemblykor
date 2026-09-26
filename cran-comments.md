@@ -1,21 +1,15 @@
-# Update (v0.1.3)
+# Update (v0.1.4)
 
-This is a maintenance and feature update. Changes:
+This is a data-correction update. Changes:
 
-* New download function `get_speech_tokens()`: pre-tokenized morphemes
-  for the `speeches` dataset (665,055 rows, ~1.3 MB download), produced
-  with the Kiwi morphological analyzer. Served remotely and cached, so
-  the installed package size is unchanged.
-* Both existing download functions now download to a temporary file and
-  move it into the cache only on success, so a failed or partial
-  download no longer leaves a corrupt cached file. On network failure
-  they return NULL invisibly with an informative message instead of
-  erroring, per CRAN policy on unavailable internet resources.
-* Fixed two bugs in the bundled tutorials (an `etable()` call that
-  received an `lm` object, and a `slice_sample()` idiom that errors
-  under dplyr >= 1.1.0).
-* Documentation corrections (dataset coverage years and counts) and a
-  new tutorial section on morphological analysis.
+* Corrected values in the built-in datasets (legislator seniority and
+  committees, results of vetoed bills, identifiers in `speeches`,
+  member attributes in `seminars`), following errata in the upstream
+  data source. Three datasets gain columns, and 48 duplicated rows of
+  `speeches` were dropped. Details are in NEWS.md.
+* `get_proposers()` now downloads a corrected file hosted in the package's
+  GitHub repository. It still fails gracefully, returning NULL with a
+  message, when the resource is unavailable.
 
 ## R CMD check results
 
@@ -25,17 +19,17 @@ This is a maintenance and feature update. Changes:
   Maintainer: 'Kyusik Yang <kyusik.yang@nyu.edu>'
 
 * checking installed package size ... NOTE
-    installed size is 7.2Mb
+    installed size is 7.5Mb
     sub-directories of 1Mb or more:
-      data    4.6Mb
-      extdata 1.1Mb
+      data    4.8Mb
+      extdata 1.2Mb
 
   This is a data package (similar to palmerpenguins) providing seven
   curated datasets from the Korean National Assembly for teaching
   quantitative methods in political science. The data size is necessary
   to provide meaningful real-world datasets for classroom exercises
   spanning regression, panel data, text analysis, and network analysis.
-  No data was added in this release.
+  The data grew by about 0.2 MB in this release (new columns).
 
 ## Test environments
 
