@@ -1889,13 +1889,18 @@ summary(m_did, cluster = "name")
 ```{r t04-time-invariant-59, eval=FALSE}
 # 성별은 시간에 따라 변하지 않으므로 FE에서 자동 제거됨
 m_gender <- feols(cross_party_ratio ~ is_governing + is_female |
-                    name + year,
+                    member_id + year,
                   data = sem_panel)
 summary(m_gender)
 ```
 
-`is_female`이 결과에 나타나지 않습니다. 이미 `name` 고정효과에 흡수되었기
-때문입니다. 성별의 효과를 보려면 고정효과 없는 모형이 필요합니다.
+`is_female`이 결과에 나타나지 않습니다. 이미 의원(`member_id`) 고정효과에
+흡수되었기 때문입니다. 성별의 효과를 보려면 고정효과 없는 모형이 필요합니다.
+
+> 여기서는 `name` 대신 `member_id`로 의원을 구분합니다. `seminars`에는 이름이
+> 같은 서로 다른 의원(예: 김재원, 이주영)이 있어서, `name` 고정효과는 두 사람을
+> 한 개체로 묶고 그 안에서 성별이 바뀌는 것처럼 만듭니다. `member_id`가 없는 행은
+> 추정에서 빠집니다.
 
 ### 충분한 within 변동이 필요
 

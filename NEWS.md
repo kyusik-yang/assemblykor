@@ -82,6 +82,11 @@ were added, and the two columns whose meaning changes are marked below.
   longer says that senior legislators propose more bills, which the data
   do not show. Row counts were updated in the README, vignettes,
   cheatsheet, tutorials and startup message.
+* Tutorial 4 (panel data) uses `member_id` instead of `name` as the
+  individual fixed effect in its example of a time-invariant variable,
+  in all three tutorial formats. With the corrected `seminars`
+  attributes, two names each belong to a man and a woman, so a `name`
+  fixed effect no longer absorbed `is_female` as the tutorial says.
 
 # assemblykor 0.1.3
 
