@@ -500,7 +500,8 @@
 #' version 0.1.3, \code{party} was documented as the party at the time of
 #' the vote. Version 0.1.4 corrects that description, adds
 #' \code{party_elected}, and restores 53 votes cast on 2026-03-12 by a
-#' member seated two days earlier, which the March 2026 collection missed.
+#' member who had just taken up a vacant proportional seat, which the
+#' March 2026 collection missed.
 #'
 #' This dataset enables ideal point estimation (e.g., W-NOMINATE),
 #' party unity scores, and analysis of legislative coalitions. Use

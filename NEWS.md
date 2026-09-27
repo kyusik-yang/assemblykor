@@ -24,8 +24,9 @@ were added, and the two columns whose meaning changes are marked below.
   ticket or list the member was elected on, one 20th-assembly district
   and two district types (two proportional members recorded as
   constituency members) were corrected, and `n_bills` was recounted from
-  the complete co-sponsorship records (582 rows change). The 22nd member
-  seated on 2026-03-10 was added (948 rows instead of 947).
+  the complete co-sponsorship records (582 rows change). The member who
+  took up a vacant proportional seat of the 22nd assembly in March 2026
+  was added (948 rows instead of 947).
 * `bills`: the 11 vetoed bills that were rejected on the re-vote or
   expired at the end of the term kept the result of their first floor
   vote (passed as-is or passed with amendments). `result` now follows the

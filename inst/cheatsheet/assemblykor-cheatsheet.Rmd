@@ -139,7 +139,7 @@ rc_leg <- roll_calls %>%
 # Bill proposal texts (~25 MB)
 texts <- get_bill_texts()
 
-# Co-sponsorship records (~6 MB)
+# Co-sponsorship records (~3.6 MB)
 props <- get_proposers()
 ```
 
