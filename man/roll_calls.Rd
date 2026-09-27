@@ -21,7 +21,10 @@ appears under the later party on all votes.}
 \code{legislators$party_elected}. Members elected on the lists of
 the satellite parties (e.g., the People Future Party and the
 Democratic Alliance of Korea) carry the list party, although they
-sat with other parties.}
+sat with other parties. Two members who succeeded to proportional
+seats during the term carry the Democratic Party of Korea, the
+party into which the Democratic Alliance of Korea had merged (see
+\code{\link{legislators}}).}
 \item{district}{Electoral district or proportional list position}
 \item{vote}{Vote cast in Korean: one of four values meaning
 yes, no, abstain, or absent}

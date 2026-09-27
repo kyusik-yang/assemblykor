@@ -18,6 +18,10 @@ This is a data-correction update. Changes:
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'Kyusik Yang <kyusik.yang@nyu.edu>'
 
+  Size of tarball: 5218586 bytes
+
+  The tarball size has the same cause as the installed size NOTE below.
+
 * checking installed package size ... NOTE
     installed size is 7.5Mb
     sub-directories of 1Mb or more:

@@ -65,7 +65,11 @@
 #'     of March 2026.}
 #'   \item{party_elected}{Party at election, that is, the party on whose ticket or
 #'     list the member was elected. For a successor to a proportional
-#'     seat, the party of the list the seat came from.}
+#'     seat, the party of the list the seat came from. The source records
+#'     ten such successors under the party that the list party had merged
+#'     into by the time they took the seat (for example, the Democratic
+#'     Party of Korea for the Democratic Alliance of Korea), as does
+#'     release 0.7.0 of the kna project.}
 #'   \item{district}{Electoral district name, or party list position for proportional members}
 #'   \item{district_type}{Election type: "constituency" or "proportional"}
 #'   \item{committees}{Committees (standing and special) the member served
@@ -481,7 +485,10 @@
 #'     \code{legislators$party_elected}. Members elected on the lists of
 #'     the satellite parties (e.g., the People Future Party and the
 #'     Democratic Alliance of Korea) carry the list party, although they
-#'     sat with other parties.}
+#'     sat with other parties. Two members who succeeded to proportional
+#'     seats during the term carry the Democratic Party of Korea, the
+#'     party into which the Democratic Alliance of Korea had merged (see
+#'     \code{\link{legislators}}).}
 #'   \item{district}{Electoral district or proportional list position}
 #'   \item{vote}{Vote cast in Korean: one of four values meaning
 #'     yes, no, abstain, or absent}

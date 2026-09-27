@@ -77,6 +77,9 @@ were added, and the two columns whose meaning changes are marked below.
   rows in the source. The documentation and codebook said it was unique.
 * The `roll_calls` documentation said that the API has member-level votes
   for the 22nd assembly only. It also has the 20th and 21st.
+* The documentation of `party_elected` notes that the source records ten
+  successors to proportional seats (two of them in `roll_calls`) under
+  the party that the list party had merged into, not the list party.
 * Tutorial 8 (bill success) no longer counts the 180 `alt_vetoed` bills
   as passed, in all three tutorial formats. The introduction vignette no
   longer says that senior legislators propose more bills, which the data

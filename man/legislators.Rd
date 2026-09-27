@@ -18,7 +18,11 @@ switches during the term. For the 22nd assembly it is the party as
 of March 2026.}
 \item{party_elected}{Party at election, that is, the party on whose ticket or
 list the member was elected. For a successor to a proportional
-seat, the party of the list the seat came from.}
+seat, the party of the list the seat came from. The source records
+ten such successors under the party that the list party had merged
+into by the time they took the seat (for example, the Democratic
+Party of Korea for the Democratic Alliance of Korea), as does
+release 0.7.0 of the kna project.}
 \item{district}{Electoral district name, or party list position for proportional members}
 \item{district_type}{Election type: "constituency" or "proportional"}
 \item{committees}{Committees (standing and special) the member served
