@@ -11,7 +11,7 @@ bills
 
 ## Format
 
-A data frame with 60,925 rows and 9 variables:
+A data frame with 60,925 rows and 11 variables:
 
 - bill_id:
 
@@ -40,8 +40,10 @@ A data frame with 60,925 rows and 9 variables:
 - result:
 
   Legislative outcome in Korean. Common values include passed as-is,
-  expired at term end, and incorporated into alternative bill. See
-  `table(bills$result)` for all values.
+  expired at term end, and incorporated into alternative bill. `NA` for
+  bills pending in March 2026. For a vetoed bill, the outcome after the
+  veto (rejected on the re-vote, passed again, or expired at the end of
+  the term). See `table(bills$result)` for all values.
 
 - proposer:
 
@@ -49,24 +51,43 @@ A data frame with 60,925 rows and 9 variables:
 
 - proposer_id:
 
-  MONA_CD of the lead proposer (links to `legislators$member_id`)
+  MONA_CD of the lead proposer (links to `legislators$member_id`).
+  Comma-separated for the few bills with joint lead proposers.
+
+- vetoed:
+
+  Logical: the President returned the bill to the Assembly for
+  reconsideration (a presidential veto)
+
+- alt_vetoed:
+
+  Logical: the bill was incorporated into a committee alternative
+  (`result` "incorporated into alternative bill") that was vetoed and
+  not passed again, so its content never became law
 
 ## Source
 
-Open National Assembly Information API (Republic of Korea).
+Open National Assembly Information API (Republic of Korea), as corrected
+in kna 0.7.0 (<https://github.com/kyusik-yang/kna>).
 
 ## Details
 
 The Korean National Assembly has seen a dramatic increase in bill
 proposals: the 21st Assembly produced 23,655 bills versus 21,594 in the
-20th. Most bills expire at the end of the assembly term (term expiry);
-only about 5\\
+20th. Most bills expire at the end of the assembly term (term expiry).
+Only about 5\\ with amendments.
+
+Up to version 0.1.3, 11 of the 12 vetoed bills, which were rejected on
+the re-vote or expired at the end of the term, kept the result of their
+first floor vote. Their `result` now follows the re-vote, as in release
+0.7.0 of the kna project. To count bills whose content became law,
+exclude `alt_vetoed` bills as well.
 
 Use
 [`get_bill_texts()`](https://kyusik-yang.github.io/assemblykor/reference/get_bill_texts.md)
 to download the full propose-reason texts for text analysis, and
 [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md)
-for the complete co-sponsorship records (769,773 rows).
+for the complete co-sponsorship records (777,220 rows).
 
 ## Examples
 
@@ -97,7 +118,7 @@ sort(table(bills$committee), decreasing = TRUE)[1:10]
 head(sort(table(bills$result), decreasing = TRUE))
 #> 
 #>   임기만료폐기   대안반영폐기       수정가결       원안가결           철회 
-#>          30678          13692           2222           1048            578 
+#>          30679          13692           2213           1046            578 
 #> 수정안반영폐기 
 #>            299 
 ```

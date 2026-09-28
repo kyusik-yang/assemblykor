@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">assemblykor</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Getting Started with assemblykor</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/v0.1.3/vignettes/introduction.Rmd" class="external-link"><code>vignettes/introduction.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/main/vignettes/introduction.Rmd" class="external-link"><code>vignettes/introduction.Rmd</code></a></small>
       <div class="d-none name"><code>introduction.Rmd</code></div>
     </div>
 
@@ -76,7 +76,7 @@ Korean National Assembly for teaching quantitative methods in political
 science:</p>
 <ul>
 <li>
-<strong><code>legislators</code></strong>: 947 MP records (20th-22nd
+<strong><code>legislators</code></strong>: 948 MP records (20th-22nd
 assemblies)</li>
 <li>
 <strong><code>bills</code></strong>: 60,925 legislative bills</li>
@@ -87,31 +87,31 @@ declarations</li>
 <strong><code>seminars</code></strong>: 5,962 legislator-year
 seminar activity records</li>
 <li>
-<strong><code>speeches</code></strong>: 15,843 committee speech
+<strong><code>speeches</code></strong>: 15,795 committee speech
 records (22nd, Science &amp; ICT)</li>
 <li>
 <strong><code>votes</code></strong>: 8,050 plenary vote tallies
 (20th-22nd)</li>
 <li>
-<strong><code>roll_calls</code></strong>: 383,739 member-level roll
+<strong><code>roll_calls</code></strong>: 383,792 member-level roll
 call votes (22nd)</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kyusik-yang.github.io/assemblykor/">assemblykor</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   ┌───────────────────────────────────────────────────────────────┐</span></span>
-<span><span class="co">#&gt;   │ assemblykor 0.1.3                                             │</span></span>
+<span><span class="co">#&gt;   │ assemblykor 0.1.4                                             │</span></span>
 <span><span class="co">#&gt;   │ Korean National Assembly Data for Political Science Education │</span></span>
 <span><span class="co">#&gt;   └───────────────────────────────────────────────────────────────┘</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   7 built-in datasets:</span></span>
-<span><span class="co">#&gt;     legislators    947 recs   MPs (20-22nd)</span></span>
+<span><span class="co">#&gt;     legislators    948 recs   MPs (20-22nd)</span></span>
 <span><span class="co">#&gt;     bills       60,925 recs   Bills proposed</span></span>
 <span><span class="co">#&gt;     wealth       2,928 recs   Asset declarations</span></span>
 <span><span class="co">#&gt;     seminars     5,962 recs   Policy seminars</span></span>
-<span><span class="co">#&gt;     speeches    15,843 recs   Committee speeches (22nd, Sci &amp; ICT)</span></span>
+<span><span class="co">#&gt;     speeches    15,795 recs   Committee speeches (22nd, Sci &amp; ICT)</span></span>
 <span><span class="co">#&gt;     votes        8,050 recs   Plenary vote tallies</span></span>
-<span><span class="co">#&gt;     roll_calls 383,739 recs   Member-level votes (22nd)</span></span>
+<span><span class="co">#&gt;     roll_calls 383,792 recs   Member-level votes (22nd)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Downloadable:</span></span>
 <span><span class="co">#&gt;     get_bill_texts()           Bill propose-reason texts</span></span>
@@ -135,7 +135,7 @@ call votes (22nd)</li>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">legislators</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">legislators</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 'data.frame':    947 obs. of  15 variables:</span></span>
+<span><span class="co">#&gt; 'data.frame':    948 obs. of  15 variables:</span></span>
 <span><span class="co">#&gt;  $ member_id    : chr  "XQ98168F" "60490713" "IH436704" "8I61593E" ...</span></span>
 <span><span class="co">#&gt;  $ assembly     : int  20 20 20 20 20 20 20 20 20 20 ...</span></span>
 <span><span class="co">#&gt;  $ name         : chr  "강길부" "강병원" "강석진" "강석호" ...</span></span>
@@ -145,11 +145,11 @@ call votes (22nd)</li>
 <span><span class="co">#&gt;  $ party_elected: chr  "무소속" "더불어민주당" "새누리당" "새누리당" ...</span></span>
 <span><span class="co">#&gt;  $ district     : chr  "울산 울주군" "서울 은평구을" "경남 산청군함양군거창군합천군" "경북 영양군영덕군봉화군울진군" ...</span></span>
 <span><span class="co">#&gt;  $ district_type: chr  "constituency" "constituency" "constituency" "constituency" ...</span></span>
-<span><span class="co">#&gt;  $ committees   : chr  "산업통상자원중소벤처기업위원회, 4차 산업혁명 특별위원회, 예산결산특별위원회, 교육문화체육관광위원회" "" "농림축산식품해양수산위원회, 국회운영위원회, 보건복지위원회, 예산결산특별위원회" "농림축산식품해양수산위원회, 외교통일위원회, 정보위원회, 정치개혁 특별위원회, 행정안전위원회, 안전행정위원회" ...</span></span>
+<span><span class="co">#&gt;  $ committees   : chr  "교육문화체육관광위원회, 예산결산특별위원회, 4차 산업혁명 특별위원회, 산업통상자원중소벤처기업위원회" "국회운영위원회, 환경노동위원회, 정치발전 특별위원회, 예산결산특별위원회, 헌법재판소장(이진성) 임명동의에 관한 "| __truncated__ "국회운영위원회, 보건복지위원회, 예산결산특별위원회, 농림축산식품해양수산위원회" "안전행정위원회, 행정안전위원회, 정치개혁 특별위원회, 정보위원회, 외교통일위원회, 농림축산식품해양수산위원회" ...</span></span>
 <span><span class="co">#&gt;  $ gender       : chr  "M" "M" "M" "M" ...</span></span>
 <span><span class="co">#&gt;  $ birth_date   : Date, format: "1942-06-05" "1971-07-09" ...</span></span>
-<span><span class="co">#&gt;  $ seniority    : int  4 2 1 3 4 1 3 2 2 1 ...</span></span>
-<span><span class="co">#&gt;  $ n_bills      : int  312 1078 694 583 1131 393 1478 932 1284 1054 ...</span></span>
+<span><span class="co">#&gt;  $ seniority    : int  4 1 1 3 4 1 1 2 1 1 ...</span></span>
+<span><span class="co">#&gt;  $ n_bills      : int  314 1078 694 585 1131 393 1478 934 1284 1056 ...</span></span>
 <span><span class="co">#&gt;  $ n_bills_lead : int  21 94 53 43 89 74 75 55 78 64 ...</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="gender-composition-by-assembly">Gender composition by assembly<a class="anchor" aria-label="anchor" href="#gender-composition-by-assembly"></a>
@@ -161,13 +161,13 @@ call votes (22nd)</li>
 <span><span class="co">#&gt;        F   M</span></span>
 <span><span class="co">#&gt;   20  53 267</span></span>
 <span><span class="co">#&gt;   21  64 258</span></span>
-<span><span class="co">#&gt;   22  64 241</span></span>
+<span><span class="co">#&gt;   22  64 242</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/proportions.html" class="external-link">prop.table</a></span><span class="op">(</span><span class="va">gender_tab</span>, margin <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     </span></span>
 <span><span class="co">#&gt;              F         M</span></span>
 <span><span class="co">#&gt;   20 0.1656250 0.8343750</span></span>
 <span><span class="co">#&gt;   21 0.1987578 0.8012422</span></span>
-<span><span class="co">#&gt;   22 0.2098361 0.7901639</span></span></code></pre></div>
+<span><span class="co">#&gt;   22 0.2091503 0.7908497</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="legislative-productivity-by-seniority">Legislative productivity by seniority<a class="anchor" aria-label="anchor" href="#legislative-productivity-by-seniority"></a>
@@ -178,7 +178,8 @@ call votes (22nd)</li>
 <span>        main <span class="op">=</span> <span class="st">"Seniority and Legislative Productivity"</span>,</span>
 <span>        col <span class="op">=</span> <span class="st">"lightblue"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="introduction_files/figure-html/seniority-plot-1.png" class="r-plt" alt="" width="672"></p>
-<p>Senior legislators produce more bills, but with high variance.</p>
+<p>Bill counts vary widely at every level of seniority. The median is
+highest among members in their first or second term.</p>
 </div>
 </div>
 <div class="section level2">
@@ -278,8 +279,8 @@ ranks” hypothesis.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 4</span></span></span>
 <span><span class="co">#&gt;   district_type     n median_net_worth median_bills</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> constituency   <span style="text-decoration: underline;">4</span>489             1.48           62</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> proportional    466             1.23           65</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> constituency   <span style="text-decoration: underline;">4</span>481             1.48         62  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> proportional    474             1.23         65.5</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="plenary-votes">6. Plenary votes<a class="anchor" aria-label="anchor" href="#plenary-votes"></a>
@@ -322,7 +323,7 @@ contested legislation where party discipline breaks down.</p>
 <span><span class="co">#&gt;   party        n_members discipline</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 조국혁신당          13      0.888</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 더불어민주당       169      0.856</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 더불어민주당       170      0.856</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 국민의힘           107      0.762</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 무소속               6      0.753</span></span></code></pre></div>
 </div>

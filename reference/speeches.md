@@ -1,6 +1,6 @@
 # Committee Speeches from the Science and ICT Committee (22nd Assembly)
 
-Full corpus of 15,843 speech records from the Science, Technology,
+Full corpus of 15,795 speech records from the Science, Technology,
 Information, Broadcasting and Communications Committee of the 22nd
 Korean National Assembly (2024). Standing committee meetings only.
 
@@ -12,7 +12,7 @@ speeches
 
 ## Format
 
-A data frame with 15,843 rows and 9 variables:
+A data frame with 15,795 rows and 10 variables:
 
 - assembly:
 
@@ -43,9 +43,15 @@ A data frame with 15,843 rows and 9 variables:
 
 - member_id:
 
-  Legislator identifier (MONA_CD, links to `legislators$member_id`).
-  Available for all rows; however, non-legislator speakers (ministers,
-  witnesses, etc.) will not match entries in `legislators`.
+  Legislator identifier (MONA_CD, links to `legislators$member_id`) for
+  the 12,060 speeches by members of the Assembly. `NA` for other
+  speakers (ministers, witnesses, and the heads of other bodies).
+
+- speaker_id:
+
+  Numeric speaker identifier used in the committee minutes, which
+  versions up to 0.1.3 stored in `member_id`. `NA` for speakers who are
+  not members of the Assembly.
 
 - speech_order:
 
@@ -65,6 +71,14 @@ Information API.
 This dataset contains the complete standing committee speech records (no
 sampling) for the Science and ICT Committee of the 22nd assembly
 (June-December 2024). Speeches shorter than 50 characters were excluded.
+`date` and `speech_order` identify a speech, except on 2024-06-25, when
+two meetings were held and eight `speech_order` values occur twice.
+
+Up to version 0.1.3, `member_id` held the numeric speaker identifier of
+the minutes, so it did not link to `legislators$member_id`, and 48
+speeches of 2024-08-14 appeared twice under two speaker identifiers.
+Version 0.1.4 attaches the MONA_CD through the member records of release
+0.7.0 of the kna project and drops the duplicates.
 
 The `role` variable distinguishes legislators from government officials,
 witnesses, and other participants. Filter to `role == "legislator"` for
@@ -91,7 +105,7 @@ table(speeches$role)
 #>       agency_head      broadcasting             chair   committee_staff 
 #>                31                46              3821                27 
 #>    expert_witness        legislator          minister  minister_nominee 
-#>               720              9098               196               151 
+#>               720              9050               196               151 
 #>           nominee  public_corp_head senior_bureaucrat         testifier 
 #>               349               187                62                77 
 #>     vice_minister           witness 

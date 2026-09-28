@@ -30,7 +30,7 @@ get_speech_tokens(cache_dir = NULL, force_download = FALSE)
 
 ## Value
 
-A data frame with 665,055 rows and 4 variables, or `NULL` (invisibly) if
+A data frame with 663,582 rows and 4 variables, or `NULL` (invisibly) if
 the download fails (e.g., no internet connection):
 
 - date:
@@ -40,7 +40,8 @@ the download fails (e.g., no internet connection):
 - speech_order:
 
   Speech turn within the meeting (links to `speeches$speech_order`);
-  `date` + `speech_order` identifies one speech
+  `date` + `speech_order` identifies one speech, except on 2024-06-25
+  (see Details)
 
 - token:
 
@@ -62,9 +63,12 @@ analysis. For noun-based analysis, filter to `pos %in% c("NNG", "NNP")`.
 
 Join back to
 [`speeches`](https://kyusik-yang.github.io/assemblykor/reference/speeches.md)
-with `by = c("date", "speech_order")` to attach speaker metadata. A
-small number of speeches (56 of 15,843) yield no content morphemes and
-therefore do not appear.
+with `by = c("date", "speech_order")` to attach speaker metadata. Every
+speech has at least one token. Two meetings were held on 2024-06-25, so
+eight `speech_order` values of that date belong to two speeches each,
+and their tokens are pooled under the shared key. Up to version 0.1.3
+the file also held a second copy of the tokens of 48 speeches that
+appeared twice in `speeches`.
 
 The tokenization script is in the package source repository under
 `data-raw/tokenize_speeches.py`.
@@ -85,11 +89,11 @@ if (requireNamespace("arrow", quietly = TRUE)) {
   head(sort(table(nouns$token), decreasing = TRUE), 20)
 }
 #> Downloading speech tokens (~1.3 MB)...
-#> Cached at: /tmp/RtmpEAD6MI/speech_tokens.parquet
+#> Cached at: /tmp/RtmpgrgoN6/speech_tokens_v2.parquet
 #> 
 #>   위원   방송   말씀   생각 위원장   부분   얘기     때   국민 후보자   문제 
-#>   6412   5476   5451   4659   3657   3115   2989   2939   2878   2686   2659 
+#>   6408   5457   5443   4638   3649   3107   2983   2935   2873   2686   2641 
 #> 위원회   관련   질의   사장   국회   자료   통신     말     법 
-#>   2511   2390   2378   2316   2228   2225   2074   1991   1953 
+#>   2507   2386   2371   2315   2225   2221   2070   1991   1951 
 # }
 ```

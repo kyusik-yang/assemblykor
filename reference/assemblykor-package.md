@@ -9,7 +9,7 @@ and member-level roll call votes.
 ## Built-in datasets
 
 - [`legislators`](https://kyusik-yang.github.io/assemblykor/reference/legislators.md):
-  947 MP records (20th-22nd assemblies)
+  948 MP records (20th-22nd assemblies)
 
 - [`bills`](https://kyusik-yang.github.io/assemblykor/reference/bills.md):
   60,925 legislative bills
@@ -21,13 +21,13 @@ and member-level roll call votes.
   5,962 legislator-year seminar records
 
 - [`speeches`](https://kyusik-yang.github.io/assemblykor/reference/speeches.md):
-  15,843 speech records (22nd, Science & ICT Committee)
+  15,795 speech records (22nd, Science & ICT Committee)
 
 - [`votes`](https://kyusik-yang.github.io/assemblykor/reference/votes.md):
   8,050 plenary vote tallies (20th-22nd assemblies)
 
 - [`roll_calls`](https://kyusik-yang.github.io/assemblykor/reference/roll_calls.md):
-  383,739 member-level roll call votes (22nd assembly)
+  383,792 member-level roll call votes (22nd assembly)
 
 ## Download functions
 
@@ -35,11 +35,20 @@ and member-level roll call votes.
   60,925 bill propose-reason texts
 
 - [`get_proposers`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md):
-  769,773 co-sponsorship records
+  777,220 co-sponsorship records
 
 - [`get_speech_tokens`](https://kyusik-yang.github.io/assemblykor/reference/get_speech_tokens.md):
-  665,055 morpheme tokens for the `speeches` dataset (Kiwi morphological
+  663,582 morpheme tokens for the `speeches` dataset (Kiwi morphological
   analyzer)
+
+## Data corrections
+
+Version 0.1.4 corrects defects that release 0.7.0 of the kna project
+(<https://github.com/kyusik-yang/kna>) found in the underlying Open
+Assembly records, among them the seniority and committees of
+`legislators`, the results of vetoed bills and the co-sponsorship
+records cut at 100 names per bill. The coverage is unchanged, with data
+as of March 2026. See the package NEWS for details.
 
 ## Tutorials
 

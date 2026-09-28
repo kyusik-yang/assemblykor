@@ -1,6 +1,103 @@
 # Changelog
 
+## assemblykor 0.1.4
+
+This release corrects defects in the built-in data that release 0.7.0 of
+the kna project (<https://github.com/kyusik-yang/kna>, CORRECTIONS.md of
+2026-09-26) found in the same Open Assembly records. The coverage is
+unchanged, with data as of March 2026. The corrections are applied by
+`data-raw/kna070_corrections.R`. Column names are unchanged. New columns
+were added, and the two columns whose meaning changes are marked below.
+
+### Data corrections
+
+- `legislators$seniority` now gives the seniority at that assembly, as
+  documented. It held the member’s lifetime number of terms at the time
+  of data collection, which overstated the seniority of 286 member-terms
+  of the 20th and 21st assemblies. First-term members now number 150 in
+  the 20th and 168 in the 21st, equal to the official counts, instead of
+  88 and 96.
+- `legislators$committees` now lists the committees the member served on
+  in that assembly, from the dated assignment records. The old strings
+  came from present-day committee lists and did not match the assembly
+  for many members. They were empty for 233 rows, and are now empty only
+  for the Speaker in the 22nd assembly.
+- `legislators`: six values of `party_elected` now give the party whose
+  ticket or list the member was elected on, one 20th-assembly district
+  and two district types (two proportional members recorded as
+  constituency members) were corrected, and `n_bills` was recounted from
+  the complete co-sponsorship records (582 rows change). The member who
+  took up a vacant proportional seat of the 22nd assembly in March 2026
+  was added (948 rows instead of 947).
+- `bills`: the 11 vetoed bills that were rejected on the re-vote or
+  expired at the end of the term kept the result of their first floor
+  vote (passed as-is or passed with amendments). `result` now follows
+  the re-vote. New logical columns `vetoed` (12 bills) and `alt_vetoed`
+  (180 bills incorporated into a committee alternative that was vetoed
+  and not passed again) make these cases visible.
+- `roll_calls$party` was documented as the party at the time of the
+  vote. It is the party label that the API reported at data collection,
+  written onto every past vote. The values are unchanged and the
+  documentation is corrected. The new column `party_elected` gives the
+  party at election. 53 votes cast on 2026-03-12 by the newly seated
+  member, which the March 2026 collection missed, were restored (383,792
+  rows instead of 383,739).
+- `seminars`: `seniority`, `total_terms`, `is_female`,
+  `is_proportional`, `is_seoul` and `province` now come from the member
+  records of kna 0.7.0, matched on `member_id` and `assembly`. They were
+  matched on the name alone, counted only the terms from the 17th
+  assembly on, and applied one seat type and one region to every term of
+  a member. `seniority` changes value in 1,128 rows, gains a value in
+  242 rows of the 22nd assembly and becomes `NA` in 272 rows. The
+  attributes are `NA` for the 266 rows without `member_id`, mostly
+  members of the outgoing assembly in election years and legislators who
+  share a name with another member. `province` now uses the short
+  province names and is `NA` for proportional-representation members.
+- `speeches$member_id` changes meaning. It held the numeric speaker
+  identifier of the committee minutes, which did not match
+  `legislators$member_id` for any speech. It is now the MONA_CD for the
+  12,060 speeches by members of the Assembly and `NA` for other
+  speakers. The old values are kept in the new column `speaker_id`. 48
+  speeches of 2024-08-14 that appeared twice under two speaker
+  identifiers were dropped (15,795 rows instead of 15,843).
+- [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md)
+  changes source. It now downloads a file hosted in this repository and
+  built from the kna 0.7.0 co-sponsorship records. The old file stopped
+  at 100 names per bill, which left out 7,447 records of 208 bills, and
+  `is_lead` was `FALSE` for the lead proposer of 36 single-proposer
+  bills (777,220 rows instead of 769,773). A new column `role` separates
+  co-proposers from supporters, who were both `is_lead == FALSE`. The
+  cache file name changed, so a file cached by 0.1.3 is not reused.
+- [`get_speech_tokens()`](https://kyusik-yang.github.io/assemblykor/reference/get_speech_tokens.md)
+  no longer holds a second copy of the tokens of the 48 duplicated
+  speeches (663,582 rows instead of 665,055), and uses a new cache file
+  name. Its documentation claimed that 56 speeches had no tokens. Every
+  speech has tokens, and the 56 were repeated `date`/`speech_order`
+  keys.
+
+### Documentation
+
+- `votes$bill_id` is unique except for bill 2000491, which has two tally
+  rows in the source. The documentation and codebook said it was unique.
+- The `roll_calls` documentation said that the API has member-level
+  votes for the 22nd assembly only. It also has the 20th and 21st.
+- The documentation of `party_elected` notes that the source records ten
+  successors to proportional seats (two of them in `roll_calls`) under
+  the party that the list party had merged into, not the list party.
+- Tutorial 8 (bill success) no longer counts the 180 `alt_vetoed` bills
+  as passed, in all three tutorial formats. The introduction vignette no
+  longer says that senior legislators propose more bills, which the data
+  do not show. Row counts were updated in the README, vignettes,
+  cheatsheet, tutorials and startup message.
+- Tutorial 4 (panel data) uses `member_id` instead of `name` as the
+  individual fixed effect in its example of a time-invariant variable,
+  in all three tutorial formats. With the corrected `seminars`
+  attributes, two names each belong to a man and a woman, so a `name`
+  fixed effect no longer absorbed `is_female` as the tutorial says.
+
 ## assemblykor 0.1.3
+
+CRAN release: 2026-07-28
 
 - New download function
   [`get_speech_tokens()`](https://kyusik-yang.github.io/assemblykor/reference/get_speech_tokens.md):

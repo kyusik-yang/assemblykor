@@ -43,6 +43,17 @@ Why tidyverse-first for teaching?
 > policy analysis, please verify against the original data sources
 > listed in the [Data sources](#data-sources) section below.
 
+> **Data corrections in 0.1.4.** `legislators$seniority` is now the
+> seniority at each assembly (it was the lifetime number of terms), the
+> `committees` of each assembly were rebuilt, vetoed bills record the
+> result of the re-vote, `speeches$member_id` links to `legislators`,
+> and
+> [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md)
+> no longer stops at 100 names per bill. These follow release 0.7.0 of
+> [kna](https://github.com/kyusik-yang/kna). See
+> [NEWS.md](https://kyusik-yang.github.io/assemblykor/NEWS.md) for the
+> full list and the size of each change.
+
 ## Meet the data
 
 [TABLE]
@@ -105,12 +116,12 @@ ggplot(wealth, aes(x = net_worth / 1e6)) +
 bills %>%
   count(result, sort = TRUE) %>%
   head(5)
-#>               result     n
-#> 1     임기만료폐기 30678
-#> 2     대안반영폐기 13692
-#> 3         수정가결  2222
-#> 4         원안가결  1048
-#> 5             철회   578
+#>         result     n
+#> 1 임기만료폐기 30679
+#> 2 대안반영폐기 13692
+#> 3         <NA> 12171
+#> 4     수정가결  2213
+#> 5     원안가결  1046
 ```
 
 ## Korean font setup
@@ -139,10 +150,10 @@ Larger datasets are available via download functions (requires the
 # Bill propose-reason texts (60,925 texts, ~25 MB download)
 texts <- get_bill_texts()
 
-# Co-sponsorship records (769,773 rows, ~6 MB download)
+# Co-sponsorship records (777,220 rows, ~3.6 MB download)
 proposers <- get_proposers()
 
-# Morpheme tokens for speeches (665,055 rows, ~1.3 MB download)
+# Morpheme tokens for speeches (663,582 rows, ~1.3 MB download)
 # Pre-tokenized with the Kiwi morphological analyzer - no Korean NLP
 # setup needed on the student side
 tokens <- get_speech_tokens()
@@ -223,7 +234,7 @@ All data in this package are derived from publicly available sources.
 
 | Dataset | Source | License |
 |----|----|----|
-| Legislators, bills, proposers, votes, roll calls | Open National Assembly Information API (open.assembly.go.kr) | Public domain (Korean government open data) |
+| Legislators, bills, proposers, votes, roll calls | Open National Assembly Information API (open.assembly.go.kr), with the corrections of [kna](https://github.com/kyusik-yang/kna) 0.7.0 | Public domain (Korean government open data) |
 | Speeches (committee minutes) | Open National Assembly Information API (open.assembly.go.kr) | Public domain (Korean government open data) |
 | Asset declarations | [OpenWatch](https://docs.openwatch.kr/data/national-assembly) | CC BY-SA 4.0 |
 | Policy seminars | National Assembly Seminar Database | Public data |
@@ -251,7 +262,7 @@ citation("assemblykor")
 ```
 
     Yang, Kyusik (2026). assemblykor: Korean National Assembly Data for
-    Political Science Education. R package version 0.1.3.
+    Political Science Education. R package version 0.1.4.
     https://CRAN.R-project.org/package=assemblykor
 
 ## License

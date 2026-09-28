@@ -12,18 +12,18 @@ install.packages("assemblykor")
 library(assemblykor)
 #> 
 #>   ┌───────────────────────────────────────────────────────────────┐
-#>   │ assemblykor 0.1.3                                             │
+#>   │ assemblykor 0.1.4                                             │
 #>   │ Korean National Assembly Data for Political Science Education │
 #>   └───────────────────────────────────────────────────────────────┘
 #> 
 #>   7 built-in datasets:
-#>     legislators    947 recs   MPs (20-22nd)
+#>     legislators    948 recs   MPs (20-22nd)
 #>     bills       60,925 recs   Bills proposed
 #>     wealth       2,928 recs   Asset declarations
 #>     seminars     5,962 recs   Policy seminars
-#>     speeches    15,843 recs   Committee speeches (22nd, Sci & ICT)
+#>     speeches    15,795 recs   Committee speeches (22nd, Sci & ICT)
 #>     votes        8,050 recs   Plenary vote tallies
-#>     roll_calls 383,739 recs   Member-level votes (22nd)
+#>     roll_calls 383,792 recs   Member-level votes (22nd)
 #> 
 #>   Downloadable:
 #>     get_bill_texts()           Bill propose-reason texts
@@ -56,13 +56,13 @@ head(legislators, 3)
 #> 1                   울산 울주군  constituency
 #> 2                 서울 은평구을  constituency
 #> 3 경남 산청군함양군거창군합천군  constituency
-#>                                                                                            committees
-#> 1 산업통상자원중소벤처기업위원회, 4차 산업혁명 특별위원회, 예산결산특별위원회, 교육문화체육관광위원회
-#> 2                                                                                                    
-#> 3                      농림축산식품해양수산위원회, 국회운영위원회, 보건복지위원회, 예산결산특별위원회
+#>                                                                                                                                                                                                   committees
+#> 1                                                                                                        교육문화체육관광위원회, 예산결산특별위원회, 4차 산업혁명 특별위원회, 산업통상자원중소벤처기업위원회
+#> 2 국회운영위원회, 환경노동위원회, 정치발전 특별위원회, 예산결산특별위원회, 헌법재판소장(이진성) 임명동의에 관한 인사청문특별위원회, 미세먼지 대책 특별위원회, 산업통상자원중소벤처기업위원회, 기획재정위원회
+#> 3                                                                                                                             국회운영위원회, 보건복지위원회, 예산결산특별위원회, 농림축산식품해양수산위원회
 #>   gender birth_date seniority n_bills n_bills_lead
-#> 1      M 1942-06-05         4     312           21
-#> 2      M 1971-07-09         2    1078           94
+#> 1      M 1942-06-05         4     314           21
+#> 2      M 1971-07-09         1    1078           94
 #> 3      M 1959-12-07         1     694           53
 head(bills, 3)
 #>                              bill_id bill_no assembly
@@ -73,10 +73,10 @@ head(bills, 3)
 #> 1 집합건물의 소유 및 관리에 관한 법률 일부개정법률안 법제사법위원회
 #> 2                            지방세법 일부개정법률안 행정안전위원회
 #> 3                                       상장회사법안     정무위원회
-#>   propose_date       result proposer proposer_id
-#> 1   2020-05-22 임기만료폐기   김병관    QB390802
-#> 2   2020-05-22 임기만료폐기   김병관    QB390802
-#> 3   2020-05-18 임기만료폐기   채이배    GDN7894V
+#>   propose_date       result proposer proposer_id vetoed alt_vetoed
+#> 1   2020-05-22 임기만료폐기   김병관    QB390802  FALSE      FALSE
+#> 2   2020-05-22 임기만료폐기   김병관    QB390802  FALSE      FALSE
+#> 3   2020-05-18 임기만료폐기   채이배    GDN7894V  FALSE      FALSE
 head(wealth, 3)
 #>   member_id year   name total_assets total_debt net_worth real_estate building
 #> 1  0135473I 2015 이군현      1856381     304644   1551737     1373000  1373000
@@ -105,7 +105,7 @@ legislators %>%
 #>   gender     n median_bills_led
 #>   <chr>  <int>            <dbl>
 #> 1 F         64               54
-#> 2 M        241               44
+#> 2 M        242               44
 ```
 
 ## Quick analysis: bill survival rates
@@ -116,14 +116,15 @@ bills %>%
   count(result, sort = TRUE) %>%
   head(5)
 #>         result     n
-#> 1 임기만료폐기 30678
+#> 1 임기만료폐기 30679
 #> 2 대안반영폐기 13692
 #> 3         <NA> 12171
-#> 4     수정가결  2222
-#> 5     원안가결  1048
+#> 4     수정가결  2213
+#> 5     원안가결  1046
 ```
 
-Only about 5% of bills pass in their original form.
+Only about 5% of bills are passed by the plenary, as proposed or with
+amendments. Bills still pending in March 2026 have `result` `NA`.
 
 ## Quick analysis: wealth inequality
 

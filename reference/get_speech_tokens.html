@@ -21,7 +21,7 @@ locally after the first download. Requires the arrow package."><meta property="o
 
     <a class="navbar-brand me-2" href="../index.html">assemblykor</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,7 @@ locally after the first download. Requires the arrow package."><meta property="o
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Download morpheme tokens for committee speeches</h1>
-      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/v0.1.3/R/download.R" class="external-link"><code>R/download.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/main/R/download.R" class="external-link"><code>R/download.R</code></a></small>
       <div class="d-none name"><code>get_speech_tokens.Rd</code></div>
     </div>
 
@@ -83,7 +83,7 @@ locally after the first download. Requires the <span class="pkg">arrow</span> pa
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A data frame with 665,055 rows and 4 variables, or <code>NULL</code>
+    <p>A data frame with 663,582 rows and 4 variables, or <code>NULL</code>
 (invisibly) if the download fails (e.g., no internet connection):</p><dl><dt>date</dt>
 <dd><p>Date of the committee meeting (links to
 <code>speeches$date</code>)</p></dd>
@@ -91,7 +91,7 @@ locally after the first download. Requires the <span class="pkg">arrow</span> pa
 <dt>speech_order</dt>
 <dd><p>Speech turn within the meeting (links to
 <code>speeches$speech_order</code>); <code>date</code> + <code>speech_order</code>
-identifies one speech</p></dd>
+identifies one speech, except on 2024-06-25 (see Details)</p></dd>
 
 <dt>token</dt>
 <dd><p>Morpheme, in dictionary form. Verbs and adjectives are
@@ -113,8 +113,11 @@ topic analysis. For noun-based analysis, filter to
 <code>pos %in% c("NNG", "NNP")</code>.</p>
 <p>Join back to <code><a href="speeches.html">speeches</a></code> with
 <code>by = c("date", "speech_order")</code> to attach speaker metadata.
-A small number of speeches (56 of 15,843) yield no content morphemes
-and therefore do not appear.</p>
+Every speech has at least one token. Two meetings were held on
+2024-06-25, so eight <code>speech_order</code> values of that date belong to
+two speeches each, and their tokens are pooled under the shared key.
+Up to version 0.1.3 the file also held a second copy of the tokens of
+48 speeches that appeared twice in <code>speeches</code>.</p>
 <p>The tokenization script is in the package source repository under
 <code>data-raw/tokenize_speeches.py</code>.</p>
     </div>
@@ -134,12 +137,12 @@ and therefore do not appear.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">nouns</span><span class="op">$</span><span class="va">token</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">20</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Downloading speech tokens (~1.3 MB)...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Cached at: /tmp/RtmpEAD6MI/speech_tokens.parquet</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Cached at: /tmp/RtmpgrgoN6/speech_tokens_v2.parquet</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   위원   방송   말씀   생각 위원장   부분   얘기     때   국민 후보자   문제 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   6412   5476   5451   4659   3657   3115   2989   2939   2878   2686   2659 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   6408   5457   5443   4638   3649   3107   2983   2935   2873   2686   2641 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 위원회   관련   질의   사장   국회   자료   통신     말     법 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   2511   2390   2378   2316   2228   2225   2074   1991   1953 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   2507   2386   2371   2315   2225   2221   2070   1991   1951 </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

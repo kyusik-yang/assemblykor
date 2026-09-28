@@ -16,7 +16,8 @@ A data frame with 8,050 rows and 13 variables:
 
 - bill_id:
 
-  Unique bill identifier (links to `bills$bill_id`)
+  Bill identifier (links to `bills$bill_id`). Unique except for bill
+  2000491 of the 20th assembly, which has two tally rows in the source.
 
 - bill_no:
 

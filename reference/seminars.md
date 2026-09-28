@@ -23,7 +23,8 @@ A data frame with 5,962 rows and 18 variables:
 - member_id:
 
   Legislator identifier (MONA_CD, links to `legislators$member_id`).
-  Available for ~95\\ `NA` for unmatched or ambiguous (homonym) cases.
+  Available for 5,696 rows (95.5\\ and `NA` for unmatched or ambiguous
+  (homonym) cases.
 
 - year:
 
@@ -31,7 +32,8 @@ A data frame with 5,962 rows and 18 variables:
 
 - assembly:
 
-  Assembly number (17-22)
+  Assembly number (17-22), assigned from the calendar year (2004-2007 to
+  the 17th, 2008-2011 to the 18th, and so on)
 
 - party:
 
@@ -44,7 +46,9 @@ A data frame with 5,962 rows and 18 variables:
 
 - seniority:
 
-  Number of terms served
+  Seniority at that assembly, that is, the number of terms served up to
+  and including this one, counting terms before the 17th (1 =
+  first-term)
 
 - n_seminars:
 
@@ -72,27 +76,31 @@ A data frame with 5,962 rows and 18 variables:
 
 - is_proportional:
 
-  Logical: proportional-representation member
+  Logical: holds a proportional-representation seat in that assembly
 
 - is_seoul:
 
-  Logical: represents a Seoul district
+  Logical: represents a Seoul district in that assembly
 
 - province:
 
-  Province/metro area of electoral district
+  Province or metropolitan city of the electoral district in that
+  assembly, in Korean short form (e.g., Seoul, Gyeonggi). `NA` for
+  proportional-representation members.
 
 - total_terms:
 
-  Total assembly terms served across career
+  Total assembly terms served across the career, as of September 2026
 
 - n_bills_led:
 
-  Number of bills proposed as lead proposer that year
+  Number of bills the legislator proposed as lead proposer in that
+  assembly term (the same value in every year of the term)
 
 ## Source
 
-National Assembly Seminar Database, collected via API.
+National Assembly Seminar Database, collected via API. Member attributes
+from kna 0.7.0 (<https://github.com/kyusik-yang/kna>).
 
 ## Details
 
@@ -105,6 +113,21 @@ legislator cooperates across party lines in this informal arena.
 The `is_governing` variable enables difference-in-differences designs:
 when a party transitions from opposition to governing (or vice versa),
 does its members' cross-party collaboration change?
+
+The member attributes `seniority`, `total_terms`, `is_female`,
+`is_proportional`, `is_seoul` and `province` come from the member
+records of release 0.7.0 of the kna project, matched on `member_id` and
+`assembly`. Up to version 0.1.3 they were matched on the name alone and
+counted only the terms from the 17th assembly on. They are `NA` when a
+row has no `member_id`, and all but `total_terms` and `is_female` are
+`NA` when the legislator did not serve in that assembly.
+
+The panel counts seminars by name and year. Because a new assembly
+begins on May 30 of an election year, the rows of an election year also
+hold the activity of members of the outgoing assembly, under the new
+assembly number. Legislators who share a name with another member of the
+same assembly have one row per year for both of them, with `member_id`
+`NA`.
 
 ## Examples
 
@@ -124,5 +147,5 @@ plot(agg, type = "b", main = "Total Policy Seminars by Year")
 # Gender gap in seminar hosting
 tapply(seminars$n_seminars, seminars$is_female, median, na.rm = TRUE)
 #> FALSE  TRUE 
-#>     4     7 
+#>     5     9 
 ```

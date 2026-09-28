@@ -9,7 +9,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">assemblykor</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Bills Proposed in the Korean National Assembly (20th-22nd)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/v0.1.3/R/data.R" class="external-link"><code>R/data.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>bills.Rd</code></div>
     </div>
 
@@ -52,7 +52,7 @@
 
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
-    <p>A data frame with 60,925 rows and 9 variables:</p><dl><dt>bill_id</dt>
+    <p>A data frame with 60,925 rows and 11 variables:</p><dl><dt>bill_id</dt>
 <dd><p>Unique bill identifier from the National Assembly system</p></dd>
 
 <dt>bill_no</dt>
@@ -73,29 +73,51 @@
 <dt>result</dt>
 <dd><p>Legislative outcome in Korean. Common values include
 passed as-is, expired at term end, and incorporated into
-alternative bill. See <code>table(bills$result)</code> for all values.</p></dd>
+alternative bill. <code>NA</code> for bills pending in March 2026. For a
+vetoed bill, the outcome after the veto (rejected on the re-vote,
+passed again, or expired at the end of the term). See
+<code>table(bills$result)</code> for all values.</p></dd>
 
 <dt>proposer</dt>
 <dd><p>Name of the lead (primary) proposer</p></dd>
 
 <dt>proposer_id</dt>
-<dd><p>MONA_CD of the lead proposer (links to <code>legislators$member_id</code>)</p></dd>
+<dd><p>MONA_CD of the lead proposer (links to
+<code>legislators$member_id</code>). Comma-separated for the few bills
+with joint lead proposers.</p></dd>
+
+<dt>vetoed</dt>
+<dd><p>Logical: the President returned the bill to the
+Assembly for reconsideration (a presidential veto)</p></dd>
+
+<dt>alt_vetoed</dt>
+<dd><p>Logical: the bill was incorporated into a committee
+alternative (<code>result</code> "incorporated into alternative bill")
+that was vetoed and not passed again, so its content never became
+law</p></dd>
 
 
 </dl></div>
     <div class="section level2">
     <h2 id="source">Source<a class="anchor" aria-label="anchor" href="#source"></a></h2>
-    <p>Open National Assembly Information API (Republic of Korea).</p>
+    <p>Open National Assembly Information API (Republic of Korea),
+as corrected in kna 0.7.0 (<a href="https://github.com/kyusik-yang/kna" class="external-link">https://github.com/kyusik-yang/kna</a>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The Korean National Assembly has seen a dramatic increase in bill
 proposals: the 21st Assembly produced 23,655 bills versus 21,594 in the
 20th. Most bills expire at the end of the assembly term
-(term expiry); only about 5\<!-- % pass in their original form. --></p>
+(term expiry). Only about 5\<!-- % are passed by the plenary, as proposed or -->
+with amendments.</p>
+<p>Up to version 0.1.3, 11 of the 12 vetoed bills, which were rejected on
+the re-vote or expired at the end of the term, kept the result of their
+first floor vote. Their <code>result</code> now follows the re-vote, as in
+release 0.7.0 of the kna project. To count bills whose content became
+law, exclude <code>alt_vetoed</code> bills as well.</p>
 <p>Use <code><a href="get_bill_texts.html">get_bill_texts()</a></code> to download the full propose-reason texts
 for text analysis, and <code><a href="get_proposers.html">get_proposers()</a></code> for the complete
-co-sponsorship records (769,773 rows).</p>
+co-sponsorship records (777,220 rows).</p>
     </div>
 
     <div class="section level2">
@@ -126,7 +148,7 @@ co-sponsorship records (769,773 rows).</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">bills</span><span class="op">$</span><span class="va">result</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   임기만료폐기   대안반영폐기       수정가결       원안가결           철회 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          30678          13692           2222           1048            578 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          30679          13692           2213           1046            578 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 수정안반영폐기 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            299 </span>
 </code></pre></div>

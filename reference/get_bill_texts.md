@@ -48,7 +48,7 @@ if (requireNamespace("arrow", quietly = TRUE)) {
   hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
 }
 #> Downloading bill texts (~25 MB)...
-#> Cached at: /tmp/RtmpEAD6MI/bill_texts.parquet
+#> Cached at: /tmp/RtmpgrgoN6/bill_texts.parquet
 
 # }
 ```

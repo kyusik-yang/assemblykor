@@ -13,7 +13,7 @@ and colleagues from other parties to discuss policy issues."><meta property="og:
 
     <a class="navbar-brand me-2" href="../index.html">assemblykor</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,7 @@ and colleagues from other parties to discuss policy issues."><meta property="og:
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Policy Seminar Activity by Legislator-Year (2004-2025)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/v0.1.3/R/data.R" class="external-link"><code>R/data.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kyusik-yang/assemblykor/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>seminars.Rd</code></div>
     </div>
 
@@ -63,14 +63,15 @@ and colleagues from other parties to discuss policy issues.</p>
 
 <dt>member_id</dt>
 <dd><p>Legislator identifier (MONA_CD, links to
-<code>legislators$member_id</code>). Available for ~95\<!-- % of rows; -->
-<code>NA</code> for unmatched or ambiguous (homonym) cases.</p></dd>
+<code>legislators$member_id</code>). Available for 5,696 rows (95.5\<!-- %), -->
+and <code>NA</code> for unmatched or ambiguous (homonym) cases.</p></dd>
 
 <dt>year</dt>
 <dd><p>Calendar year</p></dd>
 
 <dt>assembly</dt>
-<dd><p>Assembly number (17-22)</p></dd>
+<dd><p>Assembly number (17-22), assigned from the calendar
+year (2004-2007 to the 17th, 2008-2011 to the 18th, and so on)</p></dd>
 
 <dt>party</dt>
 <dd><p>Party affiliation</p></dd>
@@ -80,7 +81,9 @@ and colleagues from other parties to discuss policy issues.</p>
 "progressive", "centrist", or "other" (values are in Korean)</p></dd>
 
 <dt>seniority</dt>
-<dd><p>Number of terms served</p></dd>
+<dd><p>Seniority at that assembly, that is, the number of terms
+served up to and including this one, counting terms before the 17th
+(1 = first-term)</p></dd>
 
 <dt>n_seminars</dt>
 <dd><p>Number of policy seminars hosted that year</p></dd>
@@ -101,25 +104,32 @@ and colleagues from other parties to discuss policy issues.</p>
 <dd><p>Logical: female legislator</p></dd>
 
 <dt>is_proportional</dt>
-<dd><p>Logical: proportional-representation member</p></dd>
+<dd><p>Logical: holds a proportional-representation
+seat in that assembly</p></dd>
 
 <dt>is_seoul</dt>
-<dd><p>Logical: represents a Seoul district</p></dd>
+<dd><p>Logical: represents a Seoul district in that assembly</p></dd>
 
 <dt>province</dt>
-<dd><p>Province/metro area of electoral district</p></dd>
+<dd><p>Province or metropolitan city of the electoral district
+in that assembly, in Korean short form (e.g., Seoul, Gyeonggi).
+<code>NA</code> for proportional-representation members.</p></dd>
 
 <dt>total_terms</dt>
-<dd><p>Total assembly terms served across career</p></dd>
+<dd><p>Total assembly terms served across the career, as of
+September 2026</p></dd>
 
 <dt>n_bills_led</dt>
-<dd><p>Number of bills proposed as lead proposer that year</p></dd>
+<dd><p>Number of bills the legislator proposed as lead
+proposer in that assembly term (the same value in every year of the
+term)</p></dd>
 
 
 </dl></div>
     <div class="section level2">
     <h2 id="source">Source<a class="anchor" aria-label="anchor" href="#source"></a></h2>
-    <p>National Assembly Seminar Database, collected via API.</p>
+    <p>National Assembly Seminar Database, collected via API. Member
+attributes from kna 0.7.0 (<a href="https://github.com/kyusik-yang/kna" class="external-link">https://github.com/kyusik-yang/kna</a>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -131,6 +141,20 @@ cooperates across party lines in this informal arena.</p>
 <p>The <code>is_governing</code> variable enables difference-in-differences designs:
 when a party transitions from opposition to governing (or vice versa),
 does its members' cross-party collaboration change?</p>
+<p>The member attributes <code>seniority</code>, <code>total_terms</code>,
+<code>is_female</code>, <code>is_proportional</code>, <code>is_seoul</code> and
+<code>province</code> come from the member records of release 0.7.0 of the
+kna project, matched on <code>member_id</code> and <code>assembly</code>. Up to
+version 0.1.3 they were matched on the name alone and counted only the
+terms from the 17th assembly on. They are <code>NA</code> when a row has no
+<code>member_id</code>, and all but <code>total_terms</code> and <code>is_female</code>
+are <code>NA</code> when the legislator did not serve in that assembly.</p>
+<p>The panel counts seminars by name and year. Because a new assembly
+begins on May 30 of an election year, the rows of an election year
+also hold the activity of members of the outgoing assembly, under the
+new assembly number. Legislators who share a name with another member
+of the same assembly have one row per year for both of them, with
+<code>member_id</code> <code>NA</code>.</p>
     </div>
 
     <div class="section level2">
@@ -150,7 +174,7 @@ does its members' cross-party collaboration change?</p>
 <span class="r-in"><span><span class="co"># Gender gap in seminar hosting</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/tapply.html" class="external-link">tapply</a></span><span class="op">(</span><span class="va">seminars</span><span class="op">$</span><span class="va">n_seminars</span>, <span class="va">seminars</span><span class="op">$</span><span class="va">is_female</span>, <span class="va">median</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> FALSE  TRUE </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     4     7 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     5     9 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
