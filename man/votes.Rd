@@ -7,7 +7,9 @@
 \format{
 A data frame with 8,050 rows and 13 variables:
 \describe{
-\item{bill_id}{Unique bill identifier (links to \code{bills$bill_id})}
+\item{bill_id}{Bill identifier (links to \code{bills$bill_id}).
+Unique except for bill 2000491 of the 20th assembly, which has two
+tally rows in the source.}
 \item{bill_no}{Numeric bill number}
 \item{bill_name}{Full bill title in Korean}
 \item{assembly}{Assembly number (20, 21, or 22)}

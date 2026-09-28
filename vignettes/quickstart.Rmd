@@ -57,7 +57,8 @@ bills %>%
   head(5)
 ```
 
-Only about 5% of bills pass in their original form.
+Only about 5% of bills are passed by the plenary, as proposed or with
+amendments. Bills still pending in March 2026 have `result` `NA`.
 
 ## Quick analysis: wealth inequality
 

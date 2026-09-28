@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 `assemblykor` provides seven built-in datasets from the Korean National Assembly
 for teaching quantitative methods in political science:
 
-- **`legislators`**: 947 MP records (20th-22nd assemblies)
+- **`legislators`**: 948 MP records (20th-22nd assemblies)
 - **`bills`**: 60,925 legislative bills
 - **`wealth`**: 2,928 legislator-year asset declarations
 - **`seminars`**: 5,962 legislator-year seminar activity records
-- **`speeches`**: 15,843 committee speech records (22nd, Science & ICT)
+- **`speeches`**: 15,795 committee speech records (22nd, Science & ICT)
 - **`votes`**: 8,050 plenary vote tallies (20th-22nd)
-- **`roll_calls`**: 383,739 member-level roll call votes (22nd)
+- **`roll_calls`**: 383,792 member-level roll call votes (22nd)
 
 ```{r load}
 library(assemblykor)
@@ -57,7 +57,8 @@ boxplot(n_bills_lead ~ seniority, data = legislators,
         col = "lightblue")
 ```
 
-Senior legislators produce more bills, but with high variance.
+Bill counts vary widely at every level of seniority. The median is
+highest among members in their first or second term.
 
 ## 2. Bill outcomes
 

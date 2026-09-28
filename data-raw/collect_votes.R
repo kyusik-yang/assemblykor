@@ -106,8 +106,10 @@ save(votes, file = "data/votes.rda", compress = "xz")
 cat(sprintf("votes.rda: %.1f KB\n", file.size("data/votes.rda") / 1024))
 
 # --- 2. Collect member-level roll calls (22nd assembly only) ---
-# The nojepdqqaweusdfbi endpoint only has data for the 22nd assembly.
-# For 20th-21st assemblies, only bill-level tallies are available.
+# The nojepdqqaweusdfbi endpoint also has the 20th and 21st assemblies,
+# which are left out to keep the package small. POLY_NM is the party at
+# collection time, written onto every vote. kna070_corrections.R adds the
+# party at election.
 cat("\nCollecting member-level roll calls (22nd assembly)...\n")
 
 bill_ids <- unique(votes$bill_id[votes$assembly == 22])

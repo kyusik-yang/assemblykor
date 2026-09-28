@@ -13,14 +13,14 @@ get_speech_tokens(cache_dir = NULL, force_download = FALSE)
 \item{force_download}{Logical. If \code{TRUE}, re-download even if cached.}
 }
 \value{
-A data frame with 665,055 rows and 4 variables, or \code{NULL}
+A data frame with 663,582 rows and 4 variables, or \code{NULL}
 (invisibly) if the download fails (e.g., no internet connection):
 \describe{
 \item{date}{Date of the committee meeting (links to
 \code{speeches$date})}
 \item{speech_order}{Speech turn within the meeting (links to
 \code{speeches$speech_order}); \code{date} + \code{speech_order}
-identifies one speech}
+identifies one speech, except on 2024-06-25 (see Details)}
 \item{token}{Morpheme, in dictionary form. Verbs and adjectives are
 lemmatized (e.g., the stem plus \code{-da})}
 \item{pos}{Part-of-speech tag from the Sejong tagset: "NNG" (common
@@ -47,8 +47,11 @@ topic analysis. For noun-based analysis, filter to
 
 Join back to \code{\link{speeches}} with
 \code{by = c("date", "speech_order")} to attach speaker metadata.
-A small number of speeches (56 of 15,843) yield no content morphemes
-and therefore do not appear.
+Every speech has at least one token. Two meetings were held on
+2024-06-25, so eight \code{speech_order} values of that date belong to
+two speeches each, and their tokens are pooled under the shared key.
+Up to version 0.1.3 the file also held a second copy of the tokens of
+48 speeches that appeared twice in \code{speeches}.
 
 The tokenization script is in the package source repository under
 \code{data-raw/tokenize_speeches.py}.

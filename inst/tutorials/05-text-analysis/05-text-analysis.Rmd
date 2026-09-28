@@ -359,7 +359,7 @@ different tokens. **Morphological analysis** splits words into meaningful
 units and separates particles and endings.
 
 Installing a morphological analyzer is hard for beginners, so `assemblykor`
-ships pre-tokenized morphemes for all 15,843 speeches, produced with the
+ships pre-tokenized morphemes for all 15,795 speeches, produced with the
 Kiwi analyzer. Only content morphemes are included: nouns (NNG/NNP), verbs
 (VV), adjectives (VA), adverbs (MAG), and foreign words (SL, e.g., "AI").
 Verbs and adjectives are lemmatized to dictionary form ("-다").

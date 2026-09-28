@@ -5,7 +5,7 @@
 \alias{speeches}
 \title{Committee Speeches from the Science and ICT Committee (22nd Assembly)}
 \format{
-A data frame with 15,843 rows and 9 variables:
+A data frame with 15,795 rows and 10 variables:
 \describe{
 \item{assembly}{Assembly number (22)}
 \item{date}{Date of the committee meeting}
@@ -18,9 +18,12 @@ titles)}
 "public_corp_head", "broadcasting", "committee_staff"}
 \item{speaker_name}{Cleaned speaker name with titles removed}
 \item{member_id}{Legislator identifier (MONA_CD, links to
-\code{legislators$member_id}). Available for all rows; however,
-non-legislator speakers (ministers, witnesses, etc.) will not match
-entries in \code{legislators}.}
+\code{legislators$member_id}) for the 12,060 speeches by members
+of the Assembly. \code{NA} for other speakers (ministers,
+witnesses, and the heads of other bodies).}
+\item{speaker_id}{Numeric speaker identifier used in the committee
+minutes, which versions up to 0.1.3 stored in \code{member_id}.
+\code{NA} for speakers who are not members of the Assembly.}
 \item{speech_order}{Order of the speech turn within the meeting}
 \item{speech}{Full text of the speech in Korean}
 }
@@ -33,7 +36,7 @@ Open National Assembly Information API.
 speeches
 }
 \description{
-Full corpus of 15,843 speech records from the Science, Technology,
+Full corpus of 15,795 speech records from the Science, Technology,
 Information, Broadcasting and Communications Committee of the 22nd
 Korean National Assembly (2024). Standing committee meetings only.
 }
@@ -41,6 +44,16 @@ Korean National Assembly (2024). Standing committee meetings only.
 This dataset contains the complete standing committee speech records
 (no sampling) for the Science and ICT Committee of the 22nd assembly
 (June-December 2024). Speeches shorter than 50 characters were excluded.
+\code{date} and \code{speech_order} identify a speech, except on
+2024-06-25, when two meetings were held and eight \code{speech_order}
+values occur twice.
+
+Up to version 0.1.3, \code{member_id} held the numeric speaker
+identifier of the minutes, so it did not link to
+\code{legislators$member_id}, and 48 speeches of 2024-08-14 appeared
+twice under two speaker identifiers. Version 0.1.4 attaches the MONA_CD
+through the member records of release 0.7.0 of the kna project and
+drops the duplicates.
 
 The \code{role} variable distinguishes legislators from government
 officials, witnesses, and other participants. Filter to

@@ -1,6 +1,7 @@
 # prepare_data.R
 # Reads source data from sibling projects and creates package .rda files.
 # Run from the assemblykor package root directory.
+# Then run kna070_corrections.R, which applies the corrections of kna 0.7.0.
 
 library(arrow)
 library(readr)

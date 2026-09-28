@@ -64,7 +64,7 @@ and/or `assembly`.
 
 ## legislators
 
-**947 rows, 15 variables.** MP metadata for the 20th-22nd Korean
+**948 rows, 15 variables.** MP metadata for the 20th-22nd Korean
 National Assembly.
 
 - **Unit of observation**: legislator-assembly
@@ -80,7 +80,7 @@ knitr::kable(codebook_table(legislators), row.names = FALSE)
 
 ## bills
 
-**60,925 rows, 9 variables.** Legislative bill metadata (20th-22nd
+**60,925 rows, 11 variables.** Legislative bill metadata (20th-22nd
 assembly).
 
 - **Unit of observation**: bill
@@ -130,11 +130,14 @@ knitr::kable(codebook_table(seminars), row.names = FALSE)
 
 ## speeches
 
-**15,843 rows, 9 variables.** Committee speech records from the
+**15,795 rows, 10 variables.** Committee speech records from the
 Science and ICT Committee (22nd assembly, 2024).
 
 - **Unit of observation**: speech turn
-- **Key**: `date` + `speech_order` (unique within a meeting)
+- **Key**: `date` + `speech_order` (unique except for eight values of
+  2024-06-25, when two meetings were held)
+- **Join**: `member_id` links to `legislators$member_id` for members of
+  the Assembly (`NA` for other speakers)
 - **Source**: National Assembly committee minutes
 
 ```{r speeches-codebook, echo = FALSE}
@@ -150,7 +153,8 @@ knitr::kable(codebook_table(speeches), row.names = FALSE)
 assembly).
 
 - **Unit of observation**: bill vote
-- **Key**: `bill_id` (unique)
+- **Key**: `bill_id` (unique except for bill 2000491, which has two
+  tally rows)
 - **Join**: `bill_id` links to `bills$bill_id` (~40% match rate; `votes`
   includes committee alternatives and budget bills not in `bills`)
 - **Source**: Open National Assembly API
@@ -164,7 +168,7 @@ knitr::kable(codebook_table(votes), row.names = FALSE)
 
 ## roll_calls
 
-**383,739 rows, 8 variables.** Member-level roll call votes (22nd
+**383,792 rows, 9 variables.** Member-level roll call votes (22nd
 assembly, 1,286 bills).
 
 - **Unit of observation**: legislator-bill vote

@@ -241,12 +241,14 @@ library(fixest)
 sem_panel <- seminars %>%
   filter(n_seminars > 0, year >= 2016)
 
-m_gender <- feols(cross_party_ratio ~ is_governing + is_female | name + year,
+m_gender <- feols(cross_party_ratio ~ is_governing + is_female | member_id + year,
                   data = sem_panel)
 summary(m_gender)
 ```
 
 `is_female` is absorbed by the individual FE because it never changes within a person.
+
+The model identifies legislators by `member_id`, not `name`. Two different legislators can share a name in `seminars` (for example, a male and a female legislator named Kim Jae-won), so a `name` FE would treat them as one person whose gender changes. Rows without `member_id` are dropped.
 
 ## Summary
 

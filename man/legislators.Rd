@@ -5,43 +5,68 @@
 \alias{legislators}
 \title{Members of the Korean National Assembly (20th-22nd)}
 \format{
-A data frame with 947 rows and 15 variables:
+A data frame with 948 rows and 15 variables:
 \describe{
 \item{member_id}{Unique legislator identifier (MONA_CD from the National Assembly API)}
 \item{assembly}{Assembly number (20, 21, or 22)}
 \item{name}{Name in Korean (hangul)}
 \item{name_hanja}{Name in Chinese characters (hanja)}
 \item{name_eng}{Name in English (romanized)}
-\item{party}{Party affiliation during the assembly term}
-\item{party_elected}{Party at the time of election}
+\item{party}{Party label that the official roster of that assembly
+records for the member. It reflects party mergers, renamings and
+switches during the term. For the 22nd assembly it is the party as
+of March 2026.}
+\item{party_elected}{Party at election, that is, the party on whose ticket or
+list the member was elected. For a successor to a proportional
+seat, the party of the list the seat came from. The source records
+ten such successors under the party that the list party had merged
+into by the time they took the seat (for example, the Democratic
+Party of Korea for the Democratic Alliance of Korea), as does
+release 0.7.0 of the kna project.}
 \item{district}{Electoral district name, or party list position for proportional members}
 \item{district_type}{Election type: "constituency" or "proportional"}
-\item{committees}{Standing committee assignments (comma-separated)}
+\item{committees}{Committees (standing and special) the member served
+on in that assembly, comma-separated in order of first assignment.
+Empty for a member with no assignment, such as the Speaker.}
 \item{gender}{"M" (male) or "F" (female)}
 \item{birth_date}{Date of birth}
-\item{seniority}{Number of terms served, including current (1 = first-term)}
-\item{n_bills}{Total bills participated in (as lead proposer or co-sponsor)}
+\item{seniority}{Seniority at that assembly, that is, the number of terms
+served up to and including this one, counting terms before the 20th
+(1 = first-term)}
+\item{n_bills}{Number of bills in \code{\link{bills}} the member
+proposed, co-proposed or supported (see \code{\link{get_proposers}})}
 \item{n_bills_lead}{Bills proposed as lead (primary) proposer}
 }
 }
 \source{
-Open National Assembly Information API (Republic of Korea).
+Open National Assembly Information API (Republic of Korea),
+as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
 License: public domain (Korean government open data).
 }
 \usage{
 legislators
 }
 \description{
-Biographical and political metadata for 947 records of legislators who
+Biographical and political metadata for 948 records of legislators who
 served in the 20th (2016-2020), 21st (2020-2024), or 22nd (2024-2028)
 Korean National Assembly. Some legislators appear in multiple assemblies.
+The 22nd assembly covers the members seated by March 2026.
 }
 \details{
-661 unique legislators served across the three assemblies. \code{member_id}
+662 unique legislators served across the three assemblies. \code{member_id}
 is consistent across assemblies, so legislators can be tracked over time.
 Party names may differ between \code{party} (mid-term) and \code{party_elected}
 (election day) due to party mergers and name changes, which are common
-in Korean politics.
+in Korean politics. Some legislators share a name with another member
+of the same assembly (for example, two members named Kim Seong-tae in
+the 20th), so join on \code{member_id}, never on \code{name}.
+
+Up to version 0.1.3, \code{seniority} held each member's lifetime number of
+terms at the time of data collection, so it overstated the seniority of
+286 member-terms of the 20th and 21st assemblies, and \code{committees} came
+from a present-day string that did not match the assembly. Both now
+follow release 0.7.0 of the kna project, as do six values of
+\code{party_elected}, one district, two district types and the bill counts.
 }
 \examples{
 data(legislators)

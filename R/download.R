@@ -86,12 +86,13 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 
 #' Download bill co-sponsorship records
 #'
-#' Downloads the complete proposer records (769,773 rows) listing every
-#' legislator who co-sponsored each bill. Requires the \pkg{arrow} package.
+#' Downloads the complete proposer records (777,220 rows) listing every
+#' legislator who proposed, co-proposed or supported each of the 60,925
+#' bills in \code{\link{bills}}. Requires the \pkg{arrow} package.
 #'
 #' @inheritParams get_bill_texts
 #'
-#' @return A data frame with 769,773 rows and 8 variables, or \code{NULL}
+#' @return A data frame with 777,220 rows and 9 variables, or \code{NULL}
 #'   (invisibly) if the download fails (e.g., no internet connection):
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
@@ -99,10 +100,26 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #'   \item{bill_name}{Bill title in Korean}
 #'   \item{propose_date}{Proposal date}
 #'   \item{proposer_name}{Legislator name}
-#'   \item{proposer_party}{Party affiliation at the time of co-sponsorship}
+#'   \item{proposer_party}{Party affiliation at the time of proposal}
 #'   \item{member_id}{Legislator identifier (links to \code{legislators$member_id})}
-#'   \item{is_lead}{Logical: \code{TRUE} if lead (primary) proposer, \code{FALSE} if co-sponsor}
+#'   \item{is_lead}{Logical: \code{TRUE} if lead (primary) proposer,
+#'     \code{FALSE} if co-proposer or supporter (see \code{role})}
+#'   \item{role}{Role on the bill in Korean, one of lead proposer
+#'     (daepyo balui), co-proposer (gongdong balui) or supporter (chanseong).
+#'     Supporters are the members counted in the "oe M in" part of the
+#'     proposer text.}
 #' }
+#'
+#' @details
+#' The records come from the official proposer list of each bill
+#' (BILLINFOPPSR endpoint), as rebuilt in release 0.7.0 of the kna
+#' project (\url{https://github.com/kyusik-yang/kna}). Releases up to
+#' 0.1.3 of this package served an earlier file that stopped at 100 names
+#' per bill, which left out 7,447 records of the 208 bills with more than
+#' 100 proposers and supporters, and whose \code{is_lead} was
+#' \code{FALSE} for the lead proposer of 36 single-proposer bills. Bills
+#' with joint lead proposers have more than one row with
+#' \code{is_lead = TRUE}.
 #'
 #' @examples
 #' \donttest{
@@ -110,17 +127,19 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #'     requireNamespace("dplyr", quietly = TRUE)) {
 #'   props <- get_proposers(cache_dir = tempdir())
 #'
-#'   # Build co-sponsorship edgelist
-#'   leads <- dplyr::select(
-#'     dplyr::filter(props, is_lead), bill_id, lead = member_id
-#'   )
-#'   cosponsors <- dplyr::select(
-#'     dplyr::filter(props, !is_lead), bill_id, cosponsor = member_id
-#'   )
-#'   edges <- dplyr::inner_join(
-#'     leads, cosponsors,
-#'     by = "bill_id", relationship = "many-to-many"
-#'   )
+#'   if (!is.null(props)) {
+#'     # Build co-sponsorship edgelist
+#'     leads <- dplyr::select(
+#'       dplyr::filter(props, is_lead), bill_id, lead = member_id
+#'     )
+#'     cosponsors <- dplyr::select(
+#'       dplyr::filter(props, !is_lead), bill_id, cosponsor = member_id
+#'     )
+#'     edges <- dplyr::inner_join(
+#'       leads, cosponsors,
+#'       by = "bill_id", relationship = "many-to-many"
+#'     )
+#'   }
 #' }
 #' }
 #'
@@ -135,11 +154,13 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
   }
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
-  dest <- file.path(cache_dir, "proposers.parquet")
+  # New file name, so that a cache written by 0.1.3 (a different file
+  # with a different layout) is not reused
+  dest <- file.path(cache_dir, "proposers_v2.parquet")
 
   if (!file.exists(dest) || force_download) {
-    url <- "https://github.com/kyusik-yang/korean-assembly-bills/raw/main/data/proposers.parquet"
-    message("Downloading proposer records (~6 MB)...")
+    url <- "https://github.com/kyusik-yang/assemblykor/raw/main/hosted-data/proposers.parquet"
+    message("Downloading proposer records (~3.6 MB)...")
     if (!download_to_cache(url, dest)) return(invisible(NULL))
     message("Cached at: ", dest)
   } else {
@@ -149,15 +170,16 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
   raw <- arrow::read_parquet(dest)
 
   df <- data.frame(
-    bill_id        = raw$BILL_ID,
-    bill_no        = as.integer(raw$BILL_NO),
-    bill_name      = raw$BILL_NM,
-    propose_date   = as.Date(raw$PPSL_DT),
-    proposer_name  = raw$PPSR_NM,
-    proposer_party = raw$PPSR_POLY_NM,
-    member_id      = raw$NASS_CD,
+    bill_id        = raw$bill_id,
+    bill_no        = as.integer(raw$bill_no),
+    bill_name      = raw$bill_name,
+    propose_date   = as.Date(raw$propose_date),
+    proposer_name  = raw$proposer_name,
+    proposer_party = raw$proposer_party,
+    member_id      = raw$member_id,
     # "\ub300\ud45c\ubc1c\uc758" = lead proposer (Korean)
-    is_lead        = !is.na(raw$REP_DIV) & raw$REP_DIV == "\ub300\ud45c\ubc1c\uc758",
+    is_lead        = raw$role == "\ub300\ud45c\ubc1c\uc758",
+    role           = raw$role,
     stringsAsFactors = FALSE
   )
   df
@@ -177,14 +199,14 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
 #'
 #' @inheritParams get_bill_texts
 #'
-#' @return A data frame with 665,055 rows and 4 variables, or \code{NULL}
+#' @return A data frame with 663,582 rows and 4 variables, or \code{NULL}
 #'   (invisibly) if the download fails (e.g., no internet connection):
 #' \describe{
 #'   \item{date}{Date of the committee meeting (links to
 #'     \code{speeches$date})}
 #'   \item{speech_order}{Speech turn within the meeting (links to
 #'     \code{speeches$speech_order}); \code{date} + \code{speech_order}
-#'     identifies one speech}
+#'     identifies one speech, except on 2024-06-25 (see Details)}
 #'   \item{token}{Morpheme, in dictionary form. Verbs and adjectives are
 #'     lemmatized (e.g., the stem plus \code{-da})}
 #'   \item{pos}{Part-of-speech tag from the Sejong tagset: "NNG" (common
@@ -201,8 +223,11 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
 #'
 #' Join back to \code{\link{speeches}} with
 #' \code{by = c("date", "speech_order")} to attach speaker metadata.
-#' A small number of speeches (56 of 15,843) yield no content morphemes
-#' and therefore do not appear.
+#' Every speech has at least one token. Two meetings were held on
+#' 2024-06-25, so eight \code{speech_order} values of that date belong to
+#' two speeches each, and their tokens are pooled under the shared key.
+#' Up to version 0.1.3 the file also held a second copy of the tokens of
+#' 48 speeches that appeared twice in \code{speeches}.
 #'
 #' The tokenization script is in the package source repository under
 #' \code{data-raw/tokenize_speeches.py}.
@@ -231,7 +256,9 @@ get_speech_tokens <- function(cache_dir = NULL, force_download = FALSE) {
   }
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
-  dest <- file.path(cache_dir, "speech_tokens.parquet")
+  # New file name, so that a cache written by 0.1.3 (which still held
+  # the tokens of the duplicated speeches) is not reused
+  dest <- file.path(cache_dir, "speech_tokens_v2.parquet")
 
   if (!file.exists(dest) || force_download) {
     url <- "https://github.com/kyusik-yang/assemblykor/raw/main/hosted-data/speech_tokens.parquet"

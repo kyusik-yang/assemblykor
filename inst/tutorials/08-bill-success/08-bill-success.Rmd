@@ -55,7 +55,8 @@ Most bills die from "term expiration" (the assembly term ends before they are pr
 ```{r binary, exercise=TRUE}
 bill_analysis <- bills %>%
   mutate(
-    passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")),
+    passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                         !alt_vetoed),
     year = as.integer(format(propose_date, "%Y"))
   )
 
@@ -63,6 +64,8 @@ cat("Total bills:", nrow(bill_analysis), "\n")
 cat("Passed:", sum(bill_analysis$passed), "\n")
 cat("Pass rate:", round(mean(bill_analysis$passed) * 100, 1), "%\n")
 ```
+
+Bills whose content went into a committee alternative ("alternative-reflected disposal") count as passed, because the alternative carries their substance. The exception is an alternative that the President vetoed and that was never passed again. Its content did not become law, so these bills (`alt_vetoed == TRUE`) count as not passed. Vetoed bills themselves already record the result of the re-vote in `result`.
 
 ```{r quiz-binary, echo=FALSE}
 quiz(
@@ -80,7 +83,8 @@ quiz(
 
 ```{r pass-rate-assembly, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_analysis %>%
   group_by(assembly) %>%
@@ -95,7 +99,8 @@ bill_analysis %>%
 
 ```{r merge-legislator, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -111,7 +116,8 @@ cat("Analysis sample:", nrow(bill_leg), "bills (with proposer info)\n")
 
 ```{r pass-by-seniority, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -140,7 +146,8 @@ ggplot(pass_senior, aes(x = seniority, y = pass_rate)) +
 
 ```{r pass-by-committee, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -174,7 +181,8 @@ When the outcome is 0 or 1, OLS has problems:
 
 ```{r ols-problem, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -220,7 +228,8 @@ In R, use `glm()` with `family = binomial`:
 
 ```{r logit-simple, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -239,7 +248,8 @@ Logistic regression coefficients are in **log-odds** units. Exponentiate to get 
 
 ```{r odds-ratio, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -263,7 +273,8 @@ Control for multiple factors simultaneously:
 
 ```{r logit-multiple, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -285,7 +296,8 @@ summary(m2)
 
 ```{r or-plot, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -326,7 +338,8 @@ Converting logistic results to **predicted probabilities** makes them more intui
 
 ```{r predicted-prob, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -372,7 +385,8 @@ ggplot(new_party, aes(x = seniority, y = pred_prob, color = party)) +
 
 ```{r model-compare, exercise=TRUE}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
@@ -429,7 +443,8 @@ Run a logistic regression with only `gender` as predictor. What is the odds rati
 
 ```{r ex1-solution}
 bill_analysis <- bills %>%
-  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30")))
+  mutate(passed = as.integer(result %in% c("\uc6d0\uc548\uac00\uacb0", "\uc218\uc815\uac00\uacb0", "\ub300\uc548\ubc18\uc601\ud3d0\uae30") &
+                              !alt_vetoed))
 
 bill_leg <- bill_analysis %>%
   inner_join(
