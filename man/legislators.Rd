@@ -40,7 +40,7 @@ proposed, co-proposed or supported (see \code{\link{get_proposers}})}
 }
 \source{
 Open National Assembly Information API (Republic of Korea),
-as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
+as corrected in kna 0.7.0 and 0.7.1 (\url{https://github.com/kyusik-yang/kna}).
 License: public domain (Korean government open data).
 }
 \usage{
@@ -67,6 +67,7 @@ terms at the time of data collection, so it overstated the seniority of
 from a present-day string that did not match the assembly. Both now
 follow release 0.7.0 of the kna project, as do six values of
 \code{party_elected}, one district, two district types and the bill counts.
+The districts of the two 22nd-assembly list successors follow kna 0.7.1.
 }
 \examples{
 data(legislators)

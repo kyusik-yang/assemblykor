@@ -30,7 +30,7 @@
     "    seminars     5,962 recs   Policy seminars\n",
     "    speeches    15,795 recs   Committee speeches (22nd, Sci & ICT)\n",
     "    votes        8,050 recs   Plenary vote tallies\n",
-    "    roll_calls 383,792 recs   Member-level votes (22nd)\n",
+    "    roll_calls 384,022 recs   Member-level votes (22nd)\n",
     "\n",
     "  Downloadable:\n",
     "    get_bill_texts()           Bill propose-reason texts\n",

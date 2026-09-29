@@ -16,7 +16,7 @@
 #'   \item \code{\link{seminars}}: 5,962 legislator-year seminar records
 #'   \item \code{\link{speeches}}: 15,795 speech records (22nd, Science & ICT Committee)
 #'   \item \code{\link{votes}}: 8,050 plenary vote tallies (20th-22nd assemblies)
-#'   \item \code{\link{roll_calls}}: 383,792 member-level roll call votes (22nd assembly)
+#'   \item \code{\link{roll_calls}}: 384,022 member-level roll call votes (22nd assembly)
 #' }
 #'
 #' @section Download functions:
@@ -100,9 +100,10 @@
 #' from a present-day string that did not match the assembly. Both now
 #' follow release 0.7.0 of the kna project, as do six values of
 #' `party_elected`, one district, two district types and the bill counts.
+#' The districts of the two 22nd-assembly list successors follow kna 0.7.1.
 #'
 #' @source Open National Assembly Information API (Republic of Korea),
-#'   as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
+#'   as corrected in kna 0.7.0 and 0.7.1 (\url{https://github.com/kyusik-yang/kna}).
 #'   License: public domain (Korean government open data).
 #'
 #' @examples
@@ -469,7 +470,7 @@
 #' from July 2024 to March 12, 2026. Each row represents one legislator's
 #' vote on one bill.
 #'
-#' @format A data frame with 383,792 rows and 9 variables:
+#' @format A data frame with 384,022 rows and 9 variables:
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
 #'     \code{bills$bill_id})}
@@ -517,6 +518,9 @@
 #'
 #' @source Open National Assembly Information API (Republic of Korea),
 #'   endpoint \code{nojepdqqaweusdfbi}, with the corrections of kna 0.7.0.
+#'   The 230 votes of member MRS4949T, who took up a vacant proportional
+#'   seat on 2026-01-15 and whom the API omits, come from the LIKMS vote
+#'   pages, as in kna 0.8.0.
 #'
 #' @seealso \code{\link{votes}}
 #'

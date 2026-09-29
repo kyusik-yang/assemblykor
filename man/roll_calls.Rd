@@ -5,7 +5,7 @@
 \alias{roll_calls}
 \title{Member-Level Roll Call Votes (22nd Assembly)}
 \format{
-A data frame with 383,792 rows and 9 variables:
+A data frame with 384,022 rows and 9 variables:
 \describe{
 \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
 \code{bills$bill_id})}
@@ -34,6 +34,9 @@ yes, no, abstain, or absent}
 \source{
 Open National Assembly Information API (Republic of Korea),
 endpoint \code{nojepdqqaweusdfbi}, with the corrections of kna 0.7.0.
+The 230 votes of member MRS4949T, who took up a vacant proportional
+seat on 2026-01-15 and whom the API omits, come from the LIKMS vote
+pages, as in kna 0.8.0.
 }
 \usage{
 roll_calls

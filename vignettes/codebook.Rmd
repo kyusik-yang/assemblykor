@@ -168,7 +168,7 @@ knitr::kable(codebook_table(votes), row.names = FALSE)
 
 ## roll_calls
 
-**383,792 rows, 9 variables.** Member-level roll call votes (22nd
+**384,022 rows, 9 variables.** Member-level roll call votes (22nd
 assembly, 1,286 bills).
 
 - **Unit of observation**: legislator-bill vote

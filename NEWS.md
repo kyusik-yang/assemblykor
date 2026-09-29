@@ -1,10 +1,11 @@
 # assemblykor 0.1.4
 
-This release corrects defects in the built-in data that release 0.7.0 of
-the kna project (https://github.com/kyusik-yang/kna, CORRECTIONS.md of
-2026-09-26) found in the same Open Assembly records. The coverage is
-unchanged, with data as of March 2026. The corrections are applied by
-`data-raw/kna070_corrections.R`. Column names are unchanged. New columns
+This release corrects defects in the built-in data that releases 0.7.0 to
+0.8.1 of the kna project (https://github.com/kyusik-yang/kna, CORRECTIONS.md
+of 2026-09-26 to 2026-09-28) found in the same Open Assembly records. The
+coverage is unchanged, with data as of March 2026. The corrections are
+applied by `data-raw/kna070_corrections.R`, which reads kna 0.8.1. Column
+names are unchanged. New columns
 were added, and the two columns whose meaning changes are marked below.
 
 ## Data corrections
@@ -23,7 +24,9 @@ were added, and the two columns whose meaning changes are marked below.
 * `legislators`: six values of `party_elected` now give the party whose
   ticket or list the member was elected on, one 20th-assembly district
   and two district types (two proportional members recorded as
-  constituency members) were corrected, and `n_bills` was recounted from
+  constituency members) were corrected, the two 22nd-assembly members who
+  took up vacant proportional seats in June 2025 now have the district
+  `비례대표` instead of an empty string, and `n_bills` was recounted from
   the complete co-sponsorship records (582 rows change). The member who
   took up a vacant proportional seat of the 22nd assembly in March 2026
   was added (948 rows instead of 947).
@@ -38,7 +41,11 @@ were added, and the two columns whose meaning changes are marked below.
   onto every past vote. The values are unchanged and the documentation is
   corrected. The new column `party_elected` gives the party at election.
   53 votes cast on 2026-03-12 by the newly seated member, which the March
-  2026 collection missed, were restored (383,792 rows instead of 383,739).
+  2026 collection missed, were restored. The vote API omits 이소희, who took
+  up a vacant proportional seat on 2026-01-15, and her 230 rows of the
+  votes up to 2026-03-12 were added from the LIKMS vote pages, as in kna
+  0.8.0. 171 of them are `불참`, for votes at which she was seated but on
+  no list (384,022 rows instead of 383,739).
 * `seminars`: `seniority`, `total_terms`, `is_female`, `is_proportional`,
   `is_seoul` and `province` now come from the member records of kna 0.7.0,
   matched on `member_id` and `assembly`. They were matched on the name

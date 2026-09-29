@@ -21,7 +21,7 @@ tallies, and member-level roll call votes.
 \item \code{\link{seminars}}: 5,962 legislator-year seminar records
 \item \code{\link{speeches}}: 15,795 speech records (22nd, Science & ICT Committee)
 \item \code{\link{votes}}: 8,050 plenary vote tallies (20th-22nd assemblies)
-\item \code{\link{roll_calls}}: 383,792 member-level roll call votes (22nd assembly)
+\item \code{\link{roll_calls}}: 384,022 member-level roll call votes (22nd assembly)
 }
 }
 

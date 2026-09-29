@@ -27,7 +27,7 @@ for teaching quantitative methods in political science:
 - **`seminars`**: 5,962 legislator-year seminar activity records
 - **`speeches`**: 15,795 committee speech records (22nd, Science & ICT)
 - **`votes`**: 8,050 plenary vote tallies (20th-22nd)
-- **`roll_calls`**: 383,792 member-level roll call votes (22nd)
+- **`roll_calls`**: 384,022 member-level roll call votes (22nd)
 
 ```{r load}
 library(assemblykor)

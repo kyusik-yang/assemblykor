@@ -101,7 +101,7 @@ Why tidyverse-first for teaching?
 </td></tr>
 <tr><td colspan="2">
 
-**`roll_calls`** 383,792 records
+**`roll_calls`** 384,022 records
 
 22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,286개 법안)
 

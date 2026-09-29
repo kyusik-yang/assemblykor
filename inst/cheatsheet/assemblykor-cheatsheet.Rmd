@@ -58,7 +58,7 @@ set_ko_font()
 | `seminars` | 5,962 | MP-year | `member_id` + `year` |
 | `speeches` | 15,795 | speech turn | `date` + `speech_order` |
 | `votes` | 8,050 | bill vote | `bill_id` |
-| `roll_calls` | 383,792 | MP-bill vote | `member_id` + `bill_id` |
+| `roll_calls` | 384,022 | MP-bill vote | `member_id` + `bill_id` |
 
 ## Dataset Relationships
 
