@@ -4,8 +4,8 @@ This is a data-correction update. Changes:
 
 * Corrected values in the built-in datasets (legislator seniority and
   committees, results of vetoed bills, identifiers in `speeches`,
-  member attributes in `seminars`), following errata in the upstream
-  data source. Three datasets gain columns, and 48 duplicated rows of
+  member attributes in `seminars`, votes missing from `roll_calls`),
+  following errata in the upstream data source. Three datasets gain columns, and 48 duplicated rows of
   `speeches` were dropped. Details are in NEWS.md.
 * `get_proposers()` now downloads a corrected file hosted in the package's
   GitHub repository. It still fails gracefully, returning NULL with a
@@ -18,7 +18,7 @@ This is a data-correction update. Changes:
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'Kyusik Yang <kyusik.yang@nyu.edu>'
 
-  Size of tarball: 5218586 bytes
+  Size of tarball: 5219178 bytes
 
   The tarball size has the same cause as the installed size NOTE below.
 
