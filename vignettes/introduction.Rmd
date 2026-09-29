@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 `assemblykor` provides seven built-in datasets from the Korean National Assembly
 for teaching quantitative methods in political science:
 
-- **`legislators`**: 948 MP records (20th-22nd assemblies)
-- **`bills`**: 60,925 legislative bills
-- **`wealth`**: 2,928 legislator-year asset declarations
+- **`legislators`**: 963 MP records (20th-22nd assemblies)
+- **`bills`**: 64,900 legislative bills
+- **`wealth`**: 3,215 legislator-year asset declarations
 - **`seminars`**: 5,962 legislator-year seminar activity records
 - **`speeches`**: 15,795 committee speech records (22nd, Science & ICT)
-- **`votes`**: 8,050 plenary vote tallies (20th-22nd)
-- **`roll_calls`**: 384,022 member-level roll call votes (22nd)
+- **`votes`**: 8,611 plenary vote tallies (20th-22nd)
+- **`roll_calls`**: 549,513 member-level roll call votes (22nd)
 
 ```{r load}
 library(assemblykor)

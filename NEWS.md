@@ -2,13 +2,52 @@
 
 This release corrects defects in the built-in data that releases 0.7.0 to
 0.8.1 of the kna project (https://github.com/kyusik-yang/kna, CORRECTIONS.md
-of 2026-09-26 to 2026-09-28) found in the same Open Assembly records. The
-coverage is unchanged, with data as of March 2026. The corrections are
-applied by `data-raw/kna070_corrections.R`, which reads kna 0.8.1. Column
-names are unchanged. New columns
+of 2026-09-26 to 2026-09-28) found in the same Open Assembly records, and
+extends the 22nd assembly to 2026-09-23 and the asset declarations to 2025
+with the kna 0.8.1 data. `data-raw/kna070_corrections.R` corrects the data
+as of March 2026, and `data-raw/refresh_kna081.R` then rebuilds the 22nd
+assembly and `wealth`. The 20th and 21st assemblies, `seminars` and
+`speeches` keep their coverage. Column names are unchanged. New columns
 were added, and the two columns whose meaning changes are marked below.
 
-## Data corrections
+## Coverage extended to September 2026
+
+* `bills`: 64,900 rows instead of 60,925. The 22nd assembly now has the
+  19,651 member bills proposed up to 2026-09-23 instead of 15,676, with
+  their status on that date. 1,309 bills that were pending in March 2026
+  have a result, and 138 bills referred or re-referred after March 2026
+  have a new `committee`.
+* `legislators`: 963 rows instead of 948. The 15 members who took their
+  seats between March and September 2026, 14 of them winners of the
+  by-elections of 2026-06-11, were added. For the 22nd assembly `party` is
+  the label of September 2026 (six members changed party) or, for members
+  who had left the Assembly, the last label recorded, `committees` include
+  the assignments up to 2026-09-23 and the bill counts cover the new bills.
+* `roll_calls`: 549,513 rows instead of 384,022, all 1,847 recorded votes
+  of the 22nd assembly up to 2026-09-17, from the collection of kna 0.8.1.
+  It includes the votes of the 16 members seated in 2026 that the API
+  omits, which kna took from the LIKMS vote pages. `party` is the label of
+  September 2026, which differs from March for three members, and
+  `district` now comes from `legislators`, because the API of September
+  2026 gives district names of 2026 (such as 전남광주통합특별시) that did
+  not exist at the 2024 election.
+* `votes`: 8,611 rows instead of 8,050, with the 22nd tallies up to
+  2026-09-17 (1,847 instead of 1,286). The earlier rows are unchanged.
+* `wealth`: 3,215 rows instead of 2,928, for 776 members. The 287 rows of
+  wealth year 2025 come from the March 2026 regular disclosure (National
+  Assembly Gazette No. 2026-54), as compiled in kna 0.8.1. The 2015-2024
+  rows are unchanged. `year` is the year the declared wealth refers to,
+  published in March of the following year, and not the disclosure year
+  as documented before.
+* `get_bill_texts()` changes source. It downloads a file hosted in this
+  repository with the kna 0.8.1 texts of all 64,900 bills (80 have no
+  text), and a new column `source` separates the texts scraped from the
+  Legislative Information System, unchanged for the bills proposed by
+  2026-02-27, from the texts of the Open Assembly API. The cache file name
+  changed.
+* `get_proposers()` covers the 64,900 bills (825,283 rows).
+
+## Data corrections (data as of March 2026)
 
 * `legislators$seniority` now gives the seniority at that assembly, as
   documented. It held the member's lifetime number of terms at the time
@@ -85,7 +124,7 @@ were added, and the two columns whose meaning changes are marked below.
 * The `roll_calls` documentation said that the API has member-level votes
   for the 22nd assembly only. It also has the 20th and 21st.
 * The documentation of `party_elected` notes that the source records ten
-  successors to proportional seats (two of them in `roll_calls`) under
+  successors to proportional seats (three of them in `roll_calls`) under
   the party that the list party had merged into, not the list party.
 * Tutorial 8 (bill success) no longer counts the 180 `alt_vetoed` bills
   as passed, in all three tutorial formats. The introduction vignette no
@@ -97,6 +136,9 @@ were added, and the two columns whose meaning changes are marked below.
   in all three tutorial formats. With the corrected `seminars`
   attributes, two names each belong to a man and a woman, so a `name`
   fixed effect no longer absorbed `is_female` as the tutorial says.
+* Tutorial 7 (roll call analysis) builds its vote matrices on `member_id`,
+  in all three tutorial formats, because two members of the 22nd assembly
+  are now named 박지원.
 
 # assemblykor 0.1.3
 

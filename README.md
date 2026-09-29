@@ -62,22 +62,22 @@ Why tidyverse-first for teaching?
 <table>
 <tr><td width="50%">
 
-**`legislators`** 948 records
+**`legislators`** 963 records
 
 20-22대 국회의원 메타데이터 (이름, 정당, 선거구, 성별, 선수, 발의 건수)
 
 </td><td width="50%">
 
-**`bills`** 60,925 records
+**`bills`** 64,900 records
 
 법안 메타데이터 (제목, 위원회, 발의일, 처리 결과, 대표발의자)
 
 </td></tr>
 <tr><td>
 
-**`wealth`** 2,928 records
+**`wealth`** 3,215 records
 
-의원 재산신고 패널 (순자산, 부동산, 예금, 주식, 2015-2024 10개 연도)
+의원 재산신고 패널 (순자산, 부동산, 예금, 주식, 2015-2025 11개 연도)
 
 </td><td>
 
@@ -94,16 +94,16 @@ Why tidyverse-first for teaching?
 
 </td><td>
 
-**`votes`** 8,050 records
+**`votes`** 8,611 records
 
 본회의 표결 결과 (20-22대, 찬성/반대/기권 수, 의결 결과)
 
 </td></tr>
 <tr><td colspan="2">
 
-**`roll_calls`** 384,022 records
+**`roll_calls`** 549,513 records
 
-22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,286개 법안)
+22대 개별 의원 표결 기록 (의원별 찬성/반대/기권/불참, 1,847개 법안)
 
 </td></tr>
 </table>
@@ -188,10 +188,10 @@ Larger datasets are available via download functions (requires the `arrow`
 package):
 
 ```r
-# Bill propose-reason texts (60,925 texts, ~25 MB download)
+# Bill propose-reason texts (64,900 texts, ~26 MB download)
 texts <- get_bill_texts()
 
-# Co-sponsorship records (777,220 rows, ~3.6 MB download)
+# Co-sponsorship records (825,283 rows, ~3.8 MB download)
 proposers <- get_proposers()
 
 # Morpheme tokens for speeches (663,582 rows, ~1.3 MB download)

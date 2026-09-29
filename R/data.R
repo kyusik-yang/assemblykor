@@ -10,30 +10,31 @@
 #'
 #' @section Built-in datasets:
 #' \itemize{
-#'   \item \code{\link{legislators}}: 948 MP records (20th-22nd assemblies)
-#'   \item \code{\link{bills}}: 60,925 legislative bills
-#'   \item \code{\link{wealth}}: 2,928 legislator-year asset declarations
+#'   \item \code{\link{legislators}}: 963 MP records (20th-22nd assemblies)
+#'   \item \code{\link{bills}}: 64,900 legislative bills
+#'   \item \code{\link{wealth}}: 3,215 legislator-year asset declarations
 #'   \item \code{\link{seminars}}: 5,962 legislator-year seminar records
 #'   \item \code{\link{speeches}}: 15,795 speech records (22nd, Science & ICT Committee)
-#'   \item \code{\link{votes}}: 8,050 plenary vote tallies (20th-22nd assemblies)
-#'   \item \code{\link{roll_calls}}: 384,022 member-level roll call votes (22nd assembly)
+#'   \item \code{\link{votes}}: 8,611 plenary vote tallies (20th-22nd assemblies)
+#'   \item \code{\link{roll_calls}}: 549,513 member-level roll call votes (22nd assembly)
 #' }
 #'
 #' @section Download functions:
 #' \itemize{
-#'   \item \code{\link{get_bill_texts}}: 60,925 bill propose-reason texts
-#'   \item \code{\link{get_proposers}}: 777,220 co-sponsorship records
+#'   \item \code{\link{get_bill_texts}}: 64,900 bill propose-reason texts
+#'   \item \code{\link{get_proposers}}: 825,283 co-sponsorship records
 #'   \item \code{\link{get_speech_tokens}}: 663,582 morpheme tokens for
 #'     the \code{speeches} dataset (Kiwi morphological analyzer)
 #' }
 #'
-#' @section Data corrections:
-#' Version 0.1.4 corrects defects that release 0.7.0 of the kna project
-#' (\url{https://github.com/kyusik-yang/kna}) found in the underlying Open
-#' Assembly records, among them the seniority and committees of
-#' \code{legislators}, the results of vetoed bills and the co-sponsorship
-#' records cut at 100 names per bill. The coverage is unchanged, with data
-#' as of March 2026. See the package NEWS for details.
+#' @section Data corrections and coverage:
+#' Version 0.1.4 corrects defects that releases 0.7.0 to 0.8.1 of the kna
+#' project (\url{https://github.com/kyusik-yang/kna}) found in the underlying
+#' Open Assembly records, among them the seniority and committees of
+#' \code{legislators}, the results of vetoed bills, the co-sponsorship
+#' records cut at 100 names per bill and the votes the API omits. It also
+#' extends the 22nd assembly to 2026-09-23 and the asset declarations to
+#' 2025, from kna 0.8.1. See the package NEWS for details.
 #'
 #' @section Tutorials:
 #' Nine Korean-language tutorials covering tidyverse, visualization, regression,
@@ -47,12 +48,13 @@
 
 #' Members of the Korean National Assembly (20th-22nd)
 #'
-#' Biographical and political metadata for 948 records of legislators who
+#' Biographical and political metadata for 963 records of legislators who
 #' served in the 20th (2016-2020), 21st (2020-2024), or 22nd (2024-2028)
 #' Korean National Assembly. Some legislators appear in multiple assemblies.
-#' The 22nd assembly covers the members seated by March 2026.
+#' The 22nd assembly covers the members seated by 2026-09-23, among them
+#' the winners of the by-elections of 2026-06-11.
 #'
-#' @format A data frame with 948 rows and 15 variables:
+#' @format A data frame with 963 rows and 15 variables:
 #' \describe{
 #'   \item{member_id}{Unique legislator identifier (MONA_CD from the National Assembly API)}
 #'   \item{assembly}{Assembly number (20, 21, or 22)}
@@ -62,7 +64,8 @@
 #'   \item{party}{Party label that the official roster of that assembly
 #'     records for the member. It reflects party mergers, renamings and
 #'     switches during the term. For the 22nd assembly it is the party as
-#'     of March 2026.}
+#'     of September 2026, or the last party recorded for a member who had
+#'     left the Assembly by then.}
 #'   \item{party_elected}{Party at election, that is, the party on whose ticket or
 #'     list the member was elected. For a successor to a proportional
 #'     seat, the party of the list the seat came from. The source records
@@ -86,7 +89,7 @@
 #' }
 #'
 #' @details
-#' 662 unique legislators served across the three assemblies. `member_id`
+#' 672 unique legislators served across the three assemblies. `member_id`
 #' is consistent across assemblies, so legislators can be tracked over time.
 #' Party names may differ between `party` (mid-term) and `party_elected`
 #' (election day) due to party mergers and name changes, which are common
@@ -100,10 +103,11 @@
 #' from a present-day string that did not match the assembly. Both now
 #' follow release 0.7.0 of the kna project, as do six values of
 #' `party_elected`, one district, two district types and the bill counts.
-#' The districts of the two 22nd-assembly list successors follow kna 0.7.1.
+#' The 22nd assembly is rebuilt from release 0.8.1 of the kna project.
 #'
 #' @source Open National Assembly Information API (Republic of Korea),
-#'   as corrected in kna 0.7.0 and 0.7.1 (\url{https://github.com/kyusik-yang/kna}).
+#'   as corrected in kna 0.7.0 (20th and 21st) and kna 0.8.1 (22nd)
+#'   (\url{https://github.com/kyusik-yang/kna}).
 #'   License: public domain (Korean government open data).
 #'
 #' @examples
@@ -123,10 +127,10 @@
 
 #' Bills Proposed in the Korean National Assembly (20th-22nd)
 #'
-#' Metadata for 60,925 legislative bills proposed during the 20th through
-#' 22nd Korean National Assembly (2016-2026).
+#' Metadata for the 64,900 bills that members proposed during the 20th
+#' through 22nd Korean National Assembly (2016-2026), up to 2026-09-23.
 #'
-#' @format A data frame with 60,925 rows and 11 variables:
+#' @format A data frame with 64,900 rows and 11 variables:
 #' \describe{
 #'   \item{bill_id}{Unique bill identifier from the National Assembly system}
 #'   \item{bill_no}{Numeric bill number}
@@ -136,7 +140,7 @@
 #'   \item{propose_date}{Date the bill was formally proposed}
 #'   \item{result}{Legislative outcome in Korean. Common values include
 #'     passed as-is, expired at term end, and incorporated into
-#'     alternative bill. \code{NA} for bills pending in March 2026. For a
+#'     alternative bill. \code{NA} for bills pending on 2026-09-23. For a
 #'     vetoed bill, the outcome after the veto (rejected on the re-vote,
 #'     passed again, or expired at the end of the term). See
 #'     \code{table(bills$result)} for all values.}
@@ -167,10 +171,11 @@
 #'
 #' Use \code{get_bill_texts()} to download the full propose-reason texts
 #' for text analysis, and \code{get_proposers()} for the complete
-#' co-sponsorship records (777,220 rows).
+#' co-sponsorship records (825,283 rows).
 #'
 #' @source Open National Assembly Information API (Republic of Korea),
-#'   as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
+#'   as corrected in kna 0.7.0 (20th and 21st) and kna 0.8.1 (22nd)
+#'   (\url{https://github.com/kyusik-yang/kna}).
 #'
 #' @examples
 #' data(bills)
@@ -186,16 +191,17 @@
 "bills"
 
 
-#' Legislator Asset Declarations (2015-2024)
+#' Legislator Asset Declarations (2015-2025)
 #'
-#' Panel data of asset declarations for 772 Korean National Assembly members
-#' across 10 disclosure years (2015-2024). Derived from mandatory public
-#' disclosures via the OpenWatch project.
+#' Panel data of asset declarations for 776 Korean National Assembly members
+#' across 11 years (2015-2025). Derived from the mandatory annual public
+#' disclosures.
 #'
-#' @format A data frame with 2,928 rows and 14 variables:
+#' @format A data frame with 3,215 rows and 14 variables:
 #' \describe{
 #'   \item{member_id}{Legislator identifier (links to \code{legislators$member_id})}
-#'   \item{year}{Disclosure year (2015-2024)}
+#'   \item{year}{Year the declared wealth refers to (2015-2025). The
+#'     declaration is published in March of the following year.}
 #'   \item{name}{Legislator name in Korean}
 #'   \item{total_assets}{Total declared assets, in thousands of KRW}
 #'   \item{total_debt}{Total declared liabilities, in thousands of KRW}
@@ -220,7 +226,12 @@
 #' Not all legislators appear in every year, as the panel is unbalanced
 #' (entries correspond to active service periods).
 #'
-#' @source OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly}), CC BY-SA 4.0 license.
+#' @source 2015-2024: OpenWatch
+#'   (\url{https://docs.openwatch.kr/data/national-assembly}), CC BY-SA 4.0
+#'   license. 2025: the National Assembly Gazette (Gukhoe Gongbo) No.
+#'   2026-54 of 2026-03-26, the March 2026 regular disclosure. Both as
+#'   compiled in release 0.8.1 of the kna project
+#'   (\url{https://github.com/kyusik-yang/kna}).
 #'
 #' @examples
 #' data(wealth)
@@ -406,7 +417,7 @@
 #' 22nd Korean National Assembly (2016-2026). Each row represents one
 #' bill that went to a recorded floor vote.
 #'
-#' @format A data frame with 8,050 rows and 13 variables:
+#' @format A data frame with 8,611 rows and 13 variables:
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{bills$bill_id}).
 #'     Unique except for bill 2000491 of the 20th assembly, which has two
@@ -442,7 +453,9 @@
 #' discipline analysis.
 #'
 #' @source Open National Assembly Information API (Republic of Korea),
-#'   endpoint \code{ncocpgfiaoituanbr}.
+#'   endpoint \code{ncocpgfiaoituanbr}. The 22nd assembly is the collection
+#'   of release 0.8.1 of the kna project (\url{https://github.com/kyusik-yang/kna}),
+#'   with votes up to 2026-09-17.
 #'
 #' @examples
 #' data(votes)
@@ -465,12 +478,12 @@
 
 #' Member-Level Roll Call Votes (22nd Assembly)
 #'
-#' Individual legislator voting records for all 1,286 bills that went
+#' Individual legislator voting records for all 1,847 bills that went
 #' to a recorded plenary vote in the 22nd Korean National Assembly
-#' from July 2024 to March 12, 2026. Each row represents one legislator's
-#' vote on one bill.
+#' from July 2024 to September 17, 2026. Each row represents one
+#' legislator's vote on one bill.
 #'
-#' @format A data frame with 384,022 rows and 9 variables:
+#' @format A data frame with 549,513 rows and 9 variables:
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{votes$bill_id} and
 #'     \code{bills$bill_id})}
@@ -479,18 +492,21 @@
 #'   \item{member_id}{Legislator identifier (MONA_CD, links to
 #'     \code{legislators$member_id})}
 #'   \item{party}{Party label reported by the API at data collection
-#'     (March 2026). The API writes the member's party at that time onto
-#'     every past vote, so a member who changed party during the term
-#'     appears under the later party on all votes.}
+#'     (September 2026). The API writes the member's party at that time
+#'     onto every past vote, so a member who changed party during the term
+#'     appears under the later party on all votes. For the votes taken
+#'     from the LIKMS vote pages (see Source) it is the member's party in
+#'     September 2026.}
 #'   \item{party_elected}{Party at election, as in
 #'     \code{legislators$party_elected}. Members elected on the lists of
 #'     the satellite parties (e.g., the People Future Party and the
 #'     Democratic Alliance of Korea) carry the list party, although they
-#'     sat with other parties. Two members who succeeded to proportional
-#'     seats during the term carry the Democratic Party of Korea, the
-#'     party into which the Democratic Alliance of Korea had merged (see
-#'     \code{\link{legislators}}).}
-#'   \item{district}{Electoral district or proportional list position}
+#'     sat with other parties. Three members who succeeded to proportional
+#'     seats during the term carry the party into which the list party had
+#'     merged, two the Democratic Party of Korea and one the People Power
+#'     Party (see \code{\link{legislators}}).}
+#'   \item{district}{Electoral district at the 2024 election, or the
+#'     proportional list, as in \code{legislators$district}}
 #'   \item{vote}{Vote cast in Korean: one of four values meaning
 #'     yes, no, abstain, or absent}
 #'   \item{vote_date}{Date of the vote}
@@ -499,7 +515,7 @@
 #' @details
 #' This dataset covers the 22nd assembly. The same API endpoint also has
 #' member-level votes of the 20th and 21st assemblies, which are left out
-#' to keep the package small. Release 0.7.0 of the kna project
+#' to keep the package small. The kna project
 #' (\url{https://github.com/kyusik-yang/kna}) provides them. For the
 #' 20th and 21st assemblies, use the bill-level \code{\link{votes}}
 #' dataset.
@@ -507,9 +523,10 @@
 #' Neither party column records the party at the time of each vote. Up to
 #' version 0.1.3, \code{party} was documented as the party at the time of
 #' the vote. Version 0.1.4 corrects that description, adds
-#' \code{party_elected}, and restores 53 votes cast on 2026-03-12 by a
-#' member who had just taken up a vacant proportional seat, which the
-#' March 2026 collection missed.
+#' \code{party_elected}, and rebuilds the dataset from release 0.8.1 of the
+#' kna project, which adds the votes of the 16 members seated in 2026 that
+#' the API omits. Every member seated at a vote has a row for it, absent
+#' if the member did not vote.
 #'
 #' This dataset enables ideal point estimation (e.g., W-NOMINATE),
 #' party unity scores, and analysis of legislative coalitions. Use
@@ -517,10 +534,10 @@
 #' metadata.
 #'
 #' @source Open National Assembly Information API (Republic of Korea),
-#'   endpoint \code{nojepdqqaweusdfbi}, with the corrections of kna 0.7.0.
-#'   The 230 votes of member MRS4949T, who took up a vacant proportional
-#'   seat on 2026-01-15 and whom the API omits, come from the LIKMS vote
-#'   pages, as in kna 0.8.0.
+#'   endpoint \code{nojepdqqaweusdfbi}, as collected by release 0.8.1 of the
+#'   kna project (\url{https://github.com/kyusik-yang/kna}) in September
+#'   2026. The votes of the 16 members the API omits come from the vote
+#'   pages of the Legislative Information System (LIKMS), as in kna 0.8.0.
 #'
 #' @seealso \code{\link{votes}}
 #'

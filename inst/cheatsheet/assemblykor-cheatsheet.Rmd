@@ -52,13 +52,13 @@ set_ko_font()
 
 | Dataset | Rows | Unit | Key |
 |---------|------|------|-----|
-| `legislators` | 948 | MP-assembly | `member_id` + `assembly` |
-| `bills` | 60,925 | bill | `bill_id` |
-| `wealth` | 2,928 | MP-year | `member_id` + `year` |
+| `legislators` | 963 | MP-assembly | `member_id` + `assembly` |
+| `bills` | 64,900 | bill | `bill_id` |
+| `wealth` | 3,215 | MP-year | `member_id` + `year` |
 | `seminars` | 5,962 | MP-year | `member_id` + `year` |
 | `speeches` | 15,795 | speech turn | `date` + `speech_order` |
-| `votes` | 8,050 | bill vote | `bill_id` |
-| `roll_calls` | 384,022 | MP-bill vote | `member_id` + `bill_id` |
+| `votes` | 8,611 | bill vote | `bill_id` |
+| `roll_calls` | 549,513 | MP-bill vote | `member_id` + `bill_id` |
 
 ## Dataset Relationships
 
@@ -104,7 +104,7 @@ legislators (member_id)
 
 ### roll_calls
 `bill_id` `member_id` `party` `party_elected` `vote` `vote_date`
-*22nd assembly only (1,286 bills)*
+*22nd assembly only (1,847 bills)*
 
 </div>
 <div class="col">

@@ -13,18 +13,35 @@ get_bill_texts(cache_dir = NULL, force_download = FALSE)
 \item{force_download}{Logical. If \code{TRUE}, re-download even if cached.}
 }
 \value{
-A data frame with 60,925 rows and 3 variables, or \code{NULL}
+A data frame with 64,900 rows and 4 variables, or \code{NULL}
 (invisibly) if the download fails (e.g., no internet connection):
 \describe{
 \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
-\item{propose_reason}{Full text of the propose-reason statement (Korean)}
-\item{scrape_status}{Data collection status: "ok", "empty", "no_csrf", or "error"}
+\item{propose_reason}{Full text of the propose-reason statement
+(Korean). \code{NA} for the 80 bills that have no text in the
+source.}
+\item{scrape_status}{Status of the web collection of the text: "ok",
+"empty", "no_csrf", or "error". \code{NA} for texts from the API.}
+\item{source}{"likms_scrape" for the texts collected from the
+Legislative Information System (bills proposed by 2026-02-27), or
+"BPMBILLSUMMARY" for the texts of the Open Assembly API, which begin
+with a heading that the scraped texts lack. \code{NA} for the eight
+bills without any text record.}
 }
 }
 \description{
-Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
-The file is approximately 25 MB and is cached locally after the first
-download. Requires the \pkg{arrow} package to read parquet files.
+Downloads the full propose-reason texts (jean-iyu) for all 64,900 bills
+in \code{\link{bills}}. The file is approximately 26 MB and is cached
+locally after the first download. Requires the \pkg{arrow} package to
+read parquet files.
+}
+\details{
+The texts are those of release 0.8.1 of the kna project
+(\url{https://github.com/kyusik-yang/kna}), for the bills in
+\code{\link{bills}}. Versions up to 0.1.3 downloaded the scraped texts
+of the korean-assembly-bills dataset, which cover the bills proposed by
+2026-02-27 and are unchanged here. Record \code{source} in text
+analyses.
 }
 \examples{
 \donttest{

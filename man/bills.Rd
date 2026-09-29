@@ -5,7 +5,7 @@
 \alias{bills}
 \title{Bills Proposed in the Korean National Assembly (20th-22nd)}
 \format{
-A data frame with 60,925 rows and 11 variables:
+A data frame with 64,900 rows and 11 variables:
 \describe{
 \item{bill_id}{Unique bill identifier from the National Assembly system}
 \item{bill_no}{Numeric bill number}
@@ -15,7 +15,7 @@ A data frame with 60,925 rows and 11 variables:
 \item{propose_date}{Date the bill was formally proposed}
 \item{result}{Legislative outcome in Korean. Common values include
 passed as-is, expired at term end, and incorporated into
-alternative bill. \code{NA} for bills pending in March 2026. For a
+alternative bill. \code{NA} for bills pending on 2026-09-23. For a
 vetoed bill, the outcome after the veto (rejected on the re-vote,
 passed again, or expired at the end of the term). See
 \code{table(bills$result)} for all values.}
@@ -33,14 +33,15 @@ law}
 }
 \source{
 Open National Assembly Information API (Republic of Korea),
-as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
+as corrected in kna 0.7.0 (20th and 21st) and kna 0.8.1 (22nd)
+(\url{https://github.com/kyusik-yang/kna}).
 }
 \usage{
 bills
 }
 \description{
-Metadata for 60,925 legislative bills proposed during the 20th through
-22nd Korean National Assembly (2016-2026).
+Metadata for the 64,900 bills that members proposed during the 20th
+through 22nd Korean National Assembly (2016-2026), up to 2026-09-23.
 }
 \details{
 The Korean National Assembly has seen a dramatic increase in bill
@@ -57,7 +58,7 @@ law, exclude \code{alt_vetoed} bills as well.
 
 Use \code{get_bill_texts()} to download the full propose-reason texts
 for text analysis, and \code{get_proposers()} for the complete
-co-sponsorship records (777,220 rows).
+co-sponsorship records (825,283 rows).
 }
 \examples{
 data(bills)

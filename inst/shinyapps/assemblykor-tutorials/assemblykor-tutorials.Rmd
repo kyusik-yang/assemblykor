@@ -70,7 +70,7 @@ data(legislators)
 dim(legislators)
 ```
 
-948개 행, 15개 열입니다. 행 하나가 무엇을 의미하는지 아는 것이 중요합니다.
+963개 행, 15개 열입니다. 행 하나가 무엇을 의미하는지 아는 것이 중요합니다.
 여기서 **한 행 = 한 의원의 한 대(assembly)에서의 기록**입니다.
 같은 의원이 20대와 21대에 모두 활동했다면, 두 개의 행으로 나타납니다.
 
@@ -353,7 +353,7 @@ dim(bills)
 head(bills %>% select(bill_name, committee, propose_date, result), 5)
 ```
 
-60,925건의 법안 메타데이터입니다. `result` 열에서 법안의 최종 처리 결과를 볼 수 있습니다.
+64,900건의 법안 메타데이터입니다. `result` 열에서 법안의 최종 처리 결과를 볼 수 있습니다.
 
 ```{r eval=FALSE}
 # 법안 처리 결과 분포
@@ -2081,7 +2081,7 @@ library(patchwork)
 
 ## 2. 법안 텍스트 다운로드
 
-`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다.
+`get_bill_texts()`로 64,900건의 법안 제안이유를 다운로드합니다.
 
 ```{r t05-download-64, eval=FALSE}
 texts <- get_bill_texts()
@@ -3094,8 +3094,8 @@ data.frame(
 
 | 데이터 | 수준 | 범위 | 행 수 |
 |--------|------|------|-------|
-| `votes` | **법안별** 전체 결과 | 20-22대 | 8,050 |
-| `roll_calls` | **의원별** 투표 기록 | 22대만 | 384,022 |
+| `votes` | **법안별** 전체 결과 | 20-22대 | 8,611 |
+| `roll_calls` | **의원별** 투표 기록 | 22대만 | 549,513 |
 
 ### votes: 법안별 표결 결과
 
@@ -3329,8 +3329,9 @@ rc_heat <- roll_calls %>%
 
 ```{r t07-heatmap-112, fig.height=8, eval=FALSE}
 # 투표 행렬 (의원 x 법안)
+# 동명이인이 있으므로 의원은 member_id로 구분합니다
 vote_matrix <- rc_heat %>%
-  select(member_name, bill_id, vote_num, party) %>%
+  select(member_id, member_name, bill_id, vote_num, party) %>%
   pivot_wider(names_from = bill_id, values_from = vote_num, values_fill = 0)
 
 # 의원을 정당별로 정렬
@@ -3339,16 +3340,16 @@ vote_matrix <- vote_matrix %>%
 
 # 긴 형식으로 다시 변환 (ggplot용)
 heat_data <- vote_matrix %>%
-  pivot_longer(cols = -c(member_name, party),
+  pivot_longer(cols = -c(member_id, member_name, party),
                names_to = "bill_id", values_to = "vote_num") %>%
   mutate(
     vote_label = case_match(vote_num,
       1 ~ "찬성", -1 ~ "반대", 0 ~ "기권/불참"
     ),
-    member_name = factor(member_name, levels = vote_matrix$member_name)
+    member_id = factor(member_id, levels = vote_matrix$member_id)
   )
 
-ggplot(heat_data, aes(x = bill_id, y = member_name, fill = vote_label)) +
+ggplot(heat_data, aes(x = bill_id, y = member_id, fill = vote_label)) +
   geom_tile(color = "white", linewidth = 0.1) +
   scale_fill_manual(values = c(
     "찬성" = "#4DAF4A",
@@ -3380,18 +3381,18 @@ ggplot(heat_data, aes(x = bill_id, y = member_name, fill = vote_label)) +
 ```{r t07-agreement-113, eval=FALSE}
 # 논쟁적 법안에서 투표 행렬 만들기 (숫자)
 vote_mat <- vote_matrix %>%
-  select(-member_name, -party) %>%
+  select(-member_id, -member_name, -party) %>%
   as.matrix()
-rownames(vote_mat) <- vote_matrix$member_name
+rownames(vote_mat) <- vote_matrix$member_id
 
 # 샘플: 상위 20명만 (계산 효율)
 set.seed(42)
-sample_names <- vote_matrix %>%
+sample_ids <- vote_matrix %>%
   group_by(party) %>%
   slice_sample(n = 10) %>%
-  pull(member_name)
+  pull(member_id)
 
-vote_small <- vote_mat[rownames(vote_mat) %in% sample_names, ]
+vote_small <- vote_mat[rownames(vote_mat) %in% sample_ids, ]
 
 # 일치율 행렬 계산
 n_bills_mat <- ncol(vote_small)
@@ -3410,16 +3411,20 @@ colnames(agreement) <- rownames(vote_small)
 ```{r t07-agreement-heatmap-114, eval=FALSE}
 # 정당 정보 추가
 party_info <- vote_matrix %>%
-  filter(member_name %in% sample_names) %>%
-  select(member_name, party)
+  filter(member_id %in% sample_ids) %>%
+  select(member_id, member_name, party)
+# 축에는 member_id 대신 이름을 표시
+name_of <- setNames(party_info$member_name, party_info$member_id)
 
 agree_df <- as.data.frame(as.table(agreement)) %>%
   rename(member1 = Var1, member2 = Var2, agreement = Freq) %>%
-  left_join(party_info, by = c("member1" = "member_name")) %>%
+  left_join(party_info, by = c("member1" = "member_id")) %>%
   rename(party1 = party)
 
 ggplot(agree_df, aes(x = member1, y = member2, fill = agreement)) +
   geom_tile() +
+  scale_x_discrete(labels = name_of) +
+  scale_y_discrete(labels = name_of) +
   scale_fill_gradient2(
     low = "#E41A1C", mid = "white", high = "#4DAF4A",
     midpoint = 0.5, labels = scales::percent
@@ -3471,7 +3476,7 @@ ggplot(agree_df, aes(x = member1, y = member2, fill = agreement)) +
 <summary>정답 보기</summary>
 ```{r eval=FALSE}
 roll_calls %>%
-  group_by(member_name, party) %>%
+  group_by(member_id, member_name, party) %>%
   summarise(
     n_total = n(),
     n_absent = sum(vote_en == "absent"),

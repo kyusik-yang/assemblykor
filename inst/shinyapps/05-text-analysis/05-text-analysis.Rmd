@@ -69,7 +69,7 @@ library(tidytext)
 
 ## 2. 법안 텍스트 다운로드
 
-`get_bill_texts()`로 60,925건의 법안 제안이유를 다운로드합니다.
+`get_bill_texts()`로 64,900건의 법안 제안이유를 다운로드합니다.
 
 ```{r download, eval=FALSE}
 texts <- get_bill_texts()

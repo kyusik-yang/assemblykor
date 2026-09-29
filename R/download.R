@@ -31,21 +31,38 @@ download_to_cache <- function(url, dest) {
 
 #' Download bill propose-reason texts
 #'
-#' Downloads the full propose-reason texts (jean-iyu) for all 60,925 bills.
-#' The file is approximately 25 MB and is cached locally after the first
-#' download. Requires the \pkg{arrow} package to read parquet files.
+#' Downloads the full propose-reason texts (jean-iyu) for all 64,900 bills
+#' in \code{\link{bills}}. The file is approximately 26 MB and is cached
+#' locally after the first download. Requires the \pkg{arrow} package to
+#' read parquet files.
 #'
 #' @param cache_dir Directory to cache downloaded files. Defaults to
 #'   \code{tools::R_user_dir("assemblykor", "cache")}.
 #' @param force_download Logical. If \code{TRUE}, re-download even if cached.
 #'
-#' @return A data frame with 60,925 rows and 3 variables, or \code{NULL}
+#' @return A data frame with 64,900 rows and 4 variables, or \code{NULL}
 #'   (invisibly) if the download fails (e.g., no internet connection):
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
-#'   \item{propose_reason}{Full text of the propose-reason statement (Korean)}
-#'   \item{scrape_status}{Data collection status: "ok", "empty", "no_csrf", or "error"}
+#'   \item{propose_reason}{Full text of the propose-reason statement
+#'     (Korean). \code{NA} for the 80 bills that have no text in the
+#'     source.}
+#'   \item{scrape_status}{Status of the web collection of the text: "ok",
+#'     "empty", "no_csrf", or "error". \code{NA} for texts from the API.}
+#'   \item{source}{"likms_scrape" for the texts collected from the
+#'     Legislative Information System (bills proposed by 2026-02-27), or
+#'     "BPMBILLSUMMARY" for the texts of the Open Assembly API, which begin
+#'     with a heading that the scraped texts lack. \code{NA} for the eight
+#'     bills without any text record.}
 #' }
+#'
+#' @details
+#' The texts are those of release 0.8.1 of the kna project
+#' (\url{https://github.com/kyusik-yang/kna}), for the bills in
+#' \code{\link{bills}}. Versions up to 0.1.3 downloaded the scraped texts
+#' of the korean-assembly-bills dataset, which cover the bills proposed by
+#' 2026-02-27 and are unchanged here. Record \code{source} in text
+#' analyses.
 #'
 #' @examples
 #' \donttest{
@@ -67,11 +84,11 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
   }
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
-  dest <- file.path(cache_dir, "bill_texts.parquet")
+  dest <- file.path(cache_dir, "bill_texts_v2.parquet")
 
   if (!file.exists(dest) || force_download) {
-    url <- "https://github.com/kyusik-yang/korean-assembly-bills/raw/main/data/bill_texts.parquet"
-    message("Downloading bill texts (~25 MB)...")
+    url <- "https://github.com/kyusik-yang/assemblykor/raw/main/hosted-data/bill_texts.parquet"
+    message("Downloading bill texts (~26 MB)...")
     if (!download_to_cache(url, dest)) return(invisible(NULL))
     message("Cached at: ", dest)
   } else {
@@ -79,20 +96,19 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
   }
 
   df <- arrow::read_parquet(dest)
-  colnames(df) <- c("bill_id", "propose_reason", "scrape_status")
-  as.data.frame(df)
+  as.data.frame(df)[c("bill_id", "propose_reason", "scrape_status", "source")]
 }
 
 
 #' Download bill co-sponsorship records
 #'
-#' Downloads the complete proposer records (777,220 rows) listing every
-#' legislator who proposed, co-proposed or supported each of the 60,925
+#' Downloads the complete proposer records (825,283 rows) listing every
+#' legislator who proposed, co-proposed or supported each of the 64,900
 #' bills in \code{\link{bills}}. Requires the \pkg{arrow} package.
 #'
 #' @inheritParams get_bill_texts
 #'
-#' @return A data frame with 777,220 rows and 9 variables, or \code{NULL}
+#' @return A data frame with 825,283 rows and 9 variables, or \code{NULL}
 #'   (invisibly) if the download fails (e.g., no internet connection):
 #' \describe{
 #'   \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
@@ -112,8 +128,8 @@ get_bill_texts <- function(cache_dir = NULL, force_download = FALSE) {
 #'
 #' @details
 #' The records come from the official proposer list of each bill
-#' (BILLINFOPPSR endpoint), as rebuilt in release 0.7.0 of the kna
-#' project (\url{https://github.com/kyusik-yang/kna}). Releases up to
+#' (BILLINFOPPSR endpoint), as rebuilt in the kna project
+#' (\url{https://github.com/kyusik-yang/kna}), release 0.8.1. Releases up to
 #' 0.1.3 of this package served an earlier file that stopped at 100 names
 #' per bill, which left out 7,447 records of the 208 bills with more than
 #' 100 proposers and supporters, and whose \code{is_lead} was
