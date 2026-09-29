@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/kyusik-yang/assemblykor/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/kyusik-yang/assemblykor/blob/v0.1.4/inst/CITATION)
 
 Yang K (2026). *assemblykor: Korean National Assembly Data for Political
 Science Education*. R package version 0.1.4,

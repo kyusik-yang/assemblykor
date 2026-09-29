@@ -91,7 +91,7 @@ if (requireNamespace("arrow", quietly = TRUE)) {
   }
 }
 #> Downloading speech tokens (~1.3 MB)...
-#> Cached at: /tmp/RtmpdyZmNN/speech_tokens_v2.parquet
+#> Cached at: /tmp/Rtmp7MNR73/speech_tokens_v2.parquet
 #> 
 #>   위원   방송   말씀   생각 위원장   부분   얘기     때   국민 후보자   문제 
 #>   6408   5457   5443   4638   3649   3107   2983   2935   2873   2686   2641 
