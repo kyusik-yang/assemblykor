@@ -84,12 +84,14 @@ The tokenization script is in the package source repository under
 if (requireNamespace("arrow", quietly = TRUE)) {
   tokens <- get_speech_tokens(cache_dir = tempdir())
 
-  # Most frequent nouns
-  nouns <- tokens[tokens$pos %in% c("NNG", "NNP"), ]
-  head(sort(table(nouns$token), decreasing = TRUE), 20)
+  if (!is.null(tokens)) {
+    # Most frequent nouns
+    nouns <- tokens[tokens$pos %in% c("NNG", "NNP"), ]
+    head(sort(table(nouns$token), decreasing = TRUE), 20)
+  }
 }
 #> Downloading speech tokens (~1.3 MB)...
-#> Cached at: /tmp/RtmpgrgoN6/speech_tokens_v2.parquet
+#> Cached at: /tmp/Rtmpy0nnMp/speech_tokens_v2.parquet
 #> 
 #>   위원   방송   말씀   생각 위원장   부분   얘기     때   국민 후보자   문제 
 #>   6408   5457   5443   4638   3649   3107   2983   2935   2873   2686   2641 

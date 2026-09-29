@@ -18,7 +18,7 @@ call records.
 - [`bills`](https://kyusik-yang.github.io/assemblykor/reference/bills.md)
   : Bills Proposed in the Korean National Assembly (20th-22nd)
 - [`wealth`](https://kyusik-yang.github.io/assemblykor/reference/wealth.md)
-  : Legislator Asset Declarations (2015-2024)
+  : Legislator Asset Declarations (2015-2025)
 - [`seminars`](https://kyusik-yang.github.io/assemblykor/reference/seminars.md)
   : Policy Seminar Activity by Legislator-Year (2004-2025)
 - [`speeches`](https://kyusik-yang.github.io/assemblykor/reference/speeches.md)

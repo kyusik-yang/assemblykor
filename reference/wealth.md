@@ -1,8 +1,8 @@
-# Legislator Asset Declarations (2015-2024)
+# Legislator Asset Declarations (2015-2025)
 
-Panel data of asset declarations for 772 Korean National Assembly
-members across 10 disclosure years (2015-2024). Derived from mandatory
-public disclosures via the OpenWatch project.
+Panel data of asset declarations for 776 Korean National Assembly
+members across 11 years (2015-2025). Derived from the mandatory annual
+public disclosures.
 
 ## Usage
 
@@ -12,7 +12,7 @@ wealth
 
 ## Format
 
-A data frame with 2,928 rows and 14 variables:
+A data frame with 3,215 rows and 14 variables:
 
 - member_id:
 
@@ -20,7 +20,8 @@ A data frame with 2,928 rows and 14 variables:
 
 - year:
 
-  Disclosure year (2015-2024)
+  Year the declared wealth refers to (2015-2025). The declaration is
+  published in March of the following year.
 
 - name:
 
@@ -72,8 +73,11 @@ A data frame with 2,928 rows and 14 variables:
 
 ## Source
 
-OpenWatch (<https://docs.openwatch.kr/data/national-assembly>), CC BY-SA
-4.0 license.
+2015-2024: OpenWatch
+(<https://docs.openwatch.kr/data/national-assembly>), CC BY-SA 4.0
+license. 2025: the National Assembly Gazette (Gukhoe Gongbo) No. 2026-54
+of 2026-03-26, the March 2026 regular disclosure. Both as compiled in
+release 0.8.1 of the kna project (<https://github.com/kyusik-yang/kna>).
 
 ## Details
 
@@ -100,10 +104,10 @@ hist(wealth$net_worth / 1e6, breaks = 50,
 wealth$re_share <- wealth$real_estate / wealth$total_assets
 summary(wealth$re_share)
 #>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#>  0.0000  0.4286  0.5895  0.5750  0.7282  0.9872 
+#>  0.0000  0.4268  0.5899  0.5739  0.7283  0.9872 
 
 # Gangnam property owners vs others
 tapply(wealth$net_worth / 1e6, wealth$has_gangnam_property, median, na.rm = TRUE)
 #>    FALSE     TRUE 
-#> 1.144683 2.952746 
+#> 1.180119 2.996108 
 ```

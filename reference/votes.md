@@ -12,7 +12,7 @@ votes
 
 ## Format
 
-A data frame with 8,050 rows and 13 variables:
+A data frame with 8,611 rows and 13 variables:
 
 - bill_id:
 
@@ -71,7 +71,9 @@ A data frame with 8,050 rows and 13 variables:
 ## Source
 
 Open National Assembly Information API (Republic of Korea), endpoint
-`ncocpgfiaoituanbr`.
+`ncocpgfiaoituanbr`. The 22nd assembly is the collection of release
+0.8.1 of the kna project (<https://github.com/kyusik-yang/kna>), with
+votes up to 2026-09-17.
 
 ## Details
 
@@ -97,22 +99,22 @@ data(votes)
 table(votes$assembly)
 #> 
 #>   20   21   22 
-#> 3492 3272 1286 
+#> 3492 3272 1847 
 
 # Pass rate
 table(votes$result)
 #> 
 #>     부결 수정가결 원안가결 
-#>       26     2688     5336 
+#>       26     2879     5706 
 
 # Average yes rate
 votes$yes_rate <- votes$yes / votes$voted
 summary(votes$yes_rate)
 #>     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-#> 0.006369 0.961690 0.983784 0.961513 0.994143 1.000000 
+#> 0.006369 0.961905 0.984190 0.961401 0.994382 1.000000 
 
 # Contentious votes (yes rate < 70%)
 contentious <- votes[votes$yes / votes$voted < 0.7, ]
 nrow(contentious)
-#> [1] 144
+#> [1] 159
 ```

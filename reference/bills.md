@@ -1,7 +1,7 @@
 # Bills Proposed in the Korean National Assembly (20th-22nd)
 
-Metadata for 60,925 legislative bills proposed during the 20th through
-22nd Korean National Assembly (2016-2026).
+Metadata for the 64,900 bills that members proposed during the 20th
+through 22nd Korean National Assembly (2016-2026), up to 2026-09-23.
 
 ## Usage
 
@@ -11,7 +11,7 @@ bills
 
 ## Format
 
-A data frame with 60,925 rows and 11 variables:
+A data frame with 64,900 rows and 11 variables:
 
 - bill_id:
 
@@ -41,7 +41,7 @@ A data frame with 60,925 rows and 11 variables:
 
   Legislative outcome in Korean. Common values include passed as-is,
   expired at term end, and incorporated into alternative bill. `NA` for
-  bills pending in March 2026. For a vetoed bill, the outcome after the
+  bills pending on 2026-09-23. For a vetoed bill, the outcome after the
   veto (rejected on the re-vote, passed again, or expired at the end of
   the term). See `table(bills$result)` for all values.
 
@@ -68,7 +68,8 @@ A data frame with 60,925 rows and 11 variables:
 ## Source
 
 Open National Assembly Information API (Republic of Korea), as corrected
-in kna 0.7.0 (<https://github.com/kyusik-yang/kna>).
+in kna 0.7.0 (20th and 21st) and kna 0.8.1 (22nd)
+(<https://github.com/kyusik-yang/kna>).
 
 ## Details
 
@@ -87,7 +88,7 @@ Use
 [`get_bill_texts()`](https://kyusik-yang.github.io/assemblykor/reference/get_bill_texts.md)
 to download the full propose-reason texts for text analysis, and
 [`get_proposers()`](https://kyusik-yang.github.io/assemblykor/reference/get_proposers.md)
-for the complete co-sponsorship records (777,220 rows).
+for the complete co-sponsorship records (825,283 rows).
 
 ## Examples
 
@@ -98,27 +99,27 @@ data(bills)
 table(bills$assembly)
 #> 
 #>    20    21    22 
-#> 21594 23655 15676 
+#> 21594 23655 19651 
 
 # Top 10 committees
 sort(table(bills$committee), decreasing = TRUE)[1:10]
 #> 
 #>                 행정안전위원회                 보건복지위원회 
-#>                           8300                           6255 
+#>                           8839                           6699 
 #>                 국토교통위원회                 법제사법위원회 
-#>                           5477                           5306 
-#>                 기획재정위원회                     정무위원회 
-#>                           4620                           4516 
-#>                 환경노동위원회     농림축산식품해양수산위원회 
-#>                           4017                           3794 
+#>                           5817                           5678 
+#>                     정무위원회                 기획재정위원회 
+#>                           4832                           4620 
+#>     농림축산식품해양수산위원회                 환경노동위원회 
+#>                           4046                           4017 
 #> 산업통상자원중소벤처기업위원회                     교육위원회 
-#>                           3295                           2728 
+#>                           3511                           2889 
 
 # Distribution of legislative outcomes
 head(sort(table(bills$result), decreasing = TRUE))
 #> 
 #>   임기만료폐기   대안반영폐기       수정가결       원안가결           철회 
-#>          30679          13692           2213           1046            578 
+#>          30679          14904           2412           1108            608 
 #> 수정안반영폐기 
 #>            299 
 ```

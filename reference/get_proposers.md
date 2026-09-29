@@ -1,7 +1,7 @@
 # Download bill co-sponsorship records
 
-Downloads the complete proposer records (777,220 rows) listing every
-legislator who proposed, co-proposed or supported each of the 60,925
+Downloads the complete proposer records (825,283 rows) listing every
+legislator who proposed, co-proposed or supported each of the 64,900
 bills in
 [`bills`](https://kyusik-yang.github.io/assemblykor/reference/bills.md).
 Requires the arrow package.
@@ -25,7 +25,7 @@ get_proposers(cache_dir = NULL, force_download = FALSE)
 
 ## Value
 
-A data frame with 777,220 rows and 9 variables, or `NULL` (invisibly) if
+A data frame with 825,283 rows and 9 variables, or `NULL` (invisibly) if
 the download fails (e.g., no internet connection):
 
 - bill_id:
@@ -70,13 +70,13 @@ the download fails (e.g., no internet connection):
 ## Details
 
 The records come from the official proposer list of each bill
-(BILLINFOPPSR endpoint), as rebuilt in release 0.7.0 of the kna project
-(<https://github.com/kyusik-yang/kna>). Releases up to 0.1.3 of this
-package served an earlier file that stopped at 100 names per bill, which
-left out 7,447 records of the 208 bills with more than 100 proposers and
-supporters, and whose `is_lead` was `FALSE` for the lead proposer of 36
-single-proposer bills. Bills with joint lead proposers have more than
-one row with `is_lead = TRUE`.
+(BILLINFOPPSR endpoint), as rebuilt in the kna project
+(<https://github.com/kyusik-yang/kna>), release 0.8.1. Releases up to
+0.1.3 of this package served an earlier file that stopped at 100 names
+per bill, which left out 7,447 records of the 208 bills with more than
+100 proposers and supporters, and whose `is_lead` was `FALSE` for the
+lead proposer of 36 single-proposer bills. Bills with joint lead
+proposers have more than one row with `is_lead = TRUE`.
 
 ## Examples
 
@@ -101,6 +101,6 @@ if (requireNamespace("arrow", quietly = TRUE) &&
   }
 }
 #> Downloading proposer records (~3.6 MB)...
-#> Cached at: /tmp/RtmpgrgoN6/proposers_v2.parquet
+#> Cached at: /tmp/Rtmpy0nnMp/proposers_v2.parquet
 # }
 ```

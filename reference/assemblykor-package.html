@@ -59,33 +59,34 @@ tallies, and member-level roll call votes.</p>
     <h2 id="built-in-datasets">Built-in datasets<a class="anchor" aria-label="anchor" href="#built-in-datasets"></a></h2>
 
 
-<ul><li><p><code><a href="legislators.html">legislators</a></code>: 948 MP records (20th-22nd assemblies)</p></li>
-<li><p><code><a href="bills.html">bills</a></code>: 60,925 legislative bills</p></li>
-<li><p><code><a href="wealth.html">wealth</a></code>: 2,928 legislator-year asset declarations</p></li>
+<ul><li><p><code><a href="legislators.html">legislators</a></code>: 963 MP records (20th-22nd assemblies)</p></li>
+<li><p><code><a href="bills.html">bills</a></code>: 64,900 legislative bills</p></li>
+<li><p><code><a href="wealth.html">wealth</a></code>: 3,215 legislator-year asset declarations</p></li>
 <li><p><code><a href="seminars.html">seminars</a></code>: 5,962 legislator-year seminar records</p></li>
 <li><p><code><a href="speeches.html">speeches</a></code>: 15,795 speech records (22nd, Science &amp; ICT Committee)</p></li>
-<li><p><code><a href="votes.html">votes</a></code>: 8,050 plenary vote tallies (20th-22nd assemblies)</p></li>
-<li><p><code><a href="roll_calls.html">roll_calls</a></code>: 383,792 member-level roll call votes (22nd assembly)</p></li>
+<li><p><code><a href="votes.html">votes</a></code>: 8,611 plenary vote tallies (20th-22nd assemblies)</p></li>
+<li><p><code><a href="roll_calls.html">roll_calls</a></code>: 549,513 member-level roll call votes (22nd assembly)</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="download-functions">Download functions<a class="anchor" aria-label="anchor" href="#download-functions"></a></h2>
 
 
-<ul><li><p><code><a href="get_bill_texts.html">get_bill_texts</a></code>: 60,925 bill propose-reason texts</p></li>
-<li><p><code><a href="get_proposers.html">get_proposers</a></code>: 777,220 co-sponsorship records</p></li>
+<ul><li><p><code><a href="get_bill_texts.html">get_bill_texts</a></code>: 64,900 bill propose-reason texts</p></li>
+<li><p><code><a href="get_proposers.html">get_proposers</a></code>: 825,283 co-sponsorship records</p></li>
 <li><p><code><a href="get_speech_tokens.html">get_speech_tokens</a></code>: 663,582 morpheme tokens for
 the <code>speeches</code> dataset (Kiwi morphological analyzer)</p></li>
 </ul></div>
     <div class="section level2">
-    <h2 id="data-corrections">Data corrections<a class="anchor" aria-label="anchor" href="#data-corrections"></a></h2>
+    <h2 id="data-corrections-and-coverage">Data corrections and coverage<a class="anchor" aria-label="anchor" href="#data-corrections-and-coverage"></a></h2>
 
 
-<p>Version 0.1.4 corrects defects that release 0.7.0 of the kna project
-(<a href="https://github.com/kyusik-yang/kna" class="external-link">https://github.com/kyusik-yang/kna</a>) found in the underlying Open
-Assembly records, among them the seniority and committees of
-<code>legislators</code>, the results of vetoed bills and the co-sponsorship
-records cut at 100 names per bill. The coverage is unchanged, with data
-as of March 2026. See the package NEWS for details.</p>
+<p>Version 0.1.4 corrects defects that releases 0.7.0 to 0.8.1 of the kna
+project (<a href="https://github.com/kyusik-yang/kna" class="external-link">https://github.com/kyusik-yang/kna</a>) found in the underlying
+Open Assembly records, among them the seniority and committees of
+<code>legislators</code>, the results of vetoed bills, the co-sponsorship
+records cut at 100 names per bill and the votes the API omits. It also
+extends the 22nd assembly to 2026-09-23 and the asset declarations to
+2025, from kna 0.8.1. See the package NEWS for details.</p>
     </div>
     <div class="section level2">
     <h2 id="tutorials">Tutorials<a class="anchor" aria-label="anchor" href="#tutorials"></a></h2>

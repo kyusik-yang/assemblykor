@@ -5,13 +5,13 @@
 `assemblykor` provides seven built-in datasets from the Korean National
 Assembly for teaching quantitative methods in political science:
 
-- **`legislators`**: 948 MP records (20th-22nd assemblies)
-- **`bills`**: 60,925 legislative bills
-- **`wealth`**: 2,928 legislator-year asset declarations
+- **`legislators`**: 963 MP records (20th-22nd assemblies)
+- **`bills`**: 64,900 legislative bills
+- **`wealth`**: 3,215 legislator-year asset declarations
 - **`seminars`**: 5,962 legislator-year seminar activity records
 - **`speeches`**: 15,795 committee speech records (22nd, Science & ICT)
-- **`votes`**: 8,050 plenary vote tallies (20th-22nd)
-- **`roll_calls`**: 383,792 member-level roll call votes (22nd)
+- **`votes`**: 8,611 plenary vote tallies (20th-22nd)
+- **`roll_calls`**: 549,513 member-level roll call votes (22nd)
 
 ``` r
 
@@ -23,13 +23,13 @@ library(assemblykor)
 #>   └───────────────────────────────────────────────────────────────┘
 #> 
 #>   7 built-in datasets:
-#>     legislators    948 recs   MPs (20-22nd)
-#>     bills       60,925 recs   Bills proposed
-#>     wealth       2,928 recs   Asset declarations
+#>     legislators    963 recs   MPs (20-22nd)
+#>     bills       64,900 recs   Bills proposed
+#>     wealth       3,215 recs   Asset declarations
 #>     seminars     5,962 recs   Policy seminars
 #>     speeches    15,795 recs   Committee speeches (22nd, Sci & ICT)
-#>     votes        8,050 recs   Plenary vote tallies
-#>     roll_calls 383,792 recs   Member-level votes (22nd)
+#>     votes        8,611 recs   Plenary vote tallies
+#>     roll_calls 549,513 recs   Member-level votes (22nd)
 #> 
 #>   Downloadable:
 #>     get_bill_texts()           Bill propose-reason texts
@@ -54,7 +54,7 @@ library(assemblykor)
 
 data(legislators)
 str(legislators)
-#> 'data.frame':    948 obs. of  15 variables:
+#> 'data.frame':    963 obs. of  15 variables:
 #>  $ member_id    : chr  "XQ98168F" "60490713" "IH436704" "8I61593E" ...
 #>  $ assembly     : int  20 20 20 20 20 20 20 20 20 20 ...
 #>  $ name         : chr  "강길부" "강병원" "강석진" "강석호" ...
@@ -82,13 +82,13 @@ gender_tab
 #>        F   M
 #>   20  53 267
 #>   21  64 258
-#>   22  64 242
+#>   22  66 255
 prop.table(gender_tab, margin = 1)
 #>     
 #>              F         M
 #>   20 0.1656250 0.8343750
 #>   21 0.1987578 0.8012422
-#>   22 0.2091503 0.7908497
+#>   22 0.2056075 0.7943925
 ```
 
 ### Legislative productivity by seniority
@@ -217,8 +217,8 @@ leg_wealth %>%
 #> # A tibble: 2 × 4
 #>   district_type     n median_net_worth median_bills
 #>   <chr>         <int>            <dbl>        <dbl>
-#> 1 constituency   4481             1.48         62  
-#> 2 proportional    474             1.23         65.5
+#> 1 constituency   4950             1.50           64
+#> 2 proportional    528             1.25           68
 ```
 
 ## 6. Plenary votes
@@ -264,10 +264,10 @@ party_votes %>%
 #> # A tibble: 4 × 3
 #>   party        n_members discipline
 #>   <chr>            <int>      <dbl>
-#> 1 조국혁신당          13      0.888
-#> 2 더불어민주당       170      0.856
-#> 3 국민의힘           107      0.762
-#> 4 무소속               6      0.753
+#> 1 조국혁신당          14      0.880
+#> 2 더불어민주당       178      0.832
+#> 3 국민의힘           112      0.715
+#> 4 무소속               8      0.710
 ```
 
 ## 8. Speech patterns

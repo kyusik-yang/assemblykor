@@ -147,10 +147,10 @@ Larger datasets are available via download functions (requires the
 
 ``` r
 
-# Bill propose-reason texts (60,925 texts, ~25 MB download)
+# Bill propose-reason texts (64,900 texts, ~26 MB download)
 texts <- get_bill_texts()
 
-# Co-sponsorship records (777,220 rows, ~3.6 MB download)
+# Co-sponsorship records (825,283 rows, ~3.8 MB download)
 proposers <- get_proposers()
 
 # Morpheme tokens for speeches (663,582 rows, ~1.3 MB download)

@@ -17,13 +17,13 @@ library(assemblykor)
 #>   └───────────────────────────────────────────────────────────────┘
 #> 
 #>   7 built-in datasets:
-#>     legislators    948 recs   MPs (20-22nd)
-#>     bills       60,925 recs   Bills proposed
-#>     wealth       2,928 recs   Asset declarations
+#>     legislators    963 recs   MPs (20-22nd)
+#>     bills       64,900 recs   Bills proposed
+#>     wealth       3,215 recs   Asset declarations
 #>     seminars     5,962 recs   Policy seminars
 #>     speeches    15,795 recs   Committee speeches (22nd, Sci & ICT)
-#>     votes        8,050 recs   Plenary vote tallies
-#>     roll_calls 383,792 recs   Member-level votes (22nd)
+#>     votes        8,611 recs   Plenary vote tallies
+#>     roll_calls 549,513 recs   Member-level votes (22nd)
 #> 
 #>   Downloadable:
 #>     get_bill_texts()           Bill propose-reason texts
@@ -104,8 +104,8 @@ legislators %>%
 #> # A tibble: 2 × 3
 #>   gender     n median_bills_led
 #>   <chr>  <int>            <dbl>
-#> 1 F         64               54
-#> 2 M        242               44
+#> 1 F         66               67
+#> 2 M        255               53
 ```
 
 ## Quick analysis: bill survival rates
@@ -117,14 +117,14 @@ bills %>%
   head(5)
 #>         result     n
 #> 1 임기만료폐기 30679
-#> 2 대안반영폐기 13692
-#> 3         <NA> 12171
-#> 4     수정가결  2213
-#> 5     원안가결  1046
+#> 2 대안반영폐기 14904
+#> 3         <NA> 14641
+#> 4     수정가결  2412
+#> 5     원안가결  1108
 ```
 
 Only about 5% of bills are passed by the plenary, as proposed or with
-amendments. Bills still pending in March 2026 have `result` `NA`.
+amendments. Bills still pending on 2026-09-23 have `result` `NA`.
 
 ## Quick analysis: wealth inequality
 
@@ -164,7 +164,7 @@ leg_wealth <- legislators %>%
 
 cor(leg_wealth$n_bills_lead, leg_wealth$net_worth,
     use = "complete.obs")
-#> [1] -0.05360641
+#> [1] -0.04846324
 ```
 
 ## Tutorials

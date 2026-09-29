@@ -82,13 +82,13 @@
 <span><span class="co">#&gt;   └───────────────────────────────────────────────────────────────┘</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   7 built-in datasets:</span></span>
-<span><span class="co">#&gt;     legislators    948 recs   MPs (20-22nd)</span></span>
-<span><span class="co">#&gt;     bills       60,925 recs   Bills proposed</span></span>
-<span><span class="co">#&gt;     wealth       2,928 recs   Asset declarations</span></span>
+<span><span class="co">#&gt;     legislators    963 recs   MPs (20-22nd)</span></span>
+<span><span class="co">#&gt;     bills       64,900 recs   Bills proposed</span></span>
+<span><span class="co">#&gt;     wealth       3,215 recs   Asset declarations</span></span>
 <span><span class="co">#&gt;     seminars     5,962 recs   Policy seminars</span></span>
 <span><span class="co">#&gt;     speeches    15,795 recs   Committee speeches (22nd, Sci &amp; ICT)</span></span>
-<span><span class="co">#&gt;     votes        8,050 recs   Plenary vote tallies</span></span>
-<span><span class="co">#&gt;     roll_calls 383,792 recs   Member-level votes (22nd)</span></span>
+<span><span class="co">#&gt;     votes        8,611 recs   Plenary vote tallies</span></span>
+<span><span class="co">#&gt;     roll_calls 549,513 recs   Member-level votes (22nd)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Downloadable:</span></span>
 <span><span class="co">#&gt;     get_bill_texts()           Bill propose-reason texts</span></span>
@@ -167,8 +167,8 @@
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   gender     n median_bills_led</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> F         64               54</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> M        242               44</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> F         66               67</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> M        255               53</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="quick-analysis-bill-survival-rates">Quick analysis: bill survival rates<a class="anchor" aria-label="anchor" href="#quick-analysis-bill-survival-rates"></a>
@@ -179,12 +179,12 @@
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         result     n</span></span>
 <span><span class="co">#&gt; 1 임기만료폐기 30679</span></span>
-<span><span class="co">#&gt; 2 대안반영폐기 13692</span></span>
-<span><span class="co">#&gt; 3         &lt;NA&gt; 12171</span></span>
-<span><span class="co">#&gt; 4     수정가결  2213</span></span>
-<span><span class="co">#&gt; 5     원안가결  1046</span></span></code></pre></div>
+<span><span class="co">#&gt; 2 대안반영폐기 14904</span></span>
+<span><span class="co">#&gt; 3         &lt;NA&gt; 14641</span></span>
+<span><span class="co">#&gt; 4     수정가결  2412</span></span>
+<span><span class="co">#&gt; 5     원안가결  1108</span></span></code></pre></div>
 <p>Only about 5% of bills are passed by the plenary, as proposed or with
-amendments. Bills still pending in March 2026 have <code>result</code>
+amendments. Bills still pending on 2026-09-23 have <code>result</code>
 <code>NA</code>.</p>
 </div>
 <div class="section level2">
@@ -220,7 +220,7 @@ contested.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">leg_wealth</span><span class="op">$</span><span class="va">n_bills_lead</span>, <span class="va">leg_wealth</span><span class="op">$</span><span class="va">net_worth</span>,</span>
 <span>    use <span class="op">=</span> <span class="st">"complete.obs"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] -0.05360641</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] -0.04846324</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="tutorials">Tutorials<a class="anchor" aria-label="anchor" href="#tutorials"></a>

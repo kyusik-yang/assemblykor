@@ -9,7 +9,7 @@ and/or `assembly`.
 
 ## legislators
 
-**948 rows, 15 variables.** MP metadata for the 20th-22nd Korean
+**963 rows, 15 variables.** MP metadata for the 20th-22nd Korean
 National Assembly.
 
 - **Unit of observation**: legislator-assembly
@@ -18,27 +18,27 @@ National Assembly.
 
 | Variable | Type | Missing | Distribution |
 |:---|:---|:---|:---|
-| member_id | character | 0.0% | 662 unique; top: 04T3751T, 0VU8517U, 1WE5693J |
+| member_id | character | 0.0% | 672 unique; top: 04T3751T, 0VU8517U, 1WE5693J |
 | assembly | numeric | 0.0% | min=20, Q1=20, median=21, Q3=22, max=22 |
-| name | character | 0.0% | 654 unique; top: 강훈식, 권성동, 권칠승 |
-| name_hanja | character | 0.0% | 661 unique; top: 尹厚德, 尹在玉, 尹昊重 |
-| name_eng | character | 0.7% | 653 unique; top: AHN CHEOLSOO, AHN GYUBACK, AN HOYOUNG |
+| name | character | 0.0% | 663 unique; top: 강훈식, 권성동, 권칠승 |
+| name_hanja | character | 0.0% | 671 unique; top: 尹厚德, 尹在玉, 尹昊重 |
+| name_eng | character | 0.7% | 663 unique; top: AHN CHEOLSOO, AHN GYUBACK, AN HOYOUNG |
 | party | character | 0.0% | 17 unique; top: 더불어민주당, 국민의힘, 자유한국당 |
 | party_elected | character | 0.0% | 18 unique; top: 더불어민주당, 새누리당, 국민의힘 |
-| district | character | 0.0% | 299 unique; top: 비례대표, 강원 원주시갑, 경기 성남시분당구갑 |
+| district | character | 0.0% | 298 unique; top: 비례대표, 인천 계양구을, 강원 원주시갑 |
 | district_type | character | 0.0% | 2 unique; top: constituency, proportional |
-| committees | character | 0.0% | 861 unique; top: 외교통일위원회, 정무위원회, 과학기술정보방송통신위원회 |
+| committees | character | 0.0% | 904 unique; top: 외교통일위원회, 정무위원회, 국방위원회 |
 | gender | character | 0.0% | 2 unique; top: M, F |
 | birth_date | Date | 0.0% | 1940-07-11 to 1995-01-02 |
 | seniority | numeric | 0.0% | min=1, Q1=1, median=2, Q3=3, max=8 |
-| n_bills | numeric | 0.0% | min=0, Q1=436, median=702, Q3=1100, max=4205 |
-| n_bills_lead | numeric | 0.0% | min=0, Q1=34, median=56, Q3=83, max=696 |
+| n_bills | numeric | 0.0% | min=7, Q1=464, median=757, Q3=1158, max=4205 |
+| n_bills_lead | numeric | 0.0% | min=0, Q1=37, median=61, Q3=88, max=696 |
 
 ------------------------------------------------------------------------
 
 ## bills
 
-**60,925 rows, 11 variables.** Legislative bill metadata (20th-22nd
+**64,900 rows, 11 variables.** Legislative bill metadata (20th-22nd
 assembly).
 
 - **Unit of observation**: bill
@@ -48,24 +48,24 @@ assembly).
 
 | Variable | Type | Missing | Distribution |
 |:---|:---|:---|:---|
-| bill_id | character | 0.0% | 60925 unique; top: PRC_A1A6B0A8G3D0P1G8B4B2F1J6J3I8Q3, PRC_A1A6B0W6I2T0P1H6L0D4U0A9N0G3B2, PRC_A1A6B0X7D2X8K1H6B5W3G0C3F5P5L7 |
-| bill_no | numeric | 0.0% | min=2000001, Q1=2017465, median=2109713, Q3=2200455, max=2217175 |
+| bill_id | character | 0.0% | 64900 unique; top: PRC_A1A6B0A8G3D0P1G8B4B2F1J6J3I8Q3, PRC_A1A6B0W6I2T0P1H6L0D4U0A9N0G3B2, PRC_A1A6B0X7D2X8K1H6B5W3G0C3F5P5L7 |
+| bill_no | numeric | 0.0% | min=2000001, Q1=2018589, median=2111904, Q3=2203732, max=2221581 |
 | assembly | numeric | 0.0% | min=20, Q1=20, median=21, Q3=22, max=22 |
-| bill_name | character | 0.0% | 4530 unique; top: 조세특례제한법 일부개정법률안, 공직선거법 일부개정법률안, 국회법 일부개정법률안 |
-| committee | character | 0.2% | 33 unique; top: 행정안전위원회, 보건복지위원회, 국토교통위원회 |
-| propose_date | Date | 0.0% | 2016-05-30 to 2026-02-27 |
-| result | character | 20.0% | 8 unique; top: 임기만료폐기, 대안반영폐기, 수정가결 |
-| proposer | character | 0.0% | 770 unique; top: 황주홍, 민형배, 윤준병 |
-| proposer_id | character | 0.0% | 778 unique; top: JOY4394O, VRY5522V, JC14718Q |
-| vetoed | logical | 0.0% | TRUE: 12, FALSE: 60913 |
-| alt_vetoed | logical | 0.0% | TRUE: 180, FALSE: 60745 |
+| bill_name | character | 0.0% | 4718 unique; top: 조세특례제한법 일부개정법률안, 공직선거법 일부개정법률안, 지방세특례제한법 일부개정법률안 |
+| committee | character | 0.1% | 33 unique; top: 행정안전위원회, 보건복지위원회, 국토교통위원회 |
+| propose_date | Date | 0.0% | 2016-05-30 to 2026-09-23 |
+| result | character | 22.6% | 8 unique; top: 임기만료폐기, 대안반영폐기, 수정가결 |
+| proposer | character | 0.0% | 800 unique; top: 황주홍, 윤준병, 민형배 |
+| proposer_id | character | 0.0% | 809 unique; top: JOY4394O, JC14718Q, VRY5522V |
+| vetoed | logical | 0.0% | TRUE: 12, FALSE: 64888 |
+| alt_vetoed | logical | 0.0% | TRUE: 180, FALSE: 64720 |
 
 ------------------------------------------------------------------------
 
 ## wealth
 
-**2,928 rows, 14 variables.** Legislator asset declaration panel
-(2015-2024, 10 disclosure years).
+**3,215 rows, 14 variables.** Legislator asset declaration panel
+(2015-2025, 11 years).
 
 - **Unit of observation**: legislator-year
 - **Key**: `member_id` + `year` (unique)
@@ -75,20 +75,20 @@ assembly).
 
 | Variable | Type | Missing | Distribution |
 |:---|:---|:---|:---|
-| member_id | character | 0.0% | 772 unique; top: 04T3751T, 1WE5693J, 1Y73132H |
-| year | numeric | 0.0% | min=2015, Q1=2017, median=2020, Q3=2022, max=2024 |
-| name | character | 0.0% | 771 unique; top: 권성동, 김도읍, 김상훈 |
-| total_assets | numeric | 0.0% | min=36960, Q1=1074921, median=1814372, Q3=3297303, max=443526250 |
-| total_debt | numeric | 0.0% | min=0, Q1=44580, median=220526, Q3=572624, max=20027140 |
-| net_worth | numeric | 0.0% | min=-1427653, Q1=798320, median=1472084, Q3=2786012, max=443526250 |
-| real_estate | numeric | 0.0% | min=0, Q1=566574, median=1009008, Q3=1926902, max=42900041 |
-| building | numeric | 0.0% | min=0, Q1=484864, median=903348, Q3=1687250, max=42886438 |
-| land | numeric | 0.0% | min=0, Q1=0, median=5462, Q3=139536, max=25616148 |
-| deposits | numeric | 0.0% | min=5827, Q1=218059, median=420716, Q3=854379, max=46929336 |
-| stocks | numeric | 0.0% | min=0, Q1=0, median=0, Q3=25910, max=375332731 |
+| member_id | character | 0.0% | 776 unique; top: 04T3751T, 1WE5693J, 1Y73132H |
+| year | numeric | 0.0% | min=2015, Q1=2017, median=2020, Q3=2023, max=2025 |
+| name | character | 0.0% | 775 unique; top: 김도읍, 김상훈, 김태년 |
+| total_assets | numeric | 0.0% | min=36960, Q1=1094748, median=1840120, Q3=3320038, max=443526250 |
+| total_debt | numeric | 0.0% | min=0, Q1=40000, median=217893, Q3=572290, max=20027140 |
+| net_worth | numeric | 0.0% | min=-1427653, Q1=808384, median=1492296, Q3=2849600, max=443526250 |
+| real_estate | numeric | 0.0% | min=0, Q1=570000, median=1015618, Q3=1948572, max=42900041 |
+| building | numeric | 0.0% | min=0, Q1=490000, median=917000, Q3=1720984, max=42886438 |
+| land | numeric | 0.0% | min=0, Q1=0, median=5139, Q3=137388, max=25616148 |
+| deposits | numeric | 0.0% | min=0, Q1=218886, median=428692, Q3=876346, max=46929336 |
+| stocks | numeric | 0.0% | min=0, Q1=0, median=0, Q3=26234, max=375332731 |
 | n_properties | numeric | 0.0% | min=0, Q1=3, median=4, Q3=5, max=37 |
-| has_seoul_property | logical | 0.0% | TRUE: 2299, FALSE: 629 |
-| has_gangnam_property | logical | 0.0% | TRUE: 809, FALSE: 2119 |
+| has_seoul_property | logical | 0.0% | TRUE: 2527, FALSE: 688 |
+| has_gangnam_property | logical | 0.0% | TRUE: 885, FALSE: 2330 |
 
 ------------------------------------------------------------------------
 
@@ -153,7 +153,7 @@ and ICT Committee (22nd assembly, 2024).
 
 ## votes
 
-**8,050 rows, 13 variables.** Plenary vote tallies (20th-22nd assembly).
+**8,611 rows, 13 variables.** Plenary vote tallies (20th-22nd assembly).
 
 - **Unit of observation**: bill vote
 - **Key**: `bill_id` (unique except for bill 2000491, which has two
@@ -164,17 +164,17 @@ and ICT Committee (22nd assembly, 2024).
 
 | Variable | Type | Missing | Distribution |
 |:---|:---|:---|:---|
-| bill_id | character | 0.0% | 8049 unique; top: ARC_D1U6W0S6P2G7T1G1C2X3M1S6L7N2N0, ARC_A1D6N0F9G0E9M1T7F4B8E3C0T6E9E3, ARC_A1E8A1H2I2X1C1Q7Q4W7A0G6F1S9Q2 |
-| bill_no | character | 0.0% | 8031 unique; top: 2022996, 2000491, 2012299 |
-| bill_name | character | 0.0% | 5752 unique; top: 도로교통법 일부개정법률안(대안)(행정안전위원장), 자동차관리법 일부개정법률안(대안)(국토교통위원장), 국민건강보험법 일부개정법률안(대안)(보건복지위원장) |
+| bill_id | character | 0.0% | 8610 unique; top: ARC_D1U6W0S6P2G7T1G1C2X3M1S6L7N2N0, ARC_A1D6N0F9G0E9M1T7F4B8E3C0T6E9E3, ARC_A1E8A1H2I2X1C1Q7Q4W7A0G6F1S9Q2 |
+| bill_no | character | 0.0% | 8592 unique; top: 2022996, 2000491, 2012299 |
+| bill_name | character | 0.0% | 6110 unique; top: 도로교통법 일부개정법률안(대안)(행정안전위원장), 자동차관리법 일부개정법률안(대안)(국토교통위원장), 국민건강보험법 일부개정법률안(대안)(보건복지위원장) |
 | assembly | numeric | 0.0% | min=20, Q1=20, median=21, Q3=21, max=22 |
-| committee | character | 0.0% | 47 unique; top: 농림축산식품해양수산위원회, 국토교통위원회, 보건복지위원회 |
-| vote_date | Date | 0.0% | 2016-06-09 to 2026-03-12 |
+| committee | character | 0.0% | 49 unique; top: 농림축산식품해양수산위원회, 국토교통위원회, 보건복지위원회 |
+| vote_date | Date | 0.0% | 2016-06-09 to 2026-09-17 |
 | result | character | 0.0% | 3 unique; top: 원안가결, 수정가결, 부결 |
 | bill_type | character | 0.0% | 9 unique; top: 법률안, 예산안, 결의안 |
-| total_members | numeric | 0.0% | min=288, Q1=296, median=299, Q3=300, max=300 |
-| voted | numeric | 0.0% | min=3, Q1=188, median=213, Q3=238, max=297 |
-| yes | numeric | 0.0% | min=1, Q1=180, median=204, Q3=229, max=297 |
+| total_members | numeric | 0.0% | min=286, Q1=296, median=299, Q3=300, max=300 |
+| voted | numeric | 0.0% | min=3, Q1=187, median=212, Q3=236, max=297 |
+| yes | numeric | 0.0% | min=1, Q1=179, median=203, Q3=227, max=297 |
 | no | numeric | 0.0% | min=0, Q1=0, median=0, Q3=1, max=187 |
 | abstain | numeric | 0.0% | min=0, Q1=1, median=3, Q3=7, max=64 |
 
@@ -182,8 +182,8 @@ and ICT Committee (22nd assembly, 2024).
 
 ## roll_calls
 
-**383,792 rows, 9 variables.** Member-level roll call votes (22nd
-assembly, 1,286 bills).
+**549,513 rows, 9 variables.** Member-level roll call votes (22nd
+assembly, 1,847 bills).
 
 - **Unit of observation**: legislator-bill vote
 - **Key**: `member_id` + `bill_id` (unique)
@@ -193,15 +193,15 @@ assembly, 1,286 bills).
 
 | Variable | Type | Missing | Distribution |
 |:---|:---|:---|:---|
-| bill_id | character | 0.0% | 1286 unique; top: ARC_B2U4U0H7N2J2O0N8R5I5F1J9G2D2U5, ARC_C2A4B0A8H3R0V0R9F2L0E3Z7P8F7S5, ARC_C2A4M0W7H2E2U0L8Z5W5D3P2U7T2A3 |
+| bill_id | character | 0.0% | 1847 unique; top: ARC_B2U4U0H7N2J2O0N8R5I5F1J9G2D2U5, ARC_C2A4B0A8H3R0V0R9F2L0E3Z7P8F7S5, ARC_C2A4M0W7H2E2U0L8Z5W5D3P2U7T2A3 |
 | assembly | numeric | 0.0% | min=22, Q1=22, median=22, Q3=22, max=22 |
-| member_name | character | 0.0% | 305 unique; top: 강경숙, 강대식, 강득구 |
-| member_id | character | 0.0% | 305 unique; top: 04T3751T, 0698755I, 0R68099X |
+| member_name | character | 0.0% | 320 unique; top: 박지원, 강경숙, 강대식 |
+| member_id | character | 0.0% | 321 unique; top: 04T3751T, 0R68099X, 0VU8517U |
 | party | character | 0.0% | 8 unique; top: 더불어민주당, 국민의힘, 조국혁신당 |
-| party_elected | character | 0.0% | 8 unique; top: 더불어민주당, 국민의힘, 국민의미래 |
-| district | character | 0.0% | 255 unique; top: 비례대표, 강원 강릉시, 강원 동해시태백시삼척시정선군 |
+| party_elected | character | 0.0% | 9 unique; top: 더불어민주당, 국민의힘, 국민의미래 |
+| district | character | 0.0% | 255 unique; top: 비례대표, 강원 동해시태백시삼척시정선군, 강원 속초시인제군고성군양양군 |
 | vote | character | 0.0% | 4 unique; top: 찬성, 불참, 반대 |
-| vote_date | Date | 0.0% | 2024-07-04 to 2026-03-12 |
+| vote_date | Date | 0.0% | 2024-07-04 to 2026-09-17 |
 
 ------------------------------------------------------------------------
 
