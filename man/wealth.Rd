@@ -3,12 +3,13 @@
 \docType{data}
 \name{wealth}
 \alias{wealth}
-\title{Legislator Asset Declarations (2015-2024)}
+\title{Legislator Asset Declarations (2015-2025)}
 \format{
-A data frame with 2,928 rows and 14 variables:
+A data frame with 3,215 rows and 14 variables:
 \describe{
 \item{member_id}{Legislator identifier (links to \code{legislators$member_id})}
-\item{year}{Disclosure year (2015-2024)}
+\item{year}{Year the declared wealth refers to (2015-2025). The
+declaration is published in March of the following year.}
 \item{name}{Legislator name in Korean}
 \item{total_assets}{Total declared assets, in thousands of KRW}
 \item{total_debt}{Total declared liabilities, in thousands of KRW}
@@ -24,15 +25,20 @@ A data frame with 2,928 rows and 14 variables:
 }
 }
 \source{
-OpenWatch (\url{https://docs.openwatch.kr/data/national-assembly}), CC BY-SA 4.0 license.
+2015-2024: OpenWatch
+(\url{https://docs.openwatch.kr/data/national-assembly}), CC BY-SA 4.0
+license. 2025: the National Assembly Gazette (Gukhoe Gongbo) No.
+2026-54 of 2026-03-26, the March 2026 regular disclosure. Both as
+compiled in release 0.8.1 of the kna project
+(\url{https://github.com/kyusik-yang/kna}).
 }
 \usage{
 wealth
 }
 \description{
-Panel data of asset declarations for 772 Korean National Assembly members
-across 10 disclosure years (2015-2024). Derived from mandatory public
-disclosures via the OpenWatch project.
+Panel data of asset declarations for 776 Korean National Assembly members
+across 11 years (2015-2025). Derived from the mandatory annual public
+disclosures.
 }
 \details{
 All monetary values are in thousands of KRW (1 unit = 1,000 won).

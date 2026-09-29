@@ -15,34 +15,35 @@ tallies, and member-level roll call votes.
 \section{Built-in datasets}{
 
 \itemize{
-\item \code{\link{legislators}}: 948 MP records (20th-22nd assemblies)
-\item \code{\link{bills}}: 60,925 legislative bills
-\item \code{\link{wealth}}: 2,928 legislator-year asset declarations
+\item \code{\link{legislators}}: 963 MP records (20th-22nd assemblies)
+\item \code{\link{bills}}: 64,900 legislative bills
+\item \code{\link{wealth}}: 3,215 legislator-year asset declarations
 \item \code{\link{seminars}}: 5,962 legislator-year seminar records
 \item \code{\link{speeches}}: 15,795 speech records (22nd, Science & ICT Committee)
-\item \code{\link{votes}}: 8,050 plenary vote tallies (20th-22nd assemblies)
-\item \code{\link{roll_calls}}: 383,792 member-level roll call votes (22nd assembly)
+\item \code{\link{votes}}: 8,611 plenary vote tallies (20th-22nd assemblies)
+\item \code{\link{roll_calls}}: 549,513 member-level roll call votes (22nd assembly)
 }
 }
 
 \section{Download functions}{
 
 \itemize{
-\item \code{\link{get_bill_texts}}: 60,925 bill propose-reason texts
-\item \code{\link{get_proposers}}: 777,220 co-sponsorship records
+\item \code{\link{get_bill_texts}}: 64,900 bill propose-reason texts
+\item \code{\link{get_proposers}}: 825,283 co-sponsorship records
 \item \code{\link{get_speech_tokens}}: 663,582 morpheme tokens for
 the \code{speeches} dataset (Kiwi morphological analyzer)
 }
 }
 
-\section{Data corrections}{
+\section{Data corrections and coverage}{
 
-Version 0.1.4 corrects defects that release 0.7.0 of the kna project
-(\url{https://github.com/kyusik-yang/kna}) found in the underlying Open
-Assembly records, among them the seniority and committees of
-\code{legislators}, the results of vetoed bills and the co-sponsorship
-records cut at 100 names per bill. The coverage is unchanged, with data
-as of March 2026. See the package NEWS for details.
+Version 0.1.4 corrects defects that releases 0.7.0 to 0.8.1 of the kna
+project (\url{https://github.com/kyusik-yang/kna}) found in the underlying
+Open Assembly records, among them the seniority and committees of
+\code{legislators}, the results of vetoed bills, the co-sponsorship
+records cut at 100 names per bill and the votes the API omits. It also
+extends the 22nd assembly to 2026-09-23 and the asset declarations to
+2025, from kna 0.8.1. See the package NEWS for details.
 }
 
 \section{Tutorials}{

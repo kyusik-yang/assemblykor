@@ -5,7 +5,7 @@
 \alias{legislators}
 \title{Members of the Korean National Assembly (20th-22nd)}
 \format{
-A data frame with 948 rows and 15 variables:
+A data frame with 963 rows and 15 variables:
 \describe{
 \item{member_id}{Unique legislator identifier (MONA_CD from the National Assembly API)}
 \item{assembly}{Assembly number (20, 21, or 22)}
@@ -15,7 +15,8 @@ A data frame with 948 rows and 15 variables:
 \item{party}{Party label that the official roster of that assembly
 records for the member. It reflects party mergers, renamings and
 switches during the term. For the 22nd assembly it is the party as
-of March 2026.}
+of September 2026, or the last party recorded for a member who had
+left the Assembly by then.}
 \item{party_elected}{Party at election, that is, the party on whose ticket or
 list the member was elected. For a successor to a proportional
 seat, the party of the list the seat came from. The source records
@@ -40,20 +41,22 @@ proposed, co-proposed or supported (see \code{\link{get_proposers}})}
 }
 \source{
 Open National Assembly Information API (Republic of Korea),
-as corrected in kna 0.7.0 (\url{https://github.com/kyusik-yang/kna}).
+as corrected in kna 0.7.0 (20th and 21st) and kna 0.8.1 (22nd)
+(\url{https://github.com/kyusik-yang/kna}).
 License: public domain (Korean government open data).
 }
 \usage{
 legislators
 }
 \description{
-Biographical and political metadata for 948 records of legislators who
+Biographical and political metadata for 963 records of legislators who
 served in the 20th (2016-2020), 21st (2020-2024), or 22nd (2024-2028)
 Korean National Assembly. Some legislators appear in multiple assemblies.
-The 22nd assembly covers the members seated by March 2026.
+The 22nd assembly covers the members seated by 2026-09-23, among them
+the winners of the by-elections of 2026-06-11.
 }
 \details{
-662 unique legislators served across the three assemblies. \code{member_id}
+672 unique legislators served across the three assemblies. \code{member_id}
 is consistent across assemblies, so legislators can be tracked over time.
 Party names may differ between \code{party} (mid-term) and \code{party_elected}
 (election day) due to party mergers and name changes, which are common
@@ -67,6 +70,7 @@ terms at the time of data collection, so it overstated the seniority of
 from a present-day string that did not match the assembly. Both now
 follow release 0.7.0 of the kna project, as do six values of
 \code{party_elected}, one district, two district types and the bill counts.
+The 22nd assembly is rebuilt from release 0.8.1 of the kna project.
 }
 \examples{
 data(legislators)

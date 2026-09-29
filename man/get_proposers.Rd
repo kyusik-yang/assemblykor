@@ -13,7 +13,7 @@ get_proposers(cache_dir = NULL, force_download = FALSE)
 \item{force_download}{Logical. If \code{TRUE}, re-download even if cached.}
 }
 \value{
-A data frame with 777,220 rows and 9 variables, or \code{NULL}
+A data frame with 825,283 rows and 9 variables, or \code{NULL}
 (invisibly) if the download fails (e.g., no internet connection):
 \describe{
 \item{bill_id}{Bill identifier (links to \code{bills$bill_id})}
@@ -32,14 +32,14 @@ proposer text.}
 }
 }
 \description{
-Downloads the complete proposer records (777,220 rows) listing every
-legislator who proposed, co-proposed or supported each of the 60,925
+Downloads the complete proposer records (825,283 rows) listing every
+legislator who proposed, co-proposed or supported each of the 64,900
 bills in \code{\link{bills}}. Requires the \pkg{arrow} package.
 }
 \details{
 The records come from the official proposer list of each bill
-(BILLINFOPPSR endpoint), as rebuilt in release 0.7.0 of the kna
-project (\url{https://github.com/kyusik-yang/kna}). Releases up to
+(BILLINFOPPSR endpoint), as rebuilt in the kna project
+(\url{https://github.com/kyusik-yang/kna}), release 0.8.1. Releases up to
 0.1.3 of this package served an earlier file that stopped at 100 names
 per bill, which left out 7,447 records of the 208 bills with more than
 100 proposers and supporters, and whose \code{is_lead} was

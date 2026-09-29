@@ -54,7 +54,7 @@ Not all legislators are observed the same number of times. This is an **unbalanc
 quiz(
   question("Which of the following is an example of panel data?",
     answer("Surveying 1,000 different people each year for 5 years"),
-    answer("Tracking the same 200 legislators' wealth annually for 10 years", correct = TRUE),
+    answer("Tracking the same 200 legislators' wealth annually for 11 years", correct = TRUE),
     answer("Recording daily stock prices for a single company"),
     answer("Comparing GDP across 50 countries in 2024"),
     correct = "Correct! Panel data requires the SAME units observed repeatedly. A new random sample each year is repeated cross-section, not panel."

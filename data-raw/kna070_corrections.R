@@ -1,6 +1,6 @@
 # kna070_corrections.R
-# Applies the corrections of kna 0.7.0 to the built-in datasets and
-# rebuilds the co-sponsorship file served by get_proposers().
+# Applies the corrections of kna 0.7.0 to 0.8.1 to the built-in datasets
+# and rebuilds the co-sponsorship file served by get_proposers().
 #
 # The datasets were built by prepare_data.R and collect_votes.R from Open
 # Assembly records collected in March 2026. The kna 0.7.0 release
@@ -11,13 +11,15 @@
 # result, and the co-sponsorship list stopped at 100 names per bill. This
 # script keeps the coverage of assemblykor 0.1.3 (the same bills and
 # recorded votes, data as of March 2026) and replaces the affected values
-# with those of kna 0.7.0. It is idempotent, so running it again on its
+# with those of kna 0.7.0. kna 0.7.1 corrected five member records, and kna
+# 0.8.0 restored the 22nd votes of members that the vote API omits, so the
+# script now reads kna 0.8.1. It is idempotent, so running it again on its
 # own output gives the same result.
 #
 # Run from the package root after prepare_data.R and collect_votes.R:
 #   Rscript data-raw/kna070_corrections.R
 #
-# Input: kna 0.7.0 data/processed. Set KNA_DATA_DIR to override the default.
+# Input: kna 0.8.1 data/processed. Set KNA_DATA_DIR to override the default.
 # Output: data/{legislators,bills,roll_calls,seminars,speeches}.rda,
 #   inst/extdata/{legislators,seminars}.csv,
 #   hosted-data/proposers.parquet, hosted-data/speech_tokens.parquet
@@ -48,7 +50,7 @@ load("data/seminars.rda")
 load("data/speeches.rda")
 
 # ------------------------------------------------------------
-# kna 0.7.0 inputs
+# kna inputs
 # ------------------------------------------------------------
 members <- bind_rows(lapply(17:22, function(a) {
   read_kna(sprintf("members_%d.parquet", a))
@@ -178,8 +180,9 @@ leg <- leg %>%
     seniority = as.integer(term_number),
     party_elected = party_kna,
     # 22nd districts keep the March 2026 roster, which gives the district
-    # at the 2024 election
-    district = ifelse(assembly < 22 | is.na(district), district_kna, district),
+    # at the 2024 election. A list successor has no district there
+    district = ifelse(assembly < 22 | is.na(district) | district == "",
+                      district_kna, district),
     district_type = ifelse(election_type == pr_seat | grepl("^비례", district),
                            "proportional", "constituency"),
     committees = coalesce(committees.kna, ""),

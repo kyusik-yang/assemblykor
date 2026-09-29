@@ -5,7 +5,7 @@
 \alias{votes}
 \title{Plenary Vote Results in the Korean National Assembly (20th-22nd)}
 \format{
-A data frame with 8,050 rows and 13 variables:
+A data frame with 8,611 rows and 13 variables:
 \describe{
 \item{bill_id}{Bill identifier (links to \code{bills$bill_id}).
 Unique except for bill 2000491 of the 20th assembly, which has two
@@ -27,7 +27,9 @@ passed with amendments, rejected)}
 }
 \source{
 Open National Assembly Information API (Republic of Korea),
-endpoint \code{ncocpgfiaoituanbr}.
+endpoint \code{ncocpgfiaoituanbr}. The 22nd assembly is the collection
+of release 0.8.1 of the kna project (\url{https://github.com/kyusik-yang/kna}),
+with votes up to 2026-09-17.
 }
 \usage{
 votes

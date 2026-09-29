@@ -64,7 +64,7 @@ and/or `assembly`.
 
 ## legislators
 
-**948 rows, 15 variables.** MP metadata for the 20th-22nd Korean
+**963 rows, 15 variables.** MP metadata for the 20th-22nd Korean
 National Assembly.
 
 - **Unit of observation**: legislator-assembly
@@ -80,7 +80,7 @@ knitr::kable(codebook_table(legislators), row.names = FALSE)
 
 ## bills
 
-**60,925 rows, 11 variables.** Legislative bill metadata (20th-22nd
+**64,900 rows, 11 variables.** Legislative bill metadata (20th-22nd
 assembly).
 
 - **Unit of observation**: bill
@@ -97,8 +97,8 @@ knitr::kable(codebook_table(bills), row.names = FALSE)
 
 ## wealth
 
-**2,928 rows, 14 variables.** Legislator asset declaration panel
-(2015-2024, 10 disclosure years).
+**3,215 rows, 14 variables.** Legislator asset declaration panel
+(2015-2025, 11 years).
 
 - **Unit of observation**: legislator-year
 - **Key**: `member_id` + `year` (unique)
@@ -149,7 +149,7 @@ knitr::kable(codebook_table(speeches), row.names = FALSE)
 
 ## votes
 
-**8,050 rows, 13 variables.** Plenary vote tallies (20th-22nd
+**8,611 rows, 13 variables.** Plenary vote tallies (20th-22nd
 assembly).
 
 - **Unit of observation**: bill vote
@@ -168,8 +168,8 @@ knitr::kable(codebook_table(votes), row.names = FALSE)
 
 ## roll_calls
 
-**383,792 rows, 9 variables.** Member-level roll call votes (22nd
-assembly, 1,286 bills).
+**549,513 rows, 9 variables.** Member-level roll call votes (22nd
+assembly, 1,847 bills).
 
 - **Unit of observation**: legislator-bill vote
 - **Key**: `member_id` + `bill_id` (unique)
