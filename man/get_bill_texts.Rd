@@ -47,8 +47,11 @@ analyses.
 \donttest{
 if (requireNamespace("arrow", quietly = TRUE)) {
   texts <- get_bill_texts(cache_dir = tempdir())
-  nchar_dist <- nchar(texts$propose_reason)
-  hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+
+  if (!is.null(texts)) {
+    nchar_dist <- nchar(texts$propose_reason)
+    hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+  }
 }
 }
 

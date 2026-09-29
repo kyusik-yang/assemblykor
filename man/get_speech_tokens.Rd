@@ -61,9 +61,11 @@ The tokenization script is in the package source repository under
 if (requireNamespace("arrow", quietly = TRUE)) {
   tokens <- get_speech_tokens(cache_dir = tempdir())
 
-  # Most frequent nouns
-  nouns <- tokens[tokens$pos \%in\% c("NNG", "NNP"), ]
-  head(sort(table(nouns$token), decreasing = TRUE), 20)
+  if (!is.null(tokens)) {
+    # Most frequent nouns
+    nouns <- tokens[tokens$pos \%in\% c("NNG", "NNP"), ]
+    head(sort(table(nouns$token), decreasing = TRUE), 20)
+  }
 }
 }
 

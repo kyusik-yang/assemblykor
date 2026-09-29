@@ -68,8 +68,11 @@ download_to_cache <- function(url, dest) {
 #' \donttest{
 #' if (requireNamespace("arrow", quietly = TRUE)) {
 #'   texts <- get_bill_texts(cache_dir = tempdir())
-#'   nchar_dist <- nchar(texts$propose_reason)
-#'   hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+#'
+#'   if (!is.null(texts)) {
+#'     nchar_dist <- nchar(texts$propose_reason)
+#'     hist(nchar_dist, breaks = 100, main = "Length of Propose-Reason Texts")
+#'   }
 #' }
 #' }
 #'
@@ -253,9 +256,11 @@ get_proposers <- function(cache_dir = NULL, force_download = FALSE) {
 #' if (requireNamespace("arrow", quietly = TRUE)) {
 #'   tokens <- get_speech_tokens(cache_dir = tempdir())
 #'
-#'   # Most frequent nouns
-#'   nouns <- tokens[tokens$pos %in% c("NNG", "NNP"), ]
-#'   head(sort(table(nouns$token), decreasing = TRUE), 20)
+#'   if (!is.null(tokens)) {
+#'     # Most frequent nouns
+#'     nouns <- tokens[tokens$pos %in% c("NNG", "NNP"), ]
+#'     head(sort(table(nouns$token), decreasing = TRUE), 20)
+#'   }
 #' }
 #' }
 #'
